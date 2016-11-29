@@ -3,9 +3,18 @@ library(dplyr)
 library(tidyr)
 library(codyn)
 library(ggplot2)
+library(grid)
 
 #kim's wd
 setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm\\to yang')
+
+#ggplot theme set
+theme_set(theme_bw())
+theme_update(axis.title.x=element_text(size=40, vjust=-0.35, margin=margin(t=15)), axis.text.x=element_text(size=34),
+             axis.title.y=element_text(size=40, angle=90, vjust=0.5, margin=margin(r=15)), axis.text.y=element_text(size=34),
+             plot.title = element_text(size=24, vjust=2),
+             panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
+             legend.title=element_blank(), legend.text=element_text(size=20))
 
 #load raw abundance data
 rawAbundance <- read.csv('CORRE_irrigationL_e001D_subset.csv')%>%
@@ -55,12 +64,23 @@ rateChangeIntervalIrrAbund <- rate_change_interval(rawAbundanceIrr, time.var='tr
   mutate(type='abundance')
 
 #rate change figure
-ggplot(rateChangeIntervalIrrAbund, aes(interval, distance, linetype=plot_id)) +
-  geom_point(aes(color=treatment)) + theme_bw() + stat_smooth(method = "lm", se = F, size = 2, aes(color=treatment)) +
+rateChangeIntervalIrrAbundFig <- ggplot(rateChangeIntervalIrrAbund, aes(interval, distance, linetype=plot_id)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
   xlab('Time Interval') +
   ylab('Euclidean Distance') +
   scale_linetype(guide='none') +
-  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'Irrigation'))
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'Irrigation')) +
+  annotate('text', x=0, y=150, label='(a) Abundance-based', size=10, hjust='left') +
+  theme(legend.position=c(0.1,0.8))
+
+rateChangeIntervalIrrAbundFigB <- ggplot(rateChangeIntervalIrrAbund, aes(interval, distance)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
+  xlab('Time Interval') +
+  ylab('Euclidean Distance') +
+  scale_linetype(guide='none') +
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'Irrigation')) +
+  annotate('text', x=0, y=150, label='(c) Abundance-based', size=10, hjust='left') +
+  theme(legend.position='none')
 
 ###presence/absence data
 #rate change slopes
@@ -73,14 +93,29 @@ rateChangeIntervalIrrPres <- rate_change_interval(presenceAbsenceIrr, time.var='
   mutate(type='presence')
 
 #rate change figure
-ggplot(rateChangeIntervalIrrPres, aes(interval, distance, linetype=plot_id)) +
-  geom_point(aes(color=treatment)) + theme_bw() + stat_smooth(method = "lm", se = F, size = 2, aes(color=treatment)) +
+rateChangeIntervalIrrPresFig <- ggplot(rateChangeIntervalIrrPres, aes(interval, distance, linetype=plot_id)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
   xlab('Time Interval') +
   ylab('Euclidean Distance') +
   scale_linetype(guide='none') +
-  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'Irrigation'))
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'Irrigation')) +
+  annotate('text', x=0, y=5, label='(b) Presence-based', size=10, hjust='left') +
+  theme(legend.position='none')
 
+rateChangeIntervalIrrPresFigB <- ggplot(rateChangeIntervalIrrPres, aes(interval, distance)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
+  xlab('Time Interval') +
+  ylab('Euclidean Distance') +
+  scale_linetype(guide='none') +
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'Irrigation')) +
+  annotate('text', x=0, y=5, label='(d) Presence-based', size=10, hjust='left') +
+  theme(legend.position='none')
 
+pushViewport(viewport(layout=grid.layout(2,2)))
+print(rateChangeIntervalIrrAbundFig, vp=viewport(layout.pos.row=1, layout.pos.col=1))
+print(rateChangeIntervalIrrPresFig, vp=viewport(layout.pos.row=1, layout.pos.col=2))
+print(rateChangeIntervalIrrAbundFigB, vp=viewport(layout.pos.row=2, layout.pos.col=1))
+print(rateChangeIntervalIrrPresFigB, vp=viewport(layout.pos.row=2, layout.pos.col=2))
 
 
 
