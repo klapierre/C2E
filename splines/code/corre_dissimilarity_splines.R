@@ -4,10 +4,13 @@
 ##
 ##  Author: Andrew Tredennick (atredenn@gmail.com)
 ##  Date created: November 29, 2016
-##
+
 
 rm(list=ls(all.names = TRUE))
 
+#########
+## USER!! Reset this data path to match your machine...
+########
 data_path <- "/Users/atredenn/Google Drive/C2E/splines/data/"
 
 
@@ -24,7 +27,7 @@ library(plyr)
 
 
 ####
-####  Set Up My Plotting Theme -------------------------------------------------
+####  MY PLOTTING THEME --------------------------------------------------------
 ####
 my_theme <- theme_bw()+
   theme(panel.grid.major.x = element_blank(), 
@@ -69,17 +72,6 @@ for(do_year in unique(comm_matrix$treatment_year)){
 
 
 ####
-####  PLOT THE SPLINE ----------------------------------------------------------
-####
-ggplot(out_df, aes(x=treat_year, y=bc_dist, color=treat_name))+
-  geom_line(alpha=0.2)+
-  geom_point(alpha=0.2)+
-  stat_smooth(method="loess", se=FALSE)+
-  theme_bw()
-
-
-
-####
 ####  FIT THE GAMs -------------------------------------------------------------
 ####
 gam_df <- list()
@@ -93,20 +85,18 @@ for(do_treat in unique(out_df$treat_name)){
   
   ##  Make predictions from best model 
   ##  (here we can just show the all separate model for demonstration)
-  years_to_predict <- 1:max(unique(todo_data$treat_year))
-  pred_df          <- data.frame(treat_year = years_to_predict)
-  pred_df$yhat     <- predict(object = gam_fit, 
-                              newdata = pred_df, 
-                              type = "response")
-  pred_df <- merge(pred_df, todo_data, all.x = TRUE)
+  years_to_predict   <- 1:max(unique(todo_data$treat_year))
+  pred_df            <- data.frame(treat_year = years_to_predict)
+  pred_df$yhat       <- predict(object = gam_fit, 
+                                newdata = pred_df, 
+                                type = "response")
+  pred_df            <- merge(pred_df, todo_data, all.x = TRUE)
   pred_df$treat_name <- do_treat
-  gam_df <- rbind(gam_df, pred_df)
+  gam_df             <- rbind(gam_df, pred_df)
 }
 
 
-
-
-## Plot the fit
+## Plot the fits by treatment
 ggplot(data=gam_df, aes(x=treat_year, color=treat_name))+
   geom_point(aes(y=bc_dist), alpha=0.5)+
   geom_line(aes(y=yhat))+
