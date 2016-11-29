@@ -142,7 +142,7 @@ rateChangeIntervalE001AbundFig <- ggplot(rateChangeIntervalE001Abund, aes(interv
   xlab('Time Interval') +
   ylab('Euclidean Distance') +
   scale_linetype(guide='none') +
-  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'high NPK+')) +
+  scale_color_manual(values=c('#3300FF', '#FF3333'), name='Treatment', labels=c('high NPK+', 'control')) +
   annotate('text', x=0, y=3000, label='(a) Abundance-based', size=10, hjust='left') +
   theme(legend.position=c(0.9,0.9))
 
@@ -151,7 +151,7 @@ rateChangeIntervalE001AbundFigB <- ggplot(rateChangeIntervalE001Abund, aes(inter
   xlab('Time Interval') +
   ylab('Euclidean Distance') +
   scale_linetype(guide='none') +
-  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'high NPK+')) +
+  scale_color_manual(values=c('#3300FF', '#FF3333'), name='Treatment', labels=c('high NPK+', 'control')) +
   annotate('text', x=0, y=3000, label='(c) Abundance-based', size=10, hjust='left') +
   theme(legend.position='none')
 
@@ -171,7 +171,7 @@ rateChangeIntervalE001PresFig <- ggplot(rateChangeIntervalE001Pres, aes(interval
   xlab('Time Interval') +
   ylab('Euclidean Distance') +
   scale_linetype(guide='none') +
-  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'high NPK+')) +
+  scale_color_manual(values=c('#3300FF', '#FF3333'), name='Treatment', labels=c('high NPK+', 'control')) +
   annotate('text', x=0, y=5.2, label='(b) Presence-based', size=10, hjust='left') +
   theme(legend.position='none')
 
@@ -180,7 +180,7 @@ rateChangeIntervalE001PresFigB <- ggplot(rateChangeIntervalE001Pres, aes(interva
   xlab('Time Interval') +
   ylab('Euclidean Distance') +
   scale_linetype(guide='none') +
-  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('Control', 'high NPK+')) +
+  scale_color_manual(values=c('#3300FF', '#FF3333'), name='Treatment', labels=c('high NPK+', 'control')) +
   annotate('text', x=0, y=5.2, label='(d) Presence-based', size=10, hjust='left') +
   theme(legend.position='none')
 
@@ -290,6 +290,107 @@ print(rateChangeIntervalCAbundFig, vp=viewport(layout.pos.row=1, layout.pos.col=
 print(rateChangeIntervalCPresFig, vp=viewport(layout.pos.row=1, layout.pos.col=2))
 print(rateChangeIntervalCAbundFigB, vp=viewport(layout.pos.row=2, layout.pos.col=1))
 print(rateChangeIntervalCPresFigB, vp=viewport(layout.pos.row=2, layout.pos.col=2))
+#export as 1500x1500
+
+
+
+
+
+
+
+rawAbundancePplots <- read.csv('CORRE_raw_abundance.csv')%>%
+  select(-X)%>%
+  filter(project_name=='pplots')
+
+
+#generate presence/absence data
+presenceAbsencePplots <- rawAbundancePplots%>%
+  mutate(presence=1)%>%
+  select(-abundance)%>%
+  spread(key=genus_species, value=presence, fill=0)%>%
+  gather(key=genus_species, value=presence, -site_code, -project_name, -calendar_year, -treatment_year, -block, -treatment, -plot_id, -community_type)
+
+#generate treatment list
+trt <- rawAbundancePplots%>%
+  select(site_code, project_name, treatment, plot_id)%>%
+  unique()%>%
+  mutate(plot_id=as.character(plot_id))
+
+#pplots raw abundance subset
+rawAbundancePplotsB <- rawAbundancePplots%>%
+  #get only the control and highest N treatments
+  filter(treatment=='N2P0'|treatment=='N1P0')
+
+#pplots raw abundance subset
+presenceAbsencePplotsB <- presenceAbsencePplots%>%
+  #get only the control and highest N treatments
+  filter(treatment=='N2P0'|treatment=='N1P0')
+
+
+###calculations
+###raw abundance data
+#rate change slopes
+rateChangePplotsAbund <- rate_change(rawAbundancePplotsB, time.var='treatment_year', species.var='genus_species', abundance.var='abundance', replicate.var='plot_id')
+
+#rate change intervals for visualization
+rateChangeIntervalPplotsAbund <- rate_change_interval(rawAbundancePplotsB, time.var='treatment_year', species.var='genus_species', abundance.var='abundance', replicate.var='plot_id')%>%
+  mutate(project_name='pplots')%>%
+  left_join(trt)%>%
+  mutate(type='abundance')
+
+#rate change figure
+rateChangeIntervalPplotsAbundFig <- ggplot(rateChangeIntervalPplotsAbund, aes(interval, distance, linetype=plot_id)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
+  xlab('Time Interval') +
+  ylab('Euclidean Distance') +
+  scale_linetype(guide='none') +
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('control', '+N')) +
+  annotate('text', x=0, y=150, label='(a) Abundance-based', size=10, hjust='left') +
+  theme(legend.position=c(0.1,0.8))
+
+rateChangeIntervalPplotsAbundFigB <- ggplot(rateChangeIntervalPplotsAbund, aes(interval, distance)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
+  xlab('Time Interval') +
+  ylab('Euclidean Distance') +
+  scale_linetype(guide='none') +
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('control', '+N')) +
+  annotate('text', x=0, y=150, label='(c) Abundance-based', size=10, hjust='left') +
+  theme(legend.position='none')
+
+###presence/absence data
+#rate change slopes
+rateChangePplotsPres <- rate_change(presenceAbsencePplotsB, time.var='treatment_year', species.var='genus_species', abundance.var='presence', replicate.var='plot_id')
+
+#rate change intervals for visualization
+rateChangeIntervalPplotsPres <- rate_change_interval(presenceAbsencePplotsB, time.var='treatment_year', species.var='genus_species', abundance.var='presence', replicate.var='plot_id')%>%
+  mutate(project_name='pplots')%>%
+  left_join(trt)%>%
+  mutate(type='presence')
+
+#rate change figure
+rateChangeIntervalPplotsPresFig <- ggplot(rateChangeIntervalPplotsPres, aes(interval, distance, linetype=plot_id)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
+  xlab('Time Interval') +
+  ylab('Euclidean Distance') +
+  scale_linetype(guide='none') +
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('control', '+N')) +
+  annotate('text', x=0, y=5, label='(b) Presence-based', size=10, hjust='left') +
+  theme(legend.position='none')
+
+rateChangeIntervalPplotsPresFigB <- ggplot(rateChangeIntervalPplotsPres, aes(interval, distance)) +
+  geom_point(aes(color=treatment)) + stat_smooth(method = "loess", se = F, size = 2, aes(color=treatment)) +
+  xlab('Time Interval') +
+  ylab('Euclidean Distance') +
+  scale_linetype(guide='none') +
+  scale_color_manual(values=c('#FF3333', '#3300FF'), name='Treatment', labels=c('control', '+N')) +
+  annotate('text', x=0, y=5, label='(d) Presence-based', size=10, hjust='left') +
+  theme(legend.position='none')
+
+pushViewport(viewport(layout=grid.layout(2,2)))
+print(rateChangeIntervalPplotsAbundFig, vp=viewport(layout.pos.row=1, layout.pos.col=1))
+print(rateChangeIntervalPplotsPresFig, vp=viewport(layout.pos.row=1, layout.pos.col=2))
+print(rateChangeIntervalPplotsAbundFigB, vp=viewport(layout.pos.row=2, layout.pos.col=1))
+print(rateChangeIntervalPplotsPresFigB, vp=viewport(layout.pos.row=2, layout.pos.col=2))
 #export as 1500x1500
 
 
