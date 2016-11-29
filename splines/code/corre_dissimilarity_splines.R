@@ -39,7 +39,9 @@ my_theme <- theme_bw()+
         axis.title         = element_text(size=12, family = "Arial Narrow", face = "bold"),
         panel.border       = element_blank(),
         axis.line.x        = element_line(color="black"),
-        axis.line.y        = element_line(color="black"))
+        axis.line.y        = element_line(color="black"),
+        strip.background   = element_blank(),
+        strip.text         = element_text(size=10, color="grey35", family = "Arial Narrow"))
 
 
 
@@ -104,5 +106,7 @@ ggplot(data=gam_df, aes(x=treat_year, color=treat_name))+
   scale_color_viridis(discrete = TRUE, end=0.85)+
   xlab("Treatment year")+
   ylab("Bray-Curtis Distance")+
+  facet_wrap("treat_name", nrow=1)+
+  guides(color=FALSE)+
   my_theme
-ggsave(filename = "../figures/bray_curtis_gams_abundance.png", width = 5, height = 4, units="in", dpi = 120)
+ggsave(filename = "../figures/bray_curtis_gams_abundance.png", width = 8.5, height = 2, units="in", dpi = 120)
