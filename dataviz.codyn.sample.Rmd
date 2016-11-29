@@ -1,0 +1,96 @@
+---
+title:
+author: "cjlortie, kevin wilcox, and yang xia"
+date: "Nov 2016"
+output:
+  html_document:
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+---
+#Sample data viz and application of codyn
+###Purpose
+To explore within-community patterns.
+
+
+![](./corre.png)
+###Loads of data and libraries
+```{r, data and library loads}
+library(tidyverse)
+library(codyn)
+#library(anytime)
+
+data <- read_csv("data/CORRE_irrigationL_e001D_subset.csv")
+data
+
+#subset out each site
+CDR <- data %>% filter(site_code == "CDR")
+CDR
+
+KNZ <- data %>% filter(site_code == "KNZ")
+KNZ
+
+
+```
+
+###Data viz
+```{r, data viz}
+#basic EDA data viz for raw abundance
+
+#treatment
+ggplot(CDR, aes(treatment_year, abundance, fill = treatment)) + geom_col() + ylab("abundance.CDR")
+
+ggplot(KNZ, aes(treatment_year, abundance, fill = treatment)) + geom_col() + ylab("abundance.KNZ")
+
+#nitrogen
+ggplot(CDR, aes(treatment_year, abundance, fill = n)) + geom_col() 
+
+#phosphorous
+ggplot(CDR, aes(treatment_year, abundance, fill = p)) + geom_col()
+
+#potassium
+ggplot(CDR, aes(treatment_year, abundance, fill = k)) + geom_col()
+
+#water
+ggplot(KNZ, aes(treatment_year, abundance, fill = precip)) + geom_col()
+
+#species counts not abundances
+#CDR
+#Count approach so you can sort
+species.CDR<-CDR %>% group_by(genus_species, treatment) %>% 
+  summarise(n=n()) %>%
+  filter(n >= 10)
+species.CDR
+
+ggplot(species.CDR, aes(n, fill = treatment)) + geom_histogram()
+summary(species.CDR)
+
+ggplot(species.CDR, aes(genus_species, sort(n), fill = treatment)) + geom_col() + coord_flip()
+
+#KNZ
+species.KNZ<-KNZ %>% group_by(genus_species, treatment) %>% 
+  summarise(n=n()) %>%
+  filter(n >= 10)
+species.KNZ
+
+ggplot(species.KNZ, aes(n, fill = treatment)) + geom_histogram()
+summary(species.KNZ)
+
+ggplot(species.KNZ, aes(genus_species, sort(n), fill = treatment)) + geom_col() + coord_flip()
+
+#need to do line plots for abundance by species
+
+
+```
+
+###Community measures for each experiment
+```{r, codyn}
+#CDR
+rate_change(CDR, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+rate_change_interval(CDR, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+```
