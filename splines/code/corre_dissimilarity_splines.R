@@ -81,7 +81,8 @@ for(do_treat in unique(out_df$treat_name)){
   nyrs <- length(unique(todo_data$treat_year))
   gam_fit  <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
                   data = todo_data, 
-                  family = betar(link="logit")) 
+                  family = betar(link="logit"),
+                  select = TRUE) 
   
   ##  Make predictions from best model 
   ##  (here we can just show the all separate model for demonstration)
