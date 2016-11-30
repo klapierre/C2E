@@ -9,8 +9,20 @@
 
 rm(list=ls(all.names = TRUE))
 
-
+diffwd <- "/Users/atredenn/Google Drive/C2E/data/"
 
 ####
 ####  LOAD LIBRARIES
 ####
+library(plyr)
+library(reshape2)
+library(mgcv)
+library(ggplot2)
+library(ggthemes)
+
+
+
+####
+####  SOURCE DATA SUBSETTING SCRIPT
+####
+source("subsetting 7 yr N data.R")
