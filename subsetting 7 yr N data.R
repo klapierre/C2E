@@ -18,14 +18,29 @@ relAbund <- read.csv('CORRE_relative_abundance.csv')%>%
   filter(experiment_length>6)%>%
   subset(!is.na(n))
 
+#get rid of datasets that have fewer than 7 datapoints
+dataLength <- relAbund%>%
+  group_by(site_code, project_name, community_type, treatment, plot_id, treatment_year)%>%
+  unique()%>%
+  summarise(relcov=mean(relcov))%>%
+  ungroup()%>%
+  select(-relcov)%>%
+  group_by(site_code, project_name, community_type, treatment, plot_id)%>%
+  summarise(count=length(treatment_year))
+
+relAbundLength <- relAbund%>%
+  left_join(dataLength)%>%
+  filter(count>7)
+
 #get controls
-relAbundCtl <- relAbund%>%
+relAbundCtl <- relAbundLength%>%
   filter(n==0)
 
 #get highest N
-relAbundN <- relAbund%>%
+relAbundN <- relAbundLength%>%
   group_by(site_code, project_name, community_type)%>%
   filter(n==max(n))%>%
   filter(n>0)%>%
   rbind(relAbundCtl)
+
 
