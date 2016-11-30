@@ -96,11 +96,11 @@ gam_df <- list()
 out_df_abund <- subset(out_df_abund, treat_name != "1_y_n")
 for(do_treat in unique(out_df_abund$treat_name)){
   todo_data <- subset(out_df_abund, treat_name==do_treat)
-  nyrs <- length(unique(todo_data$treat_year))
-  gam_fit  <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
-                  data = todo_data, 
-                  family = betar(link="logit"),
-                  select = TRUE) 
+  nyrs      <- length(unique(todo_data$treat_year))
+  gam_fit   <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
+                   data = todo_data, 
+                   family = betar(link="logit"),
+                   select = TRUE) 
   
   ##  Make predictions from best model 
   ##  (here we can just show the all separate model for demonstration)
@@ -119,11 +119,11 @@ gam_df_pa <- list()
 out_df_pa <- subset(out_df_pa, treat_name != "1_y_n")
 for(do_treat in unique(out_df_pa$treat_name)){
   todo_data <- subset(out_df_pa, treat_name==do_treat)
-  nyrs <- length(unique(todo_data$treat_year))
-  gam_fit  <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
-                  data = todo_data, 
-                  family = betar(link="logit"),
-                  select = TRUE) 
+  nyrs      <- length(unique(todo_data$treat_year))
+  gam_fit   <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
+                   data = todo_data, 
+                   family = betar(link="logit"),
+                   select = TRUE) 
   
   ##  Make predictions from best model 
   ##  (here we can just show the all separate model for demonstration)
@@ -134,12 +134,12 @@ for(do_treat in unique(out_df_pa$treat_name)){
                                 type = "response")
   pred_df            <- merge(pred_df, todo_data, all.x = TRUE)
   pred_df$treat_name <- do_treat
-  gam_df_pa         <- rbind(gam_df_pa, pred_df)
+  gam_df_pa          <- rbind(gam_df_pa, pred_df)
 }
 
-gam_df$type="Abundance"
-gam_df_pa$type="Presence/Absence"
-gam_df_all <- rbind(gam_df, gam_df_pa)
+gam_df$type    <- "Abundance"
+gam_df_pa$type <- "Presence/Absence"
+gam_df_all     <- rbind(gam_df, gam_df_pa)
 
 
 ## Plot the fits by treatment
@@ -166,7 +166,7 @@ ggsave(filename = "../figures/bray_curtis_gams_cdr.png", width = 8.5, height = 3
 ####  LOAD AND SUBSET DATA -----------------------------------------------------
 ####
 all_data    <- read.csv(paste0(data_path,"CORRE_irrigationL_e001D_subset.csv"))
-irrig_data    <- subset(all_data, site_code=="KNZ")
+irrig_data  <- subset(all_data, site_code=="KNZ")
 comm_matrix <- dcast(irrig_data, formula = treatment_year+plot_id+treatment~genus_species,
                      value.var = "abundance", fill=0)
 
@@ -209,17 +209,27 @@ for(do_year in unique(comm_matrix$treatment_year)){
 out_df_abund <- subset(out_df_abund, treat_name != "c")
 todo_data <- out_df_abund
 nyrs <- length(unique(todo_data$treat_year))
-gam_fit  <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
-                data = todo_data, 
-                family = betar(link="logit"),
-                select = TRUE) 
-coefs_abund <- coef(gam_fit)
+all_ks <- 3:(nyrs-1)
+saved_gams <- list()
+saved_aics <- list()
+for(i in 1:length(all_ks)){
+  gam_fit  <- gam(bc_dist ~ s(treat_year, k=all_ks[i]), method="REML", 
+                  data = todo_data, 
+                  family = betar(link="logit"),
+                  select = TRUE) 
+  saved_gams[[i]] <- gam_fit
+  saved_aics[[i]] <- AIC(gam_fit)
+}
+min_aic          <- min(unlist(saved_aics))
+min_aic_id       <- which(unlist(saved_aics)==min_aic)
+best_gam_abund   <- saved_gams[[min_aic_id]]
+
 
 ##  Make predictions from best model 
 ##  (here we can just show the all separate model for demonstration)
 years_to_predict   <- 1:max(unique(todo_data$treat_year))
 pred_df            <- data.frame(treat_year = years_to_predict)
-pred_df$yhat       <- predict(object = gam_fit, 
+pred_df$yhat       <- predict(object = best_gam_abund, 
                               newdata = pred_df, 
                               type = "response")
 pred_df            <- merge(pred_df, todo_data, all.x = TRUE)
@@ -231,10 +241,11 @@ gam_df             <- pred_df
 out_df_pa <- subset(out_df_pa, treat_name != "c")
 todo_data <-out_df_pa
 nyrs <- length(unique(todo_data$treat_year))
-gam_fit  <- gam(bc_dist ~ s(treat_year, k=nyrs-1), method="REML", 
+gam_fit2  <- gam(bc_dist ~ s(treat_year, k=18), method="REML", 
                 data = todo_data, 
                 family = betar(link="logit"),
-                select = TRUE) 
+                select=TRUE)
+
 
 ##  Make predictions from best model 
 ##  (here we can just show the all separate model for demonstration)
@@ -266,4 +277,23 @@ ggplot(data=subset(gam_df_all), aes(x=treat_year, color=treat_name))+
 ggsave(filename = "../figures/bray_curtis_gams_irrig.png", width = 2.5, height = 4, units="in", dpi = 120)
 
 
+
+### PLAN FOR COMPARING TO NULL INTERCEPT MODEL
+# 1. Use AIC to select among all possible k's in GAMs
+# 2. Compare AIC between best GAM and the null model (intercept only)
+
+gams <- list()
+gamsaic <- list()
+count=1
+for(k in 3:18){
+  gam_fit2  <- gam(bc_dist ~ s(treat_year, k=k), method="REML", 
+                   data = todo_data, 
+                   family = betar(link="logit"),
+                   select = TRUE)
+  gams[[count]] <- gam_fit2
+  gamsaic[[count]] <- AIC(gam_fit2)
+  count=count+1
+}
+
+nullmod <- lm(bc_dist~1, data=todo_data)
 
