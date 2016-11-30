@@ -16,3 +16,15 @@ relAbund <- read.csv('CORRE_relative_abundance.csv')%>%
   left_join(nExperiments, by=c('site_code', 'project_name', 'community_type', 'treatment'))%>%
   filter(experiment_length>6)%>%
   subset(!is.na(n))
+
+#get controls
+relAbundCtl <- relAbund%>%
+  filter(n==0)
+
+#get highest N
+relAbundN <- relAbund%>%
+  group_by(site_code, project_name, community_type)%>%
+  filter(n==max(n))%>%
+  filter(n>0)%>%
+  rbind(relAbundCtl)
+
