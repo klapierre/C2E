@@ -6,7 +6,8 @@ library(ggplot2)
 library(grid)
 
 #kim's wd
-setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm\\to yang')
+if(exists("diffwd")==FALSE){setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm\\to yang')}
+if(exists("diffwd")){ setwd(diffwd) }
 
 #read in data
 projectSummary <- read.csv('CORRE_project_summary.csv')
