@@ -43,16 +43,28 @@ KNZ
 #treatment
 ggplot(CDR, aes(treatment_year, abundance, fill = treatment)) + geom_col() + ylab("abundance.CDR")
 
+ggplot(CDR, aes(treatment_year, abundance)) + geom_col() + ylab("abundance.CDR") + facet_wrap(~treatment)
+
+
 ggplot(KNZ, aes(treatment_year, abundance, fill = treatment)) + geom_col() + ylab("abundance.KNZ")
+
+ggplot(KNZ, aes(treatment_year, abundance)) + geom_col() + ylab("abundance.KNZ") + facet_wrap(~treatment)
 
 #nitrogen
 ggplot(CDR, aes(treatment_year, abundance, fill = n)) + geom_col() 
 
+ggplot(CDR, aes(treatment_year, abundance)) + geom_col() +facet_wrap(~n)
+
 #phosphorous
 ggplot(CDR, aes(treatment_year, abundance, fill = p)) + geom_col()
 
+ggplot(CDR, aes(treatment_year, abundance)) + geom_col() + facet_wrap(~p)
+
+
 #potassium
 ggplot(CDR, aes(treatment_year, abundance, fill = k)) + geom_col()
+
+ggplot(CDR, aes(treatment_year, abundance)) + geom_col() + facet_wrap(~k)
 
 #water
 ggplot(KNZ, aes(treatment_year, abundance, fill = precip)) + geom_col()
@@ -88,9 +100,209 @@ ggplot(species.KNZ, aes(genus_species, sort(n), fill = treatment)) + geom_col() 
 
 ###Community measures for each experiment
 ```{r, codyn}
+#abundance
 #CDR
 rate_change(CDR, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
 
-rate_change_interval(CDR, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+CDR.RCI <- rate_change_interval(CDR, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.RCI
+
+CDR.T <- turnover(CDR, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.T
+
+#KNZ
+rate_change(KNZ, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.RCI <- rate_change_interval(KNZ, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+KNZ.RCI
+
+KNZ.T <- turnover(KNZ, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+KNZ.T
+
+#Aggregate for plotting
+#Relative change
+CDR.RCI <- CDR.RCI %>% mutate(site = paste("CDR"))
+KNZ.RCI <- KNZ.RCI %>% mutate(site = paste("KNZ"))
+RCI <- bind_rows(CDR.RCI, KNZ.RCI)
+
+
+ggplot(RCI, aes(interval, distance, color = site)) + geom_point() + geom_smooth(method = "lm")
+
+#Turnover
+CDR.T <- CDR.T %>% mutate(site = paste("CDR"))
+KNZ.T <- KNZ.T %>% mutate(site = paste("KNZ"))
+Turnover <- bind_rows(CDR.T, KNZ.T)
+
+ggplot(Turnover, aes(treatment_year, total, color = site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+###Subsetting for treatment
+```{r, codyn change within communities}
+#CDR
+CDR.C <- CDR %>% filter(treatment == "9_y_n")
+CDR.Tr <- CDR %>% filter(treatment == "8_y_n")
+
+#KNZ
+KNZ.C <- KNZ %>% filter(treatment == "c")
+KNZ.i <- KNZ %>% filter(treatment == "i")
+
+#abundance
+#CDR
+#control
+rate_change(CDR.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.RCI.C <- rate_change_interval(CDR.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.T.C <- turnover(CDR.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+#treatment
+rate_change(CDR.Tr, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.RCI.Tr <- rate_change_interval(CDR.Tr, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.T.Tr <- turnover(CDR.Tr, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+#KNZ
+#control
+rate_change(KNZ.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.RCI.C <- rate_change_interval(KNZ.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.T.C <- turnover(KNZ.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+#treatment
+rate_change(KNZ.i, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.RCI.i <- rate_change_interval(KNZ.i, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.T.i <- turnover(KNZ.i, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+#Aggregate for plotting
+#Relative change
+#CDR
+CDR.RCI.C <- CDR.RCI.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+CDR.RCI.Tr <- CDR.RCI.Tr %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("highestN"))
+
+CDR.RCI <- bind_rows(CDR.RCI.C, CDR.RCI.Tr)
+
+ggplot(CDR.RCI, aes(interval, distance, color = treatment)) + geom_point() + geom_smooth(method = "lm")
+
+#KNZ
+KNZ.RCI.C <- KNZ.RCI.C %>% mutate(site = paste("KNZ")) %>% 
+  mutate(treatment = paste("control"))
+  
+
+KNZ.RCI.i <- KNZ.RCI.i %>% mutate(site = paste("KNZ")) %>%
+  mutate(treatment = paste("irrigate"))
+
+
+KNZ.RCI <- bind_rows(KNZ.RCI.C, KNZ.RCI.i)
+
+ggplot(KNZ.RCI, aes(interval, distance, color = treatment)) + geom_point() + geom_smooth(method = "lm")
+
+
+#Turnover
+#CDR
+CDR.T.C <- turnover(CDR.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.T.Tr <- turnover(CDR.Tr, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+CDR.T.C <- CDR.T.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+CDR.T.Tr <- CDR.T.Tr %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("highestN"))
+
+CDR.T <- bind_rows(CDR.T.C, CDR.T.Tr)
+
+ggplot(CDR.T, aes(treatment_year, total, color = treatment)) + geom_point() + geom_smooth(method = "lm")
+
+#KNR
+KNZ.T.C <- turnover(KNZ.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.T.i <- turnover(KNZ.i, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = NA)
+
+KNZ.T.C <- KNZ.T.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+KNZ.T.i <- KNZ.T.i %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("irrigated"))
+
+KNZ.T <- bind_rows(KNZ.T.C, KNZ.T.i)
+
+ggplot(KNZ.T, aes(treatment_year, total, color = treatment)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+
+###Turnover with metrics
+```{r, turnover}
+#CDR disappearance
+CDR.T.C <- turnover(CDR.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "disappearance")
+
+CDR.T.Tr <- turnover(CDR.Tr, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "disappearance")
+
+CDR.T.C <- CDR.T.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+CDR.T.Tr <- CDR.T.Tr %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("highestN"))
+
+CDR.T <- bind_rows(CDR.T.C, CDR.T.Tr)
+
+ggplot(CDR.T, aes(treatment_year, disappearance, color = treatment)) + geom_point() + geom_smooth()
+
+#CDR appearance
+CDR.T.C <- turnover(CDR.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "appearance")
+
+CDR.T.Tr <- turnover(CDR.Tr, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "appearance")
+
+CDR.T.C <- CDR.T.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+CDR.T.Tr <- CDR.T.Tr %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("highestN"))
+
+CDR.T <- bind_rows(CDR.T.C, CDR.T.Tr)
+
+ggplot(CDR.T, aes(treatment_year, appearance, color = treatment)) + geom_point() + geom_smooth()
+
+#KNR
+#Disappearance
+KNZ.T.C <- turnover(KNZ.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "disappearance")
+
+KNZ.T.i <- turnover(KNZ.i, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "disappearance")
+
+KNZ.T.C <- KNZ.T.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+KNZ.T.i <- KNZ.T.i %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("irrigated"))
+
+KNZ.T <- bind_rows(KNZ.T.C, KNZ.T.i)
+
+ggplot(KNZ.T, aes(treatment_year, disappearance, color = treatment)) + geom_point() + geom_smooth()
+
+#Appearance
+#Disappearance
+KNZ.T.C <- turnover(KNZ.C, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "appearance")
+
+KNZ.T.i <- turnover(KNZ.i, time.var = "treatment_year", species.var = "genus_species", abundance.var = "abundance", replicate.var = "plot_id", metric = "appearance")
+
+KNZ.T.C <- KNZ.T.C %>% mutate(site = paste("CDR")) %>% 
+  mutate(treatment = paste("control"))
+  
+KNZ.T.i <- KNZ.T.i %>% mutate(site = paste("CDR")) %>%
+  mutate(treatment = paste("irrigated"))
+
+KNZ.T <- bind_rows(KNZ.T.C, KNZ.T.i)
+
+ggplot(KNZ.T, aes(treatment_year, appearance, color = treatment)) + geom_point() + geom_smooth()
 
 ```
