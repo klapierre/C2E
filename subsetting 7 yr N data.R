@@ -27,12 +27,14 @@ dataLength <- relAbund%>%
   group_by(site_code, project_name, community_type, treatment, plot_id)%>%
   summarise(count=length(treatment_year))
 
-relAbundLength <- relAbund%>%
+relAbundLength <- relAbund%>%  
+  ungroup()%>%
   left_join(dataLength)%>%
   filter(count>7)
 
 #get controls
-relAbundCtl <- relAbundLength%>%
+relAbundCtl <- relAbundLength%>%  
+  ungroup()%>%
   filter(n==0)
 
 #get highest N
@@ -40,6 +42,8 @@ relAbundN <- relAbundLength%>%
   group_by(site_code, project_name, community_type)%>%
   filter(n==max(n))%>%
   filter(n>0)%>%
-  rbind(relAbundCtl)
+  rbind(relAbundCtl)%>%
+  ungroup()%>%
+  mutate(n_treatment=ifelse(n==0, 0, 1))
 
 

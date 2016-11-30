@@ -11,6 +11,6 @@ source('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\
 
 relAbundAgg <- relAbundN%>%
   ungroup()%>%
-  select(site_code, project_name, community_type, treatment, treatment_year, calendar_year, genus_species, plot_id, relcov)%>%
-  group_by(site_code, project_name, community_type, treatment, treatment_year, calendar_year, genus_species)%>%
+  select(site_code, project_name, community_type, treatment, treatment_year, calendar_year, genus_species, plot_id, relcov, n, n_treatment)%>%
+  group_by(site_code, project_name, community_type, treatment, treatment_year, calendar_year, genus_species, n, n_treatment)%>%
   summarise(relcov_agg=mean(relcov))
