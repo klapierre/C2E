@@ -2,13 +2,12 @@ library(tidyr)
 library(dplyr)
 library(codyn)
 library(vegan)
+library(Kendall)
 
 
 #' Generate a random integer partition through the Chinese
 #' Restaurant Process (CRP).
-#' 
-#' 
-#' 
+
 #STEP1 - Run the function to generate communities
 
 rCRP = function(n, theta, alpha = 0, kappa = NULL, m = NULL, zeros = TRUE) {
@@ -69,15 +68,6 @@ rCRP = function(n, theta, alpha = 0, kappa = NULL, m = NULL, zeros = TRUE) {
   return(result)
 }
 
-##attmept to understand what is going on
-take1<-as.data.frame(rCRP(n=1000, kappa=1, m=20))
-names(take1)[1]<-paste("abundance")
-sorted<-as.data.frame(take1[order(-take1$abundance),])
-names(sorted)[1]<-paste("abundance")
-
-take1a<-sorted%>%
-  mutate(species=letters[seq(1:20)])
-
 
 ####
 #loop to get dissimilarity for each community
@@ -92,7 +82,55 @@ for(i in 1:length(time$time)) {
   names(spool)[1]<-paste("abundance")
   spool$timestep<-time$time[i]
   spool$species<-seq(1:50)
+  spool$rank=rank(-spool$abundance, ties.method="average")
   
   community=rbind(spool, community)  
 }
+
+turnover<-turnover(df=community, time.var="timestep", species.var="species", abundance.var="abundance", metric="total")
+
+immigration<-turnover(df=community, time.var="timestep", species.var="species", abundance.var="abundance", metric="appearance")
+
+loss<-turnover(df=community, time.var="timestep", species.var="species", abundance.var="abundance", metric="disappearance")
+
+mrs<-rank_shift(df=community, time.var = "timestep", species.var = "species", abundance.var="abundance")%>%
+  separate(year_pair, c("year1","year2"), sep="-", remove=F)%>%
+  select(-year_pair, -year1)
+
+m<-merge(turnover, immigration, by="timestep")
+m1<-merge(m, loss, by="timestep")
+codyn_metrics<-merge(m1, mrs, by.x="timestep", by.y="year2")
+
+
+####so kendall rank correlation
+##1 code all species by rank in year 1
+
+year1<-community%>%
+  filter(timestep==1)%>%
+  mutate(rankyr1=rank)%>%
+  select(-abundance, -timestep, -rank)
+
+##get matrix to correlate
+community_rank<-merge(year1, community, by="species")%>%
+  select(-abundance)%>%
+  mutate(timestep2=paste("t", timestep, sep=""))%>%
+  select(-timestep)%>%
+  spread(timestep2, rank)
+
+###
+tao<-c(
+as.numeric(Kendall(community_rank$rankyr1, community_rank$t2)[1]),
+as.numeric(Kendall(community_rank$t2, community_rank$t3)[1]),
+as.numeric(Kendall(community_rank$t3, community_rank$t4)[1]),
+as.numeric(Kendall(community_rank$t4, community_rank$t5)[1]),
+as.numeric(Kendall(community_rank$t5, community_rank$t6)[1]),
+as.numeric(Kendall(community_rank$t6, community_rank$t7)[1]),
+as.numeric(Kendall(community_rank$t7, community_rank$t8)[1]),
+as.numeric(Kendall(community_rank$t8, community_rank$t9)[1]),
+as.numeric(Kendall(community_rank$t9, community_rank$t10)[1]))
+
+codyn_metrics$Cor<-tao
+
+pairs(codyn_metrics[2:6])
+
 
