@@ -34,7 +34,28 @@ evenness <- as.data.frame(invD/S)%>%
   select(site_code, project_name, community_type, treatment, treatment_year, calendar_year, n, n_treatment, `invD/S`)
 
 
-#calculate spp loss and gain
+#calculate spp gain and loss through space (trt compared to ctl)
+turnoverSpace <- relAbundAgg[,c(-4,-8)]
+turnoverSpace <- turnoverSpace%>%
+  mutate(relcov_agg=ifelse(relcov_agg>0, 1, 0))%>%
+  spread(key=n_treatment, value=relcov_agg, fill=0)%>%
+  mutate(diff=`1`-`0`)%>%
+  mutate(diff2=diff)
+
+gain <- turnoverSpace%>%
+  group_by(site_code, project_name, community_type, treatment_year, calendar_year)%>%
+#need to count up -1 as loss and +1 as gain
+  summarise(gain=sum(diff[diff2==1]))
+
+loss <- turnoverSpace%>%
+  group_by(site_code, project_name, community_type, treatment_year, calendar_year)%>%
+  #need to count up -1 as loss and +1 as gain
+  summarise(loss=sum(diff[diff2==-1]))
+
+turnoverSpace2 <- gain%>%
+  left_join(loss)
+
+#calculate spp loss and gain through time
 #make a new dataframe with just the label
 expTrt <- relAbundAgg
 expTrt$exp_trt <- with(relAbundAgg, (paste(site_code, project_name, community_type, treatment, sep=':')))
@@ -81,11 +102,12 @@ communityMetrics <- dominance%>%
   left_join(richness)%>%
   left_join(evenness)%>%
   left_join(turnoverAll, by=c('site_code', 'project_name', 'community_type', 'treatment', 'calendar_year'))%>%
-  gather(key=metric, value=value, bp_dominance:turnover)
+  left_join(turnoverSpace2)%>%
+  gather(key=metric, value=value, bp_dominance:loss)
 
 communityMetrics <- communityMetrics[,c(-4,-7)]
 
 #calculate effect size (as ln response ratio)
 communityLRR <- communityMetrics%>%
   spread(key=n_treatment, value=value)%>%
-  mutate(lrr=log(`1`/`0`))
+  mutate(lrr=log(`1`/`0`), lrr=ifelse(metric=='gain'|metric=='loss', `0`, lrr))
