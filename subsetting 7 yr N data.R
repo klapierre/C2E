@@ -11,7 +11,7 @@ if(exists("diffwd")){ setwd(diffwd) }
 #read in data
 projectSummary <- read.csv('CORRE_project_summary.csv')
 nExperiments <- read.csv('treatments_nitrogen_experiments.csv')
-relAbund <- read.csv(my_file)%>%
+relAbund <- read.csv("CORRE_relative_abundance.csv")%>%
   left_join(projectSummary)%>%
   left_join(nExperiments, by=c('site_code', 'project_name', 'community_type', 'treatment'))%>%
   filter(experiment_length>6)%>%

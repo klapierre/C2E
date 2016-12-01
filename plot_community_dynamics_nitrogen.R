@@ -38,71 +38,46 @@ my_theme <- theme_bw()+
 
 
 
+anpp_lrr <- readRDS("~/Desktop/anpp_timeseries.RDS")
 bray_curtis_gams <- readRDS("~/Desktop/bray_curtis_gams.RDS")
-mean_rank_shifts <- readRDS("~/Desktop/rankdf.RDS")
+bray_curtis_obs_only <- bray_curtis_gams[which(is.na(bray_curtis_gams$bc_dist)!=TRUE),]
+colnames(bray_curtis_obs_only)[which(colnames(bray_curtis_obs_only)=="bc_dist")] <- "lrr"
+bray_curtis_obs_only$metric <- "bray_curtis"
 comm_metrics <- read.csv("~/Desktop/community_LRR.csv")
-torms <- which(comm_metrics$metric %in% c("appearance", "disappearance"))
+torms <- which(comm_metrics$metric %in% c("appearance", "disappearance","bp_dominance","richness","turnover"))
 comm_metrics <- comm_metrics[-torms,]
 comm_metrics$site_proj_comm <- with(comm_metrics, paste0(site_code, project_name, community_type))
-
-trt_mrs <- subset(mean_rank_shifts, trt == 1)
-cntl_mrs <- subset(mean_rank_shifts, trt == 0)
-cntl_mrs$MRS.corr.control <- cntl_mrs$MRS.corr
-back_mrs <- cbind(trt_mrs, cntl_mrs$MRS.corr.control)
-colnames(back_mrs)[ncol(back_mrs)] <- "MRS.corr.control"
-back_mrs$lrr <- with(back_mrs, log(MRS.corr/MRS.corr.control))
-
-
-ggplot(data=subset(bray_curtis_gams), aes(x=treat_year))+
-  geom_point(aes(y=bc_dist), alpha=0.5)+
-  geom_line(aes(y=yhat))+
-  xlab("Treatment year")+
-  ylab("Bray-Curtis Dissimilarity")+
-  facet_wrap("site_proj_comm", scales = "free", nrow=1)+
-  guides(color=FALSE)+
-  my_theme
-ggsave(filename = "~/Desktop/bray_curtis_ts_gams.png", width = 10, height = 2, units="in", dpi = 120)
-
-
-ggplot(back_mrs, aes(x=as.numeric(year_pair), y=lrr))+
-  geom_line(aes(group=site_proj_comm))+
-  geom_hline(aes(yintercept=0), linetype="dotted", color="grey25")+
-  xlab("Year")+
-  ylab("Mean Rank Shift (LRR)")+
-  facet_wrap("site_proj_comm", nrow=1, scales = "free_x")+
-  my_theme+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, size=8))
-ggsave(filename = "~/Desktop/mrs_ts.png", width = 10, height = 2, units="in", dpi = 120)
-
-
-ttt <- back_mrs[,c("site_proj_comm", "year_pair", "lrr")]
-ttt$metric <- "MRS"
-x <- strsplit(as.character(ttt$year_pair), "-")
-ttt$treatment_year <- unlist(lapply(x, `[[`, 1))
-
-comm_metrics <- comm_metrics[,c("site_proj_comm", "treatment_year", "lrr", "metric")]
-comm_metrics <- rbind(comm_metrics, ttt[,c("site_proj_comm", "treatment_year", "lrr", "metric")])
-comm_metrics$treatment_year <- as.numeric(comm_metrics$treatment_year)
-
-# ggplot(comm_metrics, aes(x=treatment_year, y=lrr))+
-#   geom_line(aes(group=site_proj_comm))+
-#   geom_hline(aes(yintercept=0), linetype="dotted", color="grey25")+
-#   xlab("Year")+
-#   ylab("Log Response Ratio")+
-#   facet_grid(metric~site_proj_comm, scales = "free")+
-#   my_theme
-# ggsave(filename = "~/Desktop/comm_metrics_ts.png", width = 10, height = 6, units="in", dpi = 120)
-
+comm_metrics <- comm_metrics[,c("site_proj_comm", "calendar_year","metric","lrr")]
+comm_metrics <- rbind(comm_metrics, bray_curtis_obs_only[,c("site_proj_comm", "calendar_year","metric","lrr")])
 
 ggplot(comm_metrics, aes(x=treatment_year, y=lrr))+
   geom_point(aes(group=site_proj_comm), alpha=0.5)+
-  geom_smooth(method="loess", se=FALSE, color="black", size=0.5)+
+  # geom_smooth(method="loess", se=FALSE, color="black", size=0.5)+
   geom_hline(aes(yintercept=0), linetype="dotted", color="grey25")+
   xlab("Year")+
   ylab("Log Response Ratio")+
-  facet_grid(metric~site_proj_comm, scales = "free")+
+  facet_grid(site_proj_comm~metric, scales = "free")+
   my_theme
-ggsave(filename = "~/Desktop/comm_metrics_ts_smooths.png", width = 10, height = 6, units="in", dpi = 120)
+
+
+plot_list <- list()
+for(do_site in unique(comm_metrics$site_proj_comm)){
+  temp_dat <- subset(comm_metrics, site_proj_comm==do_site)
+  minyr <- min(temp_dat$treatment_year)
+  maxyr <- max(temp_dat$treatment_year)
+  ggplot(temp_dat, aes(x=treatment_year, y=lrr))+
+    geom_point(aes(group=site_proj_comm), alpha=0.5)+
+    # geom_smooth(method="loess", se=FALSE, color="black", size=0.5)+
+    geom_hline(aes(yintercept=0), linetype="dotted", color="grey25")+
+    xlab("")+
+    ylab("")+
+    scale_x_continuous(breaks = seq(minyr, maxyr,2))+
+    facet_wrap("metric", scales = "free", nrow=1)+
+    my_theme
+}
+
+test <- temp_dat$metric
+test2 <- factor(test, levels=c("invD/S", "MRS", "loss", "gain"), labels = c("Evenness", "Rank Corr.", "Loss", "Gain"))
 
 
 

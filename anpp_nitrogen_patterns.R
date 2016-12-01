@@ -65,6 +65,8 @@ anppLRR <- anpp_sub%>%
 anppLRR <- subset(anppLRR, community_type!="WetBowman")
 anppLRR <- subset(anppLRR, project_name!="RMAPC" & project_name!="BGP")
 
+saveRDS(anppLRR, "~/Desktop/anpp_timeseries.RDS")
+
 ggplot(anppLRR, aes(x=calendar_year, y=lrr))+
   geom_point()+
   geom_line()+
