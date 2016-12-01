@@ -88,9 +88,6 @@ for(do_unit in unique(all_sites_bc_time$site_proj_comm)){
                    data = todo_data, 
                    family = betar(link="logit"),
                    select = TRUE) 
-  
-  ##  Make predictions from best model 
-  ##  (here we can just show the all separate model for demonstration)
   years_to_predict   <- seq(min(unique(todo_data$treat_year)),max(unique(todo_data$treat_year)), by=0.1)
   pred_df            <- data.frame(treat_year = years_to_predict)
   pred_df$yhat       <- predict(object = gam_fit, 
