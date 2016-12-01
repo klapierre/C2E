@@ -11,7 +11,7 @@ if(exists("diffwd")){ setwd(diffwd) }
 #read in data
 projectSummary <- read.csv('CORRE_project_summary.csv')
 nExperiments <- read.csv('treatments_nitrogen_experiments.csv')
-relAbund <- read.csv(my_file)%>%
+relAbund <- read.csv('CORRE_anpp_raw.csv')%>%
   left_join(projectSummary)%>%
   left_join(nExperiments, by=c('site_code', 'project_name', 'community_type', 'treatment'))%>%
   filter(experiment_length>6)%>%
@@ -19,18 +19,18 @@ relAbund <- read.csv(my_file)%>%
 
 #get rid of datasets that have fewer than 7 datapoints
 dataLength <- relAbund%>%
-  group_by(site_code, project_name, community_type, treatment, plot_id, treatment_year)%>%
+  group_by(site_code, project_name, community_type, treatment, plot_id, calendar_year)%>%
   unique()%>%
-  summarise(relcov=mean(relcov))%>%
+  summarise(anpp=mean(anpp))%>%
   ungroup()%>%
-  select(-relcov)%>%
+  select(-anpp)%>%
   group_by(site_code, project_name, community_type, treatment, plot_id)%>%
-  summarise(count=length(treatment_year))
+  summarise(count=length(calendar_year))
 
 relAbundLength <- relAbund%>%  
   ungroup()%>%
   left_join(dataLength)%>%
-  filter(count>7)
+  filter(count>2)
 
 #get controls
 relAbundCtl <- relAbundLength%>%  
@@ -45,5 +45,3 @@ relAbundN <- relAbundLength%>%
   rbind(relAbundCtl)%>%
   ungroup()%>%
   mutate(n_treatment=ifelse(n==0, 0, 1))
-
-
