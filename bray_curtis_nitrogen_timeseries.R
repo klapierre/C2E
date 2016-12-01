@@ -98,7 +98,7 @@ for(do_unit in unique(all_sites_bc_time$site_proj_comm)){
   gam_df             <- rbind(gam_df, pred_df)
 }
 
-
+saveRDS(gam_df, "bray_curtis_gams.RDS")
 ## Plot the fits by site_proj_com
 ggplot(data=gam_df, aes(x=treat_year))+
   geom_point(aes(y=bc_dist), alpha=0.5)+
