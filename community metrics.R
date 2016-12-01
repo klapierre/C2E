@@ -1,10 +1,10 @@
 library(vegan)
 library(codyn)
-library(plyr)
-library(tidyr)
-library(dplyr)
 library(ggplot2)
 library(grid)
+library(plyr)
+library(dplyr)
+library(tidyr)
 
 #kim's wd
 setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm\\to yang')
@@ -80,10 +80,12 @@ turnoverAll <- turnoverAll%>%
 communityMetrics <- dominance%>%
   left_join(richness)%>%
   left_join(evenness)%>%
-  left_join(turnoverAll, by=c('site_code', 'project_name', 'community_type', 'treatment', 'calendar_year'))
-  
+  left_join(turnoverAll, by=c('site_code', 'project_name', 'community_type', 'treatment', 'calendar_year'))%>%
+  gather(key=metric, value=value, bp_dominance:turnover)
 
+communityMetrics <- communityMetrics[,c(-4,-7)]
 
-
-
-
+#calculate effect size (as ln response ratio)
+communityLRR <- communityMetrics%>%
+  spread(key=n_treatment, value=value)%>%
+  mutate(lrr=log(`1`/`0`))

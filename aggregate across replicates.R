@@ -1,8 +1,8 @@
+library(ggplot2)
+library(grid)
 library(plyr)
 library(dplyr)
 library(tidyr)
-library(ggplot2)
-library(grid)
 
 #kim's wd
 setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm\\to yang')
