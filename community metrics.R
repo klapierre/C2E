@@ -97,13 +97,20 @@ turnoverAll <- turnoverAll%>%
   separate(exp_trt, c('site_code', 'project_name', 'community_type', 'treatment'), sep=":")%>%
   select(site_code, project_name, community_type, treatment, disappearance, appearance, turnover, calendar_year)
 
+#rank correlations
+rankCorr <- read.csv('kendall_rank.csv')%>%
+  select(-X)
+
 #merge all community metrics
 communityMetrics <- dominance%>%
   left_join(richness)%>%
   left_join(evenness)%>%
   left_join(turnoverAll, by=c('site_code', 'project_name', 'community_type', 'treatment', 'calendar_year'))%>%
   left_join(turnoverSpace2)%>%
-  gather(key=metric, value=value, bp_dominance:loss)
+  mutate(siteprojcom=paste(site_code, project_name, community_type, sep=''))%>%
+  left_join(rankCorr, by=c('siteprojcom', 'treatment_year'))%>%
+  select(-siteprojcom)%>%
+  gather(key=metric, value=value, bp_dominance:RankCor)
 
 communityMetrics <- communityMetrics[,c(-4,-7)]
 
@@ -111,3 +118,4 @@ communityMetrics <- communityMetrics[,c(-4,-7)]
 communityLRR <- communityMetrics%>%
   spread(key=n_treatment, value=value)%>%
   mutate(lrr=log(`1`/`0`), lrr=ifelse(metric=='gain'|metric=='loss', `0`, lrr))
+
