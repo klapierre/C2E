@@ -40,7 +40,6 @@ df2$rich <- colSums(df3,na.rm=T)
 df2$comm <- colnames(df[,2:ncol(df)])
 df2$N <- rowSums(df2[names(df2)%in%paste("sp",1:100,sep="")],na.rm=TRUE)
 
-
 #next consider high species evenness, lower dominance
 df4 <- df2
 #for(i in 1:100) {df4[!is.na(df4[,i]),i] <- round(df4$N/df4$rich)[!is.na(df4[,i])]}
