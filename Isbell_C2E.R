@@ -100,12 +100,10 @@ d10$InvSimpEven <- diversity(d10[,1:100],"inv")/d10$S
 
 cg <- c(brewer.pal(7,"RdBu")[c(1,2,6,7)])
   
-#quartz()
 ggplot(d10,aes(x=S,y=bc,group=interaction(rank.shift,even),color=rank.shift,shape=chEven))+ 
   geom_point() + scale_colour_manual(values=cg, name="Rank Shift") + scale_shape_manual(values=c(19,6,5,2,1), name="Evenness Change") + scale_x_continuous("Richness") + scale_y_continuous("Bray-Curtis Dissimilarity") +
   theme_bw() + theme(panel.grid=element_blank(), panel.background=element_blank(), panel.border=element_rect(colour="black"),plot.title=element_text(hjust=0.5)) +labs(title="Simulated Data")
 
-#quartz(width=10,height=6)
 pdf("CommChangeDiss.pdf",width=10, height=6)
 ggplot(d10,aes(x=S,y=bc,group=interaction(rank.shift,chEven),color=rank.shift,shape=chEven))+ 
   geom_point() + facet_grid(rank.shift~chEven) + scale_colour_manual(values=cg, name="Rank Shift") + scale_shape_manual(values=c(19,6,5,2,1), name="Evenness Increase") + scale_x_continuous("Richness") + scale_y_continuous("Bray-Curtis Dissimilarity") +
