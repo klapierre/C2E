@@ -1,8 +1,6 @@
 library(vegan)
 library(ggplot2)
 library(RColorBrewer)
-#library(Kendall)
-#library(codyn)
 library(plotly)
 library(reshape2)
 
