@@ -56,17 +56,30 @@ comm_metrics <- read.csv("~/Desktop/community_metrics.csv")
 torms <- which(comm_metrics$metric %in% c("appearance", "disappearance","bp_dominance","richness","turnover"))
 comm_metrics <- comm_metrics[-torms,]
 comm_metrics$site_proj_comm <- with(comm_metrics, paste0(site_code, project_name, community_type))
+
+clim_data <- read.csv("/Users/atredenn/Google Drive/C2E/data/clim_data_yearly.csv")
+clim_data$calendar_year <- clim_data$year
+clim_data <- ddply(clim_data, .(site_code, calendar_year), summarise,
+                   ann_ppt = mean(ann_ppt))
+ttt <- merge(comm_metrics, clim_data[,c("ann_ppt","site_code","calendar_year")], all.x = TRUE)
+ttt$metric <- "ppt"
+ttt$lrr <- ttt$ann_ppt+1
+
 comm_metrics <- comm_metrics[,c("site_proj_comm", "treatment_year","metric","lrr")]
 comm_metrics <- rbind(comm_metrics, bray_curtis_obs_only[,c("site_proj_comm", "treatment_year","metric","lrr")])
 comm_metrics <- rbind(comm_metrics, anpp_lrr[,c("site_proj_comm", "treatment_year","metric","lrr")])
+comm_metrics <- rbind(comm_metrics, ttt[,c("site_proj_comm", "treatment_year","metric","lrr")])
 
 comm_metrics$metric <- factor(comm_metrics$metric, 
-                              levels=c("ANPP","bray_curtis","invD/S", "RankCor", "loss", "gain"), 
-                              labels = c("ANPP","Bray-Curtis","Evenness", "Rank Corr.", "Loss", "Gain"))
+                              levels=c("ANPP","bray_curtis","invD/S", "RankCor", "loss", "gain", "ppt"), 
+                              labels = c("ANPP","Bray-Curtis","Evenness", "Rank Corr.", "Loss", "Gain", "Precip."))
 
 
 sites_to_plot <- intersect(unique(bray_curtis_obs_only$site_proj_comm), unique(anpp_lrr$site_proj_comm))
 comm_metrics <- comm_metrics[which(comm_metrics$site_proj_comm %in% sites_to_plot),]
+# comm_metrics[which(comm_metrics$metric=="Precip."&comm_metrics$lrr==0),"lrr"]
+
+
 
 
 
@@ -82,6 +95,11 @@ for(do_unit in unique(comm_metrics$site_proj_comm)){
     gam_fit   <- gam(lrr ~ s(treatment_year, k=nyrs-1), method="REML", 
                      data = todo_data,
                      select = TRUE) 
+    if(do_metric=="Precip."){
+      gam_fit   <- gam(lrr ~ s(treatment_year, k=nyrs-1), method="REML", 
+                       data = todo_data,
+                       select = TRUE,family = Gamma) 
+    }
     years_to_predict   <- seq(min(unique(todo_data$treatment_year)),max(unique(todo_data$treatment_year)), by=0.1)
     pred_df            <- data.frame(treatment_year = years_to_predict)
     pred_df$yhat       <- predict(object = gam_fit, 
@@ -117,7 +135,7 @@ for(do_site in unique(gam_df$site_proj_comm)){
 
 g <- arrangeGrob(plot_list[[1]], plot_list[[2]],plot_list[[3]],
                  plot_list[[4]],plot_list[[5]], ncol=1) #generates g
-ggsave(file="~/Desktop/all_metrics_timeseries.png", g, width = 10, height=8, units="in", dpi=90) #saves g
+ggsave(file="~/Desktop/all_metrics_timeseries2.png", g, width = 10, height=8, units="in", dpi=90) #saves g
 
 
 
