@@ -47,7 +47,7 @@ my_theme <- theme_bw()+
 diffwd <- "/Users/atredenn/Google Drive/C2E/data/"
 source("subsetting 7 yr N data.R")
 setwd("~/Repos/C2E/")
-relAbundN$site_proj_comm <- with(relAbundN, paste0(site_code, project_name, community_type))
+relAbundN$site_proj_comm <- with(relAbundN, paste(site_code, project_name, community_type, sep = "::"))
 
 
 ####
