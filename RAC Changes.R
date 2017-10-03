@@ -38,14 +38,21 @@ E_q<-function(x){
 corredat<-read.csv("~/Documents/SpeciesRelativeAbundance_May2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0")
+  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
+
+corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_May2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
 
 
 #problems
 #IMGERS_Yu, plot 303 is there twice, it should be plot 304 where treatment=N5
-#Sakatchewan, says Error in mapply(FUN = f, ..., SIMPLIFY = FALSE) : 
+#Sakatchewan, says Error in mapply(FUN = f, ..., SIMPLIFY = FALSE)
 #zero-length inputs cannot be mixed with those of non-zero length 
-
+#gvn face - only 2 years of data so will only have one point for the dataset.
+  
+  
 plotinfo<-corredat%>%
   select(site_project_comm, calendar_year, plot_id, treatment, treatment_year)%>%
   unique()
@@ -126,7 +133,7 @@ corre_rank<-rbind(ranks, corre_zero_rank)%>%
 
 ##calculate reordering between time steps by mean ranks shifts corrected for the size of the speceis pool
 
-reordering=data.frame(id=c(), calendar_year=c(), MRSc=c())#expeiment year is year of timestep2
+reorder=data.frame(id=c(), calendar_year=c(), MRSc=c())#expeiment year is year of timestep2
 
 exp_plot_list<-unique(corre_rank$exp_plot)
 
@@ -155,33 +162,41 @@ for (i in 1:length(exp_plot_list)){
     
     MRSc<-mean(abs(subset_t12$rank.x-subset_t12$rank.y))/nrow(subset_t12)
     
-    metrics<-data.frame(id=id, experiment_year=timestep[i+1], MRSc=MRSc)#spc_id
+    metrics<-data.frame(id=id, calendar_year=timestep[i+1], MRSc=MRSc)#spc_id
     ##calculate differences for these year comparison and rbind to what I want.
     
-    reordering=rbind(metrics, reordering)  
+    reorder=rbind(metrics, reorder)  
   }
 }
 
-corre_reordering<-reordering%>%
+reordering<-reorder%>%
   separate(id, c("site_project_comm","plot_id"), sep="::")
 
-#####Calculating Bray-Curtis both comparing the mean community change between consequtive time steps and the change in dispersion between two time steps.
+#####Calculating Bray-Curtis both comparing the mean community change between consequtive time steps and the change in dispersion between two time steps for all plots within a treatment.
+
 ##Doing this for all years of an experiment at one time point because want to ensure all points are in the same space.
+
 ###first, get bray curtis dissimilarity values for each all years within each experiment between all combinations of plots
 ###second, get distance of each plot to its year centroid 
 ###third: mean_change is the distance the centroids of consequtive years
 ####fourth: dispersion_diff is the average dispersion of plots within a treatment to treatment centriod then compared between consequtive years
 
+###list of all treats within an experiment
+
+corredat$exptreat<-paste(corredat$site_project_comm, corredat$treatment, sep="::")
+
+exptreatlist<-unique(corredat$exptreat)
+
 #makes an empty dataframe
-bray_curtis=data.frame(site_project_comm=c(), calendar_year=c(), bc_mean_change=c(), bc_dispersion_diff=c()) 
+bray_curtis=data.frame(site_project_comm_treat=c(), calendar_year=c(), bc_mean_change=c(), bc_dispersion_diff=c()) 
 ##calculating bray-curtis mean change and disperison differecnes
-for(i in 1:length(explist)) {
+for(i in 1:length(exptreatlist)) {
   
   #subsets out each dataset
   subset=corredat%>%
-    filter(site_project_comm==explist[i])%>%
-    select(site_project_comm, calendar_year, genus_species, relcov, plot_id)
-  
+    filter(exptreat==exptreatlist[i])%>%
+    select(site_project_comm, treatment, calendar_year, genus_species, relcov, plot_id)
+
   #get years
   experiment_years<-sort(unique(subset$calendar_year))
   
@@ -190,7 +205,7 @@ for(i in 1:length(explist)) {
     spread(genus_species, relcov, fill=0)
   
   #calculate bray-curtis dissimilarities
-  bc=vegdist(species[,4:ncol(species)], method="bray")
+  bc=vegdist(species[,5:ncol(species)], method="bray")
   
   #calculate distances of each plot to year centroid (i.e., dispersion)
   disp=betadisper(bc, species$calendar_year, type="centroid")
@@ -200,38 +215,57 @@ for(i in 1:length(explist)) {
   
   ##extracting only the comparisions we want year x to year x=1.
   ###(experiment_year is year x+1
-  cent_dist_yrs=data.frame(site_project_comm=explist[i],
+  cent_dist_yrs=data.frame(site_project_comm_treat=exptreatlist[i],
                            calendar_year=experiment_years[2:length(experiment_years)],
                            mean_change=diag(cent_dist[2:nrow(cent_dist),1:(ncol(cent_dist)-1)]))
   
   #collecting and labeling distances to centroid from betadisper to get a measure of dispersion and then take the mean for a year
-  disp2=data.frame(site_project_comm=site_project_comm_u[i],
-                   experiment_year=species$experiment_year,
+  disp2=data.frame(site_project_comm_treat=exptreatlist[i],
+                   calendar_year=species$calendar_year,
                    plot_id=species$plot_id,
                    dist=disp$distances)%>%
     tbl_df%>%
-    group_by(site_project_comm, experiment_year)%>%
+    group_by(site_project_comm_treat, calendar_year)%>%
     summarize(dispersion=mean(dist))
   
   ##subtract consequtive years subtracts year x+1 - x. So if it is positive there was greater dispersion in year x+1 and if negative less dispersion in year x+1
-  disp_yrs=data.frame(site_project_comm=site_project_comm_u[i],
-                      experiment_year=experiment_years[2:length(experiment_years)],
+  disp_yrs=data.frame(site_project_comm_treat=exptreatlist[i],
+                      calendar_year=experiment_years[2:length(experiment_years)],
                       dispersion_diff=diff(disp2$dispersion))
   
   #merge together change in mean and dispersion data
-  distances<-merge(cent_dist_yrs, disp_yrs, by=c("site_project_comm","experiment_year"))
+  distances<-merge(cent_dist_yrs, disp_yrs, by=c("site_project_comm_treat","calendar_year"))
   
   #pasting dispersions into the dataframe made for this analysis
   bray_curtis=rbind(distances, bray_curtis)  
 }
 
-codyndat_braycurtis<-bray_curtis
+corre_braycurtis<-bray_curtis%>%
+  separate(site_project_comm_treat, into=c("site_project_comm","treatment"), sep="::")
 
+##getting the average for each treatment in a year
+
+corre_diversity<-merge(plotinfo, diversity, by=c("site_project_comm","calendar_year","plot_id"))%>%
+  group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
+  summarize(S=mean(S), even=mean(E_q, na.rm=T))
+
+corre_gainloss<-merge(plotinfo, gain_loss, by=c("site_project_comm","calendar_year","plot_id"))%>%
+  group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
+  summarize(gain=mean(appearance), loss=mean(disappearance))
+
+corre_reordering<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
+  group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
+  summarize(MRSc=mean(MRSc))
 
 ####MERGING TO A SINGE DATASET
-merge1<-merge(codyndat_diversity, codyndat_gains_loss, by=c("site_project_comm","experiment_year"))
-merge2<-merge(merge1, codyndat_reorder, by=c("site_project_comm","experiment_year"))
-merge3<-merge(merge2, codyndat_braycurtis, by=c("site_project_comm","experiment_year"))
-merge4<-merge(merge3, codyndat_dstar, by=c("site_project_comm","experiment_year"))
-codyndat_allmetrics<-merge(merge4, codyndat_info, by="site_project_comm")
+merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
+merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
+all_metrics<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"), all=T)
 
+write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears.csv")
+
+merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
+merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
+all_metrics2<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"))
+
+write.csv(all_metrics2, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_compareyears.csv")
