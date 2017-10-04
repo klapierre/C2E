@@ -35,7 +35,7 @@ E_q<-function(x){
 
 #read in the data FIX THE PATH LATER
 
-corredat<-read.csv("~/Documents/SpeciesRelativeAbundance_May2017.csv")%>%
+corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_May2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
