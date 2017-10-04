@@ -34,10 +34,9 @@ E_q<-function(x){
 
 #read in the data FIX THE PATH LATER
 
-corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_May2017.csv")%>%
+corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotinfo<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_May2017.csv")%>%
   select(site_code, project_name, community_type, calendar_year, treatment, plot_mani)%>%
@@ -47,18 +46,15 @@ plotinfo<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInfor
 
 corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_May2017.csv")%>%
   select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotinfo<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\ExperimentInformation_May2017.csv")%>%
   select(site_code, project_name, community_type, calendar_year, treatment, plot_mani)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 #problems
-#IMGERS_Yu, plot 303 is there twice, it should be plot 304 where treatment=N5
 #Sakatchewan, says Error in mapply(FUN = f, ..., SIMPLIFY = FALSE)
 #zero-length inputs cannot be mixed with those of non-zero length 
-#gvn face - only 2 years of data so will only have one point for the dataset.
 
 ##fill in the zeros
 explist<-unique(corredat$site_project_comm)
@@ -273,4 +269,4 @@ corre_braycurtis_control_treat<-bray_curtis%>%
 merge1<-merge(div_diff, reordering_ct, by=c("site_project_comm","calendar_year","treatment"))
 all_Cont_Treat_Compare<-merge(merge1, corre_braycurtis_control_treat,by=c("site_project_comm","calendar_year","treatment"))
 
-write.csv(all_Cont_Treat_Compare, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_ContTreat_Compare.csv")
+write.csv(all_Cont_Treat_Compare, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_ContTreat_Compare_OCT2017.csv")
