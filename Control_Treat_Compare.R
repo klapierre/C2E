@@ -209,7 +209,7 @@ exp_year<-unique(corredat_treat_control$expyear)
 #makes an empty dataframe
 bray_curtis=data.frame() 
 ##calculating bray-curtis mean change and disperison differecnes
-for(i in 1:length(expyear)) {
+for(i in 1:length(exp_year)) {
   
   #subsets out each dataset
   subset<-corredat_treat_control%>%
@@ -226,7 +226,7 @@ for(i in 1:length(expyear)) {
     spread(genus_species, relcov, fill=0)
   
   #calculate bray-curtis dissimilarities
-  bc=vegdist(species[,5:ncol(species)], method="bray")
+  bc=vegdist(species[,6:ncol(species)], method="bray")
   
   #calculate distances of each plot to treatment centroid (i.e., dispersion)
   disp=betadisper(bc, species$treatment, type="centroid")
@@ -273,4 +273,4 @@ corre_braycurtis_control_treat<-bray_curtis%>%
 merge1<-merge(div_diff, reordering_ct, by=c("site_project_comm","calendar_year","treatment"))
 all_Cont_Treat_Compare<-merge(merge1, corre_braycurtis_control_treat,by=c("site_project_comm","calendar_year","treatment"))
 
-write.csv(all_Cont_Treat_Compare, "~/Documents/CORRE_ContTreat_Compare.csv")
+write.csv(all_Cont_Treat_Compare, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_ContTreat_Compare.csv")
