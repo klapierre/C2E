@@ -94,11 +94,11 @@ control<-merge(diversity, plotinfo, by=c("site_project_comm", "calendar_year","t
   select(-S, -Even)
 
 div_diff<-merge(control, diversity, by=c("site_project_comm","calendar_year","treatment_year"))%>%
-  mutate(Sdiff=S-controlS,
-         Evendiff=Even-controlEven,
+  mutate(PCSdiff=(S-controlS)/controlS,
+         PCEvendiff=(Even-controlEven)/controlEven,
          treatment=treatment.y)%>%
   filter(treatment.x!=treatment.y)%>%
-  select(site_project_comm, calendar_year, treatment_year, treatment, Sdiff, Evendiff)
+  select(site_project_comm, calendar_year, treatment_year, treatment, PCSdiff, PCEvendiff)
 
 ###calculate species differences and reordering
 
