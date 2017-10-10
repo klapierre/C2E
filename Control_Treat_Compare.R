@@ -1,6 +1,5 @@
 library(tidyverse)
 library(gridExtra)
-library(reldist)
 library(grid)
 library(gtable)
 library(codyn)
@@ -35,24 +34,27 @@ E_q<-function(x){
 
 #read in the data FIX THE PATH LATER
 
-corredat<-read.csv("~/Documents/SpeciesRelativeAbundance_May2017.csv")%>%
+corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
+
+plotinfo<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_May2017.csv")%>%
+  select(site_code, project_name, community_type, calendar_year, treatment, plot_mani)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
+
+
 
 corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_May2017.csv")%>%
   select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="IMGERS_Yu_0"&site_project_comm!="Saskatchewan_CCD_0"&site_project_comm!="GVN_FACE_0")
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotinfo<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\ExperimentInformation_May2017.csv")%>%
-  select(site_code, project_name, community_type, calendar_year, treatment, plot_mani)
+  select(site_code, project_name, community_type, calendar_year, treatment, plot_mani)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 #problems
-#IMGERS_Yu, plot 303 is there twice, it should be plot 304 where treatment=N5
 #Sakatchewan, says Error in mapply(FUN = f, ..., SIMPLIFY = FALSE)
 #zero-length inputs cannot be mixed with those of non-zero length 
-#gvn face - only 2 years of data so will only have one point for the dataset.
 
 ##fill in the zeros
 explist<-unique(corredat$site_project_comm)
@@ -70,25 +72,40 @@ for (i in 1:length(explist)){
   ##make long and get averages of each species by treatment
   long<-subset%>%
     gather(genus_species, relcov, 10:ncol(subset))%>%
-    group_by(site_project_comm, calendar_year, treatment, genus_species)%>%
-    summarize(relcov=mean(relcov))
+    group_by(site_project_comm, calendar_year, treatment, treatment_year, genus_species)%>%
+    summarize(relcov=mean(relcov))%>%
+    ungroup
   
   corredat_sppool<-rbind(corredat_sppool, long)
 }
 
 
 ###richness and evenness
-diversity <- group_by(sp_pooled, site_project_comm, calendar_year,treatment_year, treatment) %>% 
+diversity <- group_by(corredat_sppool, site_project_comm, calendar_year, treatment_year, treatment) %>% 
   summarize(S=S(relcov),
             Even=E_q(relcov))%>%
   tbl_df()
 
+#subtract treatment from controls
+control<-merge(diversity, plotinfo, by=c("site_project_comm", "calendar_year","treatment"))%>%
+  filter(plot_mani==0)%>%
+  mutate(controlS=S,
+         controlEven=Even)%>%
+  select(-S, -Even)
+
+div_diff<-merge(control, diversity, by=c("site_project_comm","calendar_year","treatment_year"))%>%
+  mutate(PCSdiff=(S-controlS)/controlS,
+         PCEvendiff=(Even-controlEven)/controlEven,
+         treatment=treatment.y)%>%
+  filter(treatment.x!=treatment.y)%>%
+  select(site_project_comm, calendar_year, treatment_year, treatment, PCSdiff, PCEvendiff)
 
 ###calculate species differences and reordering
 
 #label the control versus treatment plots
 
-corredat_treat_control<-merge(plotinfo, corredat,by=c("site_code","project_name","community_type","calendar_year",'treatment'))
+corredat_treat_control<-merge(plotinfo, corredat,by=c("site_code","project_name","community_type","calendar_year",'treatment',"site_project_comm"))%>%
+  mutate(expyear=paste(site_project_comm, calendar_year, sep="::"))
   
 
 reordering_ct=data.frame(site_project_comm=c(), treatment=c(), calendar_year=c(), MRSc_diff=c(), spdiffc=c())
@@ -106,7 +123,7 @@ for (i in 1:length(explist)){
   
   ##make long and get averages of each species by treatment
   long<-subset%>%
-    gather(genus_species, relcov, 11:ncol(subset))%>%
+    gather(genus_species, relcov, 12:ncol(subset))%>%
     group_by(site_project_comm, calendar_year, treatment, plot_mani, genus_species)%>%
     summarize(relcov=mean(relcov))
   
@@ -172,3 +189,84 @@ for (i in 1:length(explist)){
   }
 }
 
+###mean change and dispersion
+
+#####Calculating Bray-Curtis both comparing the mean community change between treatment and control plots in a time step
+
+###first, get bray curtis dissimilarity values for each all years within each experiment between all combinations of plots
+###second, get distance of each plot to its year centroid 
+###third: mean_change is the distance the centroids of consequtive years
+####fourth: dispersion_diff is the average dispersion of plots within a treatment to treatment centriod then compared between consequtive years
+
+###list of all treats within an experiment
+
+exp_year<-unique(corredat_treat_control$expyear)
+
+#makes an empty dataframe
+bray_curtis=data.frame() 
+##calculating bray-curtis mean change and disperison differecnes
+for(i in 1:length(exp_year)) {
+  
+  #subsets out each dataset
+  subset<-corredat_treat_control%>%
+    filter(expyear==exp_year[i])%>%
+    select(site_project_comm, treatment, calendar_year, genus_species, relcov, plot_id, plot_mani)
+
+  #need this to keep track of plot mani
+  labels=subset%>%
+    select(plot_mani, treatment)%>%
+    unique()
+  
+  #transpose data
+  species=subset%>%
+    spread(genus_species, relcov, fill=0)
+  
+  #calculate bray-curtis dissimilarities
+  bc=vegdist(species[,6:ncol(species)], method="bray")
+  
+  #calculate distances of each plot to treatment centroid (i.e., dispersion)
+  disp=betadisper(bc, species$treatment, type="centroid")
+  
+  #getting distances between centroids over years; these centroids are in BC space, so that's why this uses euclidean distances
+  cent_dist=as.data.frame(as.matrix(vegdist(disp$centroids, method="euclidean")))
+  
+  #extracting only the distances we need and adding labels for the comparisons;
+  cent_C_T=data.frame(site_project_comm_year=exp_year[i],
+                      treatment=row.names(cent_dist),
+                      mean_change=t(cent_dist[names(cent_dist)==labels$treatment[labels$plot_mani==0],]))
+  
+  #renaming column
+  colnames(cent_C_T)[3]<-"mean_change"
+  
+  #collecting and labeling distances to centroid from betadisper to get a measure of dispersion and then take the mean for a treatment
+  disp2=data.frame(site_project_comm_year=exp_year[i],
+                   treatment=species$treatment,
+                   plot_mani=species$plot_mani,
+                   plot_id=species$plot_id,
+                   dist=disp$distances)%>%
+    tbl_df%>%
+    group_by(site_project_comm_year, treatment, plot_mani)%>%
+    summarize(dispersion=mean(dist))
+  
+  control<-disp2$dispersion[disp2$plot_mani==0]
+  
+  ##subtract control from treatments
+  disp_treat=disp2%>%
+    mutate(disp_diff=dispersion-control)%>%
+    select(-dispersion)
+  
+  #merge together change in mean and dispersion data
+  distances<-merge(cent_C_T, disp_treat, by=c("site_project_comm_year","treatment"))
+  
+  #pasting dispersions into the dataframe made for this analysis
+  bray_curtis=rbind(bray_curtis, distances)  
+}
+
+corre_braycurtis_control_treat<-bray_curtis%>%
+  separate(site_project_comm_year, into=c("site_project_comm","calendar_year"), sep="::")%>%
+  filter(plot_mani!=0)
+
+merge1<-merge(div_diff, reordering_ct, by=c("site_project_comm","calendar_year","treatment"))
+all_Cont_Treat_Compare<-merge(merge1, corre_braycurtis_control_treat,by=c("site_project_comm","calendar_year","treatment"))
+
+write.csv(all_Cont_Treat_Compare, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_ContTreat_Compare_OCT2017.csv")
