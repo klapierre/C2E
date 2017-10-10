@@ -8,11 +8,11 @@
 ##
 ##  This script produces a simulated dataset where each site_proj_comm of the 
 ##  CoRRE database has 20 simulated within-year replicates. The result is a
-##  long dataframe, saved as and RDS file called, "bootstrapped_rac_metrics.RDS".
+##  long dataframe, saved as an RDS file named "bootstrapped_rac_metrics.RDS".
 ##
 ##  Authors: Andrew Tredennick (atredenn@gmail.com)
 ##           Kevin Wilcox (wilcoxkr@gmail.com)
-##           Chris Lortie (lortie@yorku.ca)
+##           Chris Lortie (pitched original idea)
 ##
 ##  Date created: October 10, 2017
 ##
@@ -92,11 +92,23 @@ for(do_group in groups){
         dplyr::filter(calendar_year == do_year) %>%
         dplyr::select(appearance, disappearance, S, E_q, MRSc, bc_dissim) %>%
         mutate(S = as.numeric(S)) # coerce S to numeric for matrix conversion
+      metric_names <- colnames(year_data)
       
       ##  Calculate empirical means and covariances
       ### TODO: DISCUSS WHAT TO DO ABOUT NA'S IN E_q !!!!!!!!!!!!!!!!!!!!!!!!!!
+      ### TODO: IS 'S' REALLY 1 IN SOME CASES??????? !!!!!!!!!!!!!!!!!!!!!!!!!!
       year_means <- as.numeric(colMeans(year_data, na.rm = TRUE))
-      year_covar <- cov(as.matrix(year_data), use = "complete.obs")
+      bad_metric <- which(is.nan(year_means))
+      bad_metric_name <- metric_names[bad_metric]
+      
+      if(length(bad_metric) > 0){
+        bad_name   <- colnames(year_data)[bad_metric]
+        year_data  <- year_data[-bad_metric]
+        year_means <- as.numeric(colMeans(year_data, na.rm = TRUE))
+        year_covar <- cov(as.matrix(year_data), use = "complete.obs")
+      }else{
+        year_covar <- cov(as.matrix(year_data), use = "complete.obs")
+      }
       
       ##  Simulate data
       tmp_sim <- MASS::mvrnorm(n = nsims, mu = year_means, Sigma = year_covar)
@@ -105,7 +117,13 @@ for(do_group in groups){
       tmp_df <- as.data.frame(tmp_sim) %>%
         mutate(site_project_comm = do_group,
                treatment      = do_treat,
-               calendar_year  = do_year) %>%
+               calendar_year  = do_year) 
+      
+      if(length(bad_metric) > 0){
+        tmp_df[,bad_metric_name] <- NA
+      }
+      
+      tmp_df <- tmp_df %>%
         dplyr::select(site_project_comm, treatment, calendar_year, appearance,
                disappearance, S, E_q, MRSc, bc_dissim)
       
