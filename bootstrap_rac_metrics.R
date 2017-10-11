@@ -60,8 +60,10 @@ long_sites <- rac_data %>%
   dplyr::filter(year_diff >= 10)
 
 ##  Filter the metrics data to only long time series (10 years or more)
+### TODO: DISCUSS REMOVING THIS SERC DATASET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 long_data <- rac_data %>%
-  dplyr::filter(site_project_comm %in% long_sites$site_project_comm)
+  dplyr::filter(site_project_comm %in% long_sites$site_project_comm) %>%
+  dplyr::filter(site_project_comm != "SERC_TMECE_SP" & treatment != "E") # nasty data
 
 
 
@@ -139,3 +141,6 @@ for(do_group in groups){
   counter <- counter+1
   
 } # end site_project_comm loop
+
+##  Save the emprically-based simulated data
+saveRDS(boots_rac_df, paste0(out_dir,"bootstrapped_rac_metrics.RDS"))
