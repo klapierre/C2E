@@ -62,7 +62,7 @@ long_sites <- rac_data %>%
 ##  Filter the metrics data to only long time series (10 years or more)
 ### TODO: DISCUSS REMOVING THIS SERC DATASET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 long_data <- rac_data %>%
-  dplyr::filter(site_project_comm %in% long_sites$site_project_comm) %>%
+  # dplyr::filter(site_project_comm %in% long_sites$site_project_comm) %>%
   dplyr::filter(site_project_comm != "SERC_TMECE_SP" & treatment != "E") # nasty data
 
 
@@ -112,25 +112,27 @@ for(do_group in groups){
         year_covar <- cov(as.matrix(year_data), use = "complete.obs")
       }
       
-      ##  Simulate data
-      tmp_sim <- MASS::mvrnorm(n = nsims, mu = year_means, Sigma = year_covar)
-      
-      ##  Store as data.frame
-      tmp_df <- as.data.frame(tmp_sim) %>%
-        mutate(site_project_comm = do_group,
-               treatment      = do_treat,
-               calendar_year  = do_year) 
-      
-      if(length(bad_metric) > 0){
-        tmp_df[,bad_metric_name] <- NA
+      if(!is.na(sum(year_covar))){
+        ##  Simulate data
+        tmp_sim <- MASS::mvrnorm(n = nsims, mu = year_means, Sigma = year_covar)
+        
+        ##  Store as data.frame
+        tmp_df <- as.data.frame(tmp_sim) %>%
+          mutate(site_project_comm = do_group,
+                 treatment      = do_treat,
+                 calendar_year  = do_year) 
+        
+        if(length(bad_metric) > 0){
+          tmp_df[,bad_metric_name] <- NA
+        }
+        
+        tmp_df <- tmp_df %>%
+          dplyr::select(site_project_comm, treatment, calendar_year, appearance,
+                        disappearance, S, E_q, MRSc, bc_dissim)
+        
+        ##  rbind() the temporary data frame to the storage data frame
+        boots_rac_df <- rbind(boots_rac_df, tmp_df)
       }
-      
-      tmp_df <- tmp_df %>%
-        dplyr::select(site_project_comm, treatment, calendar_year, appearance,
-               disappearance, S, E_q, MRSc, bc_dissim)
-      
-      ##  rbind() the temporary data frame to the storage data frame
-      boots_rac_df <- rbind(boots_rac_df, tmp_df)
       
     } # end year loop, within treatment and site_project_comm
     
