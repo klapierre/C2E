@@ -1,6 +1,5 @@
 library(tidyverse)
 library(gridExtra)
-library(reldist)
 library(grid)
 library(gtable)
 library(codyn)
@@ -20,21 +19,66 @@ longset<-dat%>%
   filter(len>9)%>%
   select(-len)
 
-datsub<-merge(dat, longset, by="site_project_comm")
+datsub<-merge(dat, longset, by="site_project_comm")%>%
+  mutate(id=paste(site_project_comm, treatment, sep="::"))%>%
+  na.omit #3 averages for evenness have NAs and need to omit
 
 ##LOOP THIS
-#subset to get a single treatment for a site_proj_comm
-test_c<-datsub%>%
-  filter(site_project_comm=="KNZ_pplots_0"&treatment=="N1P0")
 
-#do vp and pull out what we want
-vp<-varpart(test_np$mean_change, ~even, ~gain, ~loss, ~MRSc, data=test_np)
+list<-unique(datsub$id)
 
-standdev<-sd(test_np$mean_change)
+vp_output<-data.frame()
 
-adjR.temp <- data.frame(metric=c("even","gain","loss","MRSc","resid"),
-                        adj.r2=vp[["part"]][["indfract"]][c(1:4,16),"Adj.R.square"],
-                        sd_meanchange=standdev)
+for (i in 1:length(list)){
+  
+  #subset to get a single treatment for a site_proj_comm
+  subset<-datsub%>%
+    filter(id==list[i])
+  
+  #do vp and pull out what we want
+  vp<-varpart(subset$mean_change, ~even, ~gain, ~loss, ~MRSc, data=subset)
+  
+  standdev<-sd(subset$mean_change)
+  
+  adjR.temp <- data.frame(id=unique(subset$id),
+                          treatment=unique(subset$treatment),
+                          metric=c("even","gain","loss","MRSc"),
+                          adj.r2=vp[["part"]][["indfract"]][c(1:4),"Adj.R.square"],
+                          resid=vp[["part"]][["indfract"]][16,"Adj.R.square"],
+                          sd_meanchange=standdev)
+  
+  vp_output<-rbind(vp_output, adjR.temp)
+}
+
+vp_output2<-vp_output%>%
+  separate(id, into=c("site_project_comm", "trt"), sep="::")%>%
+  mutate(treat=as.factor(treatment))%>%
+  na.omit
+
+
+theme_set(theme_bw(12))
+ggplot(data=vp_output2, aes(x=metric, y=adj.r2, group=treatment))+
+        geom_bar(stat="identity", position=position_dodge(),aes(fill=treat))+
+        theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank())+
+        xlab("Metric")+
+        ylab("Adj R2")+
+        #geom_text(label=resid)+
+        #geom_text(label=sttdev)+
+        facet_wrap(~site_project_comm)
+
+
+#didn't work for KNZ_BGP; ASGA_clonal, DCGS_gap, ORNL_Face
+probelmatic<-datsub%>%
+  filter(site_project_comm=="ASGA_clonal_0"|site_project_comm=="KNZ_BGP_0"|site_project_comm=="dcgs_gap_0"|site_project_comm=="ORNL_FACE_0")
+
+test<-probelmatic%>%
+  filter(id=="ASGA_clonal_0::non-clonal_UN")
+
+vp<-varpart(test$mean_change, ~even, ~gain, ~loss, ~MRSc, data=test)
+
+
+
+
 
 # looking at this
  plot(vp)
