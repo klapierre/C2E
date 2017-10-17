@@ -131,7 +131,7 @@ summary(model1Fit)
 modificationIndices1 <- modindices(model1Fit) #modification indices
 print(modificationIndices1[modificationIndices1$op == "~",])
 print(modificationIndices1[modificationIndices1$op == "~~",])
-semPaths(model1Fit, 'Standardized', 'Estimates')
+semPaths(model1Fit, 'Standardized', 'Estimates', layout='tree3')
 
 
 # #Model 2 - remove mean change, and look at direct effects of community metrics on ANPP change
