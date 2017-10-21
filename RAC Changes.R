@@ -33,8 +33,7 @@ E_q<-function(x){
   2/pi*atan(b)
 }
 
-#read in the data FIX THE PATH LATER
-
+#read in the data 
 corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -75,7 +74,6 @@ corredat<-rbind(corredat1, azi, jrn, knz, sak)
 #problems
 #gvn face - only 2 years of data so will only have one point for the dataset.
   
-  
 plotinfo<-corredat%>%
   select(site_project_comm, calendar_year, plot_id, treatment, treatment_year)%>%
   unique()
@@ -84,10 +82,14 @@ plotinfo<-corredat%>%
 #####CALCULATING DIVERSITY METRICS WITHIN A TIME STEP FOR EACH REPLICATE 
 
 ##need to get this working with NAs for mean calculations
-diversity <- group_by(corredat, site_project_comm, calendar_year, plot_id) %>% 
+diversity <- group_by(corredat, site_project_comm, plot_id, calendar_year) %>% 
   summarize(S=S(relcov),
             E_q=E_q(relcov))%>%
-            tbl_df()
+            tbl_df()%>%
+  ungroup()%>%
+  group_by(site_project_comm)%>%
+  mutate(S_diff=c(NA, diff(S)),
+         E_diff=c(NA, diff(E_q)))
 
 #####CALCULATING DIVERSITY METRICS ACROSS CONSECUTIVE TIME STEPS FOR EACH REPLICATE
 explist<-unique(corredat$site_project_comm)
