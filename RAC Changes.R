@@ -40,31 +40,31 @@ corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelative
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm!="GVN_FACE_0")
 
-corredat1<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+corredat1<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0")
 
 ##several studies only have two measurments of a plot. I am dropping those plots
-azi<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+azi<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_code=="AZI")%>%
   filter(plot_id!=11&plot_id!=15&plot_id!=35&plot_id!=37)
 
-jrn<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+jrn<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="JRN_study278_0")%>%
   filter(plot_id!=211&plot_id!=210)
 
-knz<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+knz<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="KNZ_GFP_4F")%>%
   filter(plot_id!="7_1_1"&plot_id!="7_2_1")
 
-sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+sak<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
@@ -81,13 +81,18 @@ plotinfo<-corredat%>%
   unique()
 
 
-#####CALCULATING DIVERSITY METRICS WITHIN A TIME STEP FOR EACH REPLICATE 
+#####CALCULATING DIVERSITY METRICS ACROSS CONSECUTIVE TIME STEPS FOR EACH REPLICATE
 
 ##need to get this working with NAs for mean calculations
 diversity <- group_by(corredat, site_project_comm, calendar_year, plot_id) %>% 
   summarize(S=S(relcov),
             E_q=E_q(relcov))%>%
-            tbl_df()
+  ungroup()%>%
+  group_by(site_project_comm, plot_id)%>%
+  arrange(site_project_comm, plot_id, calendar_year)%>%
+  mutate(S_diff=c(999, diff(S)),
+         E_diff=c(999, diff(E_q)))%>%
+  filter(S_diff!=999)
 
 #####CALCULATING DIVERSITY METRICS ACROSS CONSECUTIVE TIME STEPS FOR EACH REPLICATE
 explist<-unique(corredat$site_project_comm)
@@ -229,10 +234,7 @@ for(i in 1:length(exptreatlist)) {
     spread(genus_species, relcov, fill=0)
   
   #calculate bray-curtis dissimilarities
-  bc=as.matrix(vegdist(species[,5:ncol(species)], method="bray"))
-  
-  
-  
+  bc=vegdist(species[,5:ncol(species)], method="bray")
   
   #calculate distances of each plot to year centroid (i.e., dispersion)
   disp=betadisper(bc, species$calendar_year, type="centroid")
@@ -274,7 +276,7 @@ corre_braycurtis<-bray_curtis%>%
 
 corre_diversity<-merge(plotinfo, diversity, by=c("site_project_comm","calendar_year","plot_id"))%>%
   group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
-  summarize(S=mean(S), even=mean(E_q, na.rm=T))
+  summarize(S_diff=mean(S_diff), even_diff=mean(E_diff, na.rm=T))
 
 corre_gainloss<-merge(plotinfo, gain_loss, by=c("site_project_comm","calendar_year","plot_id"))%>%
   group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
@@ -290,17 +292,19 @@ merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calenda
 merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
 all_metrics<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"), all=T)
 
-write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears.csv")
+write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears_2.csv")
 
-write.csv(all_metrics, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears.csv")
 
-merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
-merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
-all_metrics2<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"))
+write.csv(all_metrics, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears_2.csv")
 
-write.csv(all_metrics2, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_compareyears.csv")
-
-write.csv(all_metrics2, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_compareyears.csv")
+#no longer necessary because everything is compared across years
+# merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
+# merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
+# all_metrics2<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"))
+# 
+# write.csv(all_metrics2, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_compareyears.csv")
+# 
+# write.csv(all_metrics2, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_compareyears.csv")
 
 
 ###Getting b-C distnace of each plot to itself comparing t1 to t2.
@@ -350,3 +354,5 @@ merge3<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year"
 corre_all<-merge(plotinfo, merge3, by=c("site_project_comm","calendar_year","plot_id"))
 
 write.csv(corre_all, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allReplicates.csv")
+
+write.csv(corre_all, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allReplicates_2.csv")
