@@ -9,13 +9,13 @@ library(Kendall)
 theme_set(theme_bw(12))
 
 #read in the data
-dat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_compareyears.csv")%>%
+dat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears_2.csv")%>%
   select(-X)
 
-dat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_compareyears.csv")%>%
+dat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears_2.csv")%>%
   select(-X)
 
-trt<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\ExperimentInformation_May2017.csv")%>%
+trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_May2017.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -40,24 +40,24 @@ pairs(dat2[,c(5:11)], upper.panel = panel.pearson)
 ###graphing datat add line for controls and line for treatments
 
 
-S<-ggplot(data=dat1, aes(x=treatment_year, y=S))+
-  geom_line(aes(group=id, color=trt))+
+S<-ggplot(data=dat1, aes(x=treatment_year, y=S_diff))+
+  geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
-  ggtitle("Richness")
-even<-ggplot(data=dat1, aes(x=treatment_year, y=even))+
-  geom_line(aes(group=id, color=trt))+
+  ggtitle("Richness Change")
+even<-ggplot(data=dat1, aes(x=treatment_year, y=even_diff))+
+  geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
-  ggtitle("Evenness")
+  ggtitle("Evenness Change")
 gain<-ggplot(data=dat1, aes(x=treatment_year, y=gain))+
-  geom_line(aes(group=id, color=trt))+
+  geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
   ggtitle("Gains")
 loss<-ggplot(data=dat1, aes(x=treatment_year, y=loss))+
-  geom_line(aes(group=id, color=trt))+
+  geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
   ggtitle("Losses")
 mrsc<-ggplot(data=dat1, aes(x=treatment_year, y=MRSc))+
-  geom_line(aes(group=id, color=trt))+
+  geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F,  size=3, aes(color=trt))+
   ggtitle("Reordering")
 
@@ -66,12 +66,12 @@ grid.arrange(S, even, gain, loss, mrsc)
 ###do some kind of ratio to controls
 control<-dat1%>%
   filter(plot_mani==0)%>%
-  mutate(C_S=S, C_even=even, C_gain=gain, C_loss=loss, C_MRSc=MRSc)%>%
+  mutate(C_S=S_diff, C_even=even_diff, C_gain=gain, C_loss=loss, C_MRSc=MRSc)%>%
   select(site_project_comm, treatment_year, C_S, C_even, C_gain, C_loss, C_MRSc)
 
 logRR<-merge(dat1, control, by=c("site_project_comm","treatment_year"))%>%
   filter(plot_mani!=0)%>%
-  mutate(lrS=log((S+.01)/(C_S+.01)), lrE=log((even+.01)/(C_even+.01)), lrG=log((gain+.01)/(C_gain+.01)), lrL=log((loss+.01)/(C_loss+.01)), lrR=log((MRSc+.01)/(C_MRSc+.01)))%>%
+  mutate(lrS=log((S_diff+.01)/(C_S+.01)), lrE=log((even_diff+.01)/(C_even+.01)), lrG=log((gain+.01)/(C_gain+.01)), lrL=log((loss+.01)/(C_loss+.01)), lrR=log((MRSc+.01)/(C_MRSc+.01)))%>%
   na.omit%>%
   mutate(id=paste(site_project_comm, treatment, sep="::"))
 
