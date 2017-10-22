@@ -12,6 +12,15 @@ library(Kendall)
 dat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_compareyears.csv")%>%
   select(-X)
 
+dat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears_2.csv")%>%
+  select(-X)
+
+trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_May2017.csv")%>%
+  select(site_code, project_name, community_type, treatment,plot_mani)%>%
+  unique()%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
+
+
 longset<-dat%>%
   select(site_project_comm, treatment_year)%>%
   group_by(site_project_comm)%>%
@@ -36,7 +45,7 @@ for (i in 1:length(list)){
     filter(id==list[i])
   
   #do vp and pull out what we want
-  vp<-varpart(subset$mean_change, ~even, ~gain, ~loss, ~MRSc, data=subset)
+  vp<-varpart(subset$mean_change, ~even_diff, ~gain, ~loss, ~MRSc, data=subset)
   
   standdev<-sd(subset$mean_change)
   
@@ -55,6 +64,7 @@ vp_output2<-vp_output%>%
   mutate(treat=as.factor(treatment))%>%
   na.omit
 
+vp_output3<-merge(vp_output2, trt, by=c("site_project_comm","treatment"))
 
 theme_set(theme_bw(12))
 ggplot(data=vp_output2, aes(x=metric, y=adj.r2, group=treatment))+
@@ -64,8 +74,8 @@ ggplot(data=vp_output2, aes(x=metric, y=adj.r2, group=treatment))+
         ylab("Adj R2")+
         #geom_text(label=resid)+
         #geom_text(label=sttdev)+
-        facet_wrap(~site_project_comm)
-
+        facet_wrap(~site_project_comm)+
+  theme(legend.position="none")
 
 #didn't work for KNZ_BGP; ASGA_clonal, DCGS_gap, ORNL_Face
 probelmatic<-datsub%>%
