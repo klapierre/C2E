@@ -18,7 +18,7 @@ setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\
 correTrt <- read.csv('ExperimentInformation_May2017.csv')%>%
   select(site_code, project_name, community_type, treatment_year, treatment, plot_mani)
 #community data
-correCommChange <- read.csv('CORRE_RAC_Metrics_Oct2017_allReplicates.csv')%>%
+correCommChange <- read.csv('CORRE_RAC_Metrics_Oct2017_allReplicates_2.csv')%>%
   select(-X)
 #anpp data
 correANPPchange <- read.csv('ANPP_Oct2017.csv')%>%
