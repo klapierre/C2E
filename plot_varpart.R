@@ -57,6 +57,7 @@ metrics_df <-  readRDS(paste0(data_dir,"bootstrapped_rac_metrics.RDS")) %>%
 
 ##  Add in treatment info
 vpart_results <- vpart_out %>%
+  filter(site_project_comm != "KNZ_BGP_0") %>%
   left_join(trt_key, by = c("site_project_comm", "treatment")) %>%
   left_join(metrics_df, by = c("site_project_comm", "treatment", "calendar_year"))
 
@@ -80,8 +81,8 @@ bc_nitrogen <- vpart_results %>%
 bc_n <- ggplot(bc_nitrogen, aes(x=treatment_year, y=avg_bc))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Mean Bray-Curtis Change")+
-  ggtitle("Nitrogen Only")
+  labs(x="Treatment Year", y="Bray-Curtis Change")+
+  scale_y_continuous(limits=c(0.1,0.7))
 
 ##  Precipitation
 bc_ppt <- vpart_results %>%
@@ -96,8 +97,8 @@ bc_ppt <- vpart_results %>%
 bc_precip <- ggplot(bc_ppt, aes(x=treatment_year, y=avg_bc))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Mean Bray-Curtis Change")+
-  ggtitle("Precipitation Only")
+  labs(x="Treatment Year", y="Bray-Curtis Change")+
+  scale_y_continuous(limits=c(0.1,0.7))
 
 ##  Phosphorous
 bc_p <- vpart_results %>%
@@ -112,8 +113,8 @@ bc_p <- vpart_results %>%
 bc_phos <- ggplot(bc_p, aes(x=treatment_year, y=avg_bc))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Mean Bray-Curtis Change")+
-  ggtitle("Phosphorous Only")
+  labs(x="Treatment Year", y="Bray-Curtis Change")+
+  scale_y_continuous(limits=c(0.1,0.7))
 
 ##  CO2
 bc_co2 <- vpart_results %>%
@@ -128,8 +129,8 @@ bc_co2 <- vpart_results %>%
 bc_carbon <- ggplot(bc_co2, aes(x=treatment_year, y=avg_bc))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Mean Bray-Curtis Change")+
-  ggtitle("CO2 Only")
+  labs(x="Treatment Year", y="Bray-Curtis Change")+
+  scale_y_continuous(limits=c(0.1,0.7))
 
 ### Variance Partitioning Plots
 ##  Nitrogen only
@@ -141,10 +142,14 @@ vpart_means <- vpart_results %>%
   summarise(var_expl_alone=mean(var_expl_alone,na.rm=T))
 
 nitrogen <- ggplot(subset(vpart_means, metric!="total_var_expl"),
-       aes(x=treatment_year, y=var_expl_alone, fill=metric)) +
-  geom_col(position=position_dodge(0.9))+
+       aes(x=treatment_year, y=var_expl_alone, color=metric)) +
+  # geom_col(position=position_dodge(0.9))+
+  geom_line()+
+  geom_point()+
   labs(x="Treatment Year", y="Variance Explained")+
-  ggtitle("Nitrogen Additions Only")
+  ggtitle("Nitrogen Additions Only")+
+  scale_color_brewer(palette = "Set1", name = "")+
+  theme(legend.position = c(0.3, 0.8))
 
 ##  Phosporous only
 vpart_means <- vpart_results %>%
@@ -155,10 +160,14 @@ vpart_means <- vpart_results %>%
   summarise(var_expl_alone=mean(var_expl_alone,na.rm=T))
 
 phosphorous <- ggplot(subset(vpart_means, metric!="total_var_expl"),
-       aes(x=treatment_year, y=var_expl_alone, fill=metric)) +
-  geom_col(position=position_dodge(0.9))+
+       aes(x=treatment_year, y=var_expl_alone, color=metric)) +
+  # geom_col(position=position_dodge(0.9))+
+  geom_line()+
+  geom_point()+
   labs(x="Treatment Year", y="Variance Explained")+
-  ggtitle("Phosporous Additions Only")
+  ggtitle("Phosporous Additions Only")+
+  scale_color_brewer(palette = "Set1", name = "")+
+  guides(color=FALSE)
 
 ##  CO2 only
 vpart_means <- vpart_results %>%
@@ -169,10 +178,14 @@ vpart_means <- vpart_results %>%
   summarise(var_expl_alone=mean(var_expl_alone,na.rm=T))
 
 co2 <- ggplot(subset(vpart_means, metric!="total_var_expl"),
-       aes(x=treatment_year, y=var_expl_alone, fill=metric)) +
-  geom_col(position=position_dodge(0.9))+
+       aes(x=treatment_year, y=var_expl_alone, color=metric)) +
+  # geom_col(position=position_dodge(0.9))+
+  geom_line()+
+  geom_point()+
   labs(x="Treatment Year", y="Variance Explained")+
-  ggtitle("CO2 Treatment Only")
+  ggtitle("CO2 Treatment Only")+
+  scale_color_brewer(palette = "Set1", name = "")+
+  guides(color=FALSE)
 
 ##  Precip only
 vpart_means <- vpart_results %>%
@@ -183,12 +196,24 @@ vpart_means <- vpart_results %>%
   summarise(var_expl_alone=mean(var_expl_alone,na.rm=T))
 
 precip <- ggplot(subset(vpart_means, metric!="total_var_expl"),
-       aes(x=treatment_year, y=var_expl_alone, fill=metric)) +
-  geom_col(position=position_dodge(0.9))+
+       aes(x=treatment_year, y=var_expl_alone, color=metric)) +
+  # geom_col(position=position_dodge(0.9))+
+  geom_line()+
+  geom_point()+
   labs(x="Treatment Year", y="Variance Explained")+
-  ggtitle("Precipitation Treatment Only")
+  ggtitle("Precipitation Treatment Only")+
+  scale_color_brewer(palette = "Set1", name = "")+
+  guides(color=FALSE)
 
-plot_grid(nitrogen, bc_n, phosphorous, bc_phos, co2, bc_carbon, precip, bc_precip, nrow = 4, ncol = 2, labels = "AUTO")
+# plot_grid(nitrogen, bc_n, phosphorous, bc_phos, co2, bc_carbon, precip, bc_precip, nrow = 4, ncol = 2)
+
+bc_dynamics <- plot_grid(nitrogen, phosphorous, co2, precip, 
+                         bc_n, bc_phos, bc_carbon, bc_precip, 
+                         nrow = 2, ncol = 4)
+
+outfile <- paste0(data_dir,"bc_dynamics.pdf")
+ggsave(filename = outfile, plot = bc_dynamics, width = 14, height = 6, units = "in")
+
 
 # 
 # ggplot(subset(vpart_out, metric!="total_var_expl"&site_project_comm=="KNZ_pplots_0"),
