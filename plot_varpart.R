@@ -62,6 +62,42 @@ vpart_results <- vpart_out %>%
   left_join(metrics_df, by = c("site_project_comm", "treatment", "calendar_year"))
 
 
+####
+####  GET JUST CONTROL BRAY CURTIS THROUGH TIME ----
+####
+df_raw <- readRDS(paste0(data_dir,"bootstrapped_rac_metrics.RDS")) %>%
+  filter(site_project_comm!="CUL_Culardoch_0")
+
+trt_key <- read.csv(paste0(data_dir, "ExperimentInformation_May2017.csv")) %>%
+  mutate(site_project_comm = paste(site_code,project_name,community_type,sep="_")) %>%
+  dplyr::select(site_project_comm, treatment, plot_mani) %>%
+  unique()
+
+df_all <- df_raw %>%
+  group_by(site_project_comm, treatment) %>%
+  mutate(year_1=min(calendar_year)) %>%
+  mutate(treatment_year = calendar_year-year_1+1) %>%
+  dplyr::select(-year_1)
+
+exp_to_include <- df_all %>%
+  group_by(site_project_comm, treatment, calendar_year) %>%
+  summarise(avg_s=mean(S,na.rm=T),avg_bc=mean(bc_dissim,na.rm=T)) %>%
+  filter(avg_s!=1 & avg_bc!=1) %>%
+  dplyr::select(site_project_comm, treatment, calendar_year)
+
+suppressWarnings( # ignore coerce factor to character message
+  df <- df_all %>%
+    right_join(exp_to_include, by = c("site_project_comm", "treatment", "calendar_year")) %>%
+    left_join(trt_key, c("site_project_comm", "treatment"))
+)
+
+cntrl_df <- df %>%
+  filter(site_project_comm != "KNZ_BGP_0") %>%
+  filter(plot_mani == 0) %>%
+  group_by(treatment_year) %>%
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "control")
+
 
 ####
 ####  SOME PRELIM PLOTS ----
@@ -76,13 +112,17 @@ bc_nitrogen <- vpart_results %>%
   dplyr::select(site_project_comm, treatment_year,bc_dissim) %>%
   unique() %>%
   group_by(treatment_year) %>%
-  summarise(avg_bc = mean(bc_dissim))
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "trt")
+bc_nitrogen <- rbind(bc_nitrogen, cntrl_df[which(cntrl_df$treatment_year %in% bc_nitrogen$treatment_year),])
 
-bc_n <- ggplot(bc_nitrogen, aes(x=treatment_year, y=avg_bc))+
+bc_n <- ggplot(bc_nitrogen, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
   geom_point(size=3)+
   labs(x="Treatment Year", y="Bray-Curtis Change")+
-  scale_y_continuous(limits=c(0.1,0.7))
+  scale_y_continuous(limits=c(0.1,0.7))+
+  scale_color_manual(values = c("grey35","dodgerblue"), name="", labels=c("Control","Treatment"))+
+  theme(legend.position = c(0.25, 0.8))
 
 ##  Precipitation
 bc_ppt <- vpart_results %>%
@@ -92,13 +132,17 @@ bc_ppt <- vpart_results %>%
   dplyr::select(site_project_comm, treatment_year,bc_dissim) %>%
   unique() %>%
   group_by(treatment_year) %>%
-  summarise(avg_bc = mean(bc_dissim))
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "trt")
+bc_ppt <- rbind(bc_ppt, cntrl_df[which(cntrl_df$treatment_year %in% bc_ppt$treatment_year),])
 
-bc_precip <- ggplot(bc_ppt, aes(x=treatment_year, y=avg_bc))+
+bc_precip <- ggplot(bc_ppt, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Bray-Curtis Change")+
-  scale_y_continuous(limits=c(0.1,0.7))
+  labs(x="Treatment Year", y="")+
+  scale_y_continuous(limits=c(0.1,0.7))+
+  scale_color_manual(values = c("grey35","dodgerblue"))+
+  guides(color=FALSE)
 
 ##  Phosphorous
 bc_p <- vpart_results %>%
@@ -108,13 +152,17 @@ bc_p <- vpart_results %>%
   dplyr::select(site_project_comm, treatment_year,bc_dissim) %>%
   unique() %>%
   group_by(treatment_year) %>%
-  summarise(avg_bc = mean(bc_dissim))
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "trt")
+bc_p <- rbind(bc_p, cntrl_df[which(cntrl_df$treatment_year %in% bc_p$treatment_year),])
 
-bc_phos <- ggplot(bc_p, aes(x=treatment_year, y=avg_bc))+
+bc_phos <- ggplot(bc_p, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Bray-Curtis Change")+
-  scale_y_continuous(limits=c(0.1,0.7))
+  labs(x="Treatment Year", y="")+
+  scale_y_continuous(limits=c(0.1,0.7))+
+  scale_color_manual(values = c("grey35","dodgerblue"))+
+  guides(color=FALSE)
 
 ##  CO2
 bc_co2 <- vpart_results %>%
@@ -124,13 +172,17 @@ bc_co2 <- vpart_results %>%
   dplyr::select(site_project_comm, treatment_year,bc_dissim) %>%
   unique() %>%
   group_by(treatment_year) %>%
-  summarise(avg_bc = mean(bc_dissim))
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "trt")
+bc_co2 <- rbind(bc_co2, cntrl_df[which(cntrl_df$treatment_year %in% bc_co2$treatment_year),])
 
-bc_carbon <- ggplot(bc_co2, aes(x=treatment_year, y=avg_bc))+
+bc_carbon <- ggplot(bc_co2, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
   geom_point(size=3)+
-  labs(x="Treatment Year", y="Bray-Curtis Change")+
-  scale_y_continuous(limits=c(0.1,0.7))
+  labs(x="Treatment Year", y="")+
+  scale_y_continuous(limits=c(0.1,0.7))+
+  scale_color_manual(values = c("grey35","dodgerblue"))+
+  guides(color=FALSE)
 
 ### Variance Partitioning Plots
 ##  Nitrogen only
@@ -145,7 +197,7 @@ nitrogen <- ggplot(subset(vpart_means, metric!="total_var_expl"),
        aes(x=treatment_year, y=var_expl_alone, color=metric)) +
   # geom_col(position=position_dodge(0.9))+
   geom_line()+
-  geom_point()+
+  geom_point(size=3)+
   labs(x="Treatment Year", y="Variance Explained")+
   ggtitle("Nitrogen Additions Only")+
   scale_color_brewer(palette = "Set1", name = "")+
@@ -163,8 +215,8 @@ phosphorous <- ggplot(subset(vpart_means, metric!="total_var_expl"),
        aes(x=treatment_year, y=var_expl_alone, color=metric)) +
   # geom_col(position=position_dodge(0.9))+
   geom_line()+
-  geom_point()+
-  labs(x="Treatment Year", y="Variance Explained")+
+  geom_point(size=3)+
+  labs(x="Treatment Year", y="")+
   ggtitle("Phosporous Additions Only")+
   scale_color_brewer(palette = "Set1", name = "")+
   guides(color=FALSE)
@@ -181,8 +233,8 @@ co2 <- ggplot(subset(vpart_means, metric!="total_var_expl"),
        aes(x=treatment_year, y=var_expl_alone, color=metric)) +
   # geom_col(position=position_dodge(0.9))+
   geom_line()+
-  geom_point()+
-  labs(x="Treatment Year", y="Variance Explained")+
+  geom_point(size=3)+
+  labs(x="Treatment Year", y="")+
   ggtitle("CO2 Treatment Only")+
   scale_color_brewer(palette = "Set1", name = "")+
   guides(color=FALSE)
@@ -199,8 +251,8 @@ precip <- ggplot(subset(vpart_means, metric!="total_var_expl"),
        aes(x=treatment_year, y=var_expl_alone, color=metric)) +
   # geom_col(position=position_dodge(0.9))+
   geom_line()+
-  geom_point()+
-  labs(x="Treatment Year", y="Variance Explained")+
+  geom_point(size=3)+
+  labs(x="Treatment Year", y="")+
   ggtitle("Precipitation Treatment Only")+
   scale_color_brewer(palette = "Set1", name = "")+
   guides(color=FALSE)
