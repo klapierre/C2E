@@ -94,13 +94,15 @@ for(do_group in groups){
         dplyr::filter(calendar_year == do_year) %>%
         dplyr::select(appearance, disappearance, S, E_q, MRSc, bc_dissim) %>%
         mutate(S = as.numeric(S)) # coerce S to numeric for matrix conversion
-      metric_names <- colnames(year_data)
+     
+       metric_names <- colnames(year_data)
       
       ##  Calculate empirical means and covariances
       ### TODO: DISCUSS WHAT TO DO ABOUT NA'S IN E_q !!!!!!!!!!!!!!!!!!!!!!!!!!
       ### TODO: IS 'S' REALLY 1 IN SOME CASES??????? !!!!!!!!!!!!!!!!!!!!!!!!!!
-      year_means <- as.numeric(colMeans(year_data, na.rm = TRUE))
-      bad_metric <- which(is.nan(year_means))
+      ### TODO: SET PLOT NUMBER THRESHOLD !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      year_means      <- as.numeric(colMeans(year_data, na.rm = TRUE))
+      bad_metric      <- which(is.nan(year_means))
       bad_metric_name <- metric_names[bad_metric]
       
       if(length(bad_metric) > 0){
@@ -143,6 +145,7 @@ for(do_group in groups){
   counter <- counter+1
   
 } # end site_project_comm loop
-
+test <- subset(boots_rac_df, site_project_comm=="KAEFS_WAPAClip_0" & treatment=="C CD")
+test2 <- subset(long_data,site_project_comm=="KAEFS_WAPAClip_0" & treatment=="C CD")
 ##  Save the emprically-based simulated data
 saveRDS(boots_rac_df, paste0(out_dir,"bootstrapped_rac_metrics.RDS"))
