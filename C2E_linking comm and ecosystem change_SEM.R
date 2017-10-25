@@ -12,6 +12,8 @@ setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\converge di
 #kim's laptop
 setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
 
+###NOTE: options 1 and2 may be a little messed up due to a find-replace error, double check code if using
+
 # #######OPTION 1: use all plots, looking at change from plot in yr 1 to yr x through time. compare treatment and control plot changes (vertical arrows); must group by site_project_comm!---------------------------------------
 ####data input
 #treatment data
@@ -33,14 +35,14 @@ expLength <- correANPPchange%>%
   mutate(experiment_length=max(treatment_year))%>%
   ungroup()%>%
   select(site_project_comm, experiment_length)%>%
-  unique() #mean experiment length is 10.36 across ANPP data
+  unique() #mean experiment length is 10.56 across ANPP data
 #merge
 correSEMdata <- correANPPchange%>%
   left_join(correCommChange)%>%
   left_join(expLength)%>%
   na.omit()%>%
-  #remove CDR e001 and e002 intermediate treatments (before CDR e001/e002 make up 33.8% of the data; after removal drops to 3 trts todal, to make up only 18.5% of total data)
-  mutate(trt_drop=ifelse(project_name=='e001'&treatment==2, 1, ifelse(project_name=='e001'&treatment==3, 1, ifelse(project_name=='e001'&treatment==4, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==7, 1, ifelse(project_name=='e002'&treatment=='2_f_u_n', 1, ifelse(project_name=='e002'&treatment=='3_f_u_n', 1, ifelse(project_name=='e002'&treatment=='4_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='7_f_u_n', 1, 0)))))))))))%>%
+  #remove CDR e001 and e002 intermediate treatments (before CDR e001/e002 make up 55.8% of the data; after removal drops to 5 trts todal, to make up only 18.5% of total data)
+  mutate(trt_drop=ifelse(project_name=='e001'&treatment==2, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==7, 1, ifelse(project_name=='e002'&treatment=='2_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='7_f_u_n', 1, 0)))))))))))%>%
   filter(trt_drop==0)%>%
   #transform to improve normality
   mutate(mean_change_transform=sqrt(bc_dissim), E_q_transform=log(E_q), S_transform=sqrt(S), anpp_change_transform=log(anpp))%>%
@@ -54,7 +56,7 @@ dataVis <- correSEMdata%>%
 chart.Correlation(dataVis, histogram=T, pch=19)
 
 
-####3 models: all data (across all years); year 2 vs year 3 (29 experiments, must run 2 separate SEMs and compare); year 2 vx year 10 (12 experiments, must run 2 separate SEMs and compare)
+####5 models: all data (across all years); year 2 vs year 5 (29 experiments, must run 2 separate SEMs and compare); year 2 vx year 10 (12 experiments, must run 2 separate SEMs and compare)
 
 #note that appearance/disappearance are count data, and must use a poisson model (need to figure out how to do this)
 #model 1 - all data
@@ -84,10 +86,10 @@ correModelFit <- sem(correModel, data=correSEMdata, meanstructure=TRUE)
 design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata)
 modelFit <- lavaan.survey(lavaan.fit=correModelFit, survey.design=design)
 summary(modelFit, standardize=T)
-modificationIndices <- modindices(modelFit, sort.=TRUE, minimum.value=3) #modification indices
+modificationIndices <- modindices(modelFit, sort.=TRUE, minimum.value=5) #modification indices
 print(modificationIndices[modificationIndices$op == "~",])
 print(modificationIndices[modificationIndices$op == "~~",])
-semPaths(modelFit, 'Standard', 'Estimates', layout='tree3', residuals=F, intercepts=F)
+semPaths(modelFit, 'Standard', 'Estimates', layout='tree5', residuals=F, intercepts=F)
 
 
 
@@ -98,8 +100,8 @@ correSEMyears <- correSEMdata%>%
   mutate(metric_year=paste(metric, treatment_year, sep='_'))%>%
   na.omit()
 
-#model 2 - years 2 vs 3
-correSEMdata3 <- correSEMyears%>%
+#model 2 - years 2 vs 5
+correSEMdata5 <- correSEMyears%>%
   filter(treatment_year==2|treatment_year==10|treatment_year==6)%>%
   select(-metric, -treatment_year, -calendar_year)%>%
   spread(key=metric_year, value=value)%>%
@@ -196,15 +198,15 @@ MRSc_6~~MRSc_10
 S_transform_6~~S_transform_10
 '
 
-correModel2Fit <- sem(correModel2, data=correSEMdata3, meanstructure=TRUE)
+correModel2Fit <- sem(correModel2, data=correSEMdata5, meanstructure=TRUE)
 # adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata3)
+design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata5)
 model2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=design)
 summary(model2Fit, standardize=T)
-modificationIndices2 <- modindices(model2Fit, sort.=TRUE, minimum.value=3) #modification indices
+modificationIndices2 <- modindices(model2Fit, sort.=TRUE, minimum.value=5) #modification indices
 print(modificationIndices2[modificationIndices2$op == "~",])
 print(modificationIndices2[modificationIndices2$op == "~~",])
-semPaths(model2Fit, 'Standardized', 'Estimates', layout='tree3', intercepts=F)
+semPaths(model2Fit, 'Standardized', 'Estimates', layout='tree5', intercepts=F)
 
 
 
@@ -235,15 +237,15 @@ expLength <- correANPPchange%>%
   mutate(experiment_length=max(treatment_year))%>%
   ungroup()%>%
   select(site_project_comm, experiment_length)%>%
-  unique() #mean experiment length is 10.36 across ANPP data
+  unique() #mean experiment length is 10.56 across ANPP data
 
 #merge
 correSEMdata <- correANPPchange%>%
   left_join(correCommChange)%>%
   left_join(expLength)%>%
   na.omit()%>%
-  #remove CDR e001 and e002 intermediate treatments (before CDR e001/e002 make up 33.8% of the data; after removal drops to 3 trts todal, to make up only 18.5% of total data)
-  mutate(trt_drop=ifelse(project_name=='e001'&treatment==2, 1, ifelse(project_name=='e001'&treatment==3, 1, ifelse(project_name=='e001'&treatment==4, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==7, 1, ifelse(project_name=='e002'&treatment=='2_f_u_n', 1, ifelse(project_name=='e002'&treatment=='3_f_u_n', 1, ifelse(project_name=='e002'&treatment=='4_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='7_f_u_n', 1, 0)))))))))))%>%
+  #remove CDR e001 and e002 intermediate treatments (before CDR e001/e002 make up 55.8% of the data; after removal drops to 5 trts todal, to make up only 18.5% of total data)
+  mutate(trt_drop=ifelse(project_name=='e001'&treatment==2, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==7, 1, ifelse(project_name=='e002'&treatment=='2_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='7_f_u_n', 1, 0)))))))))))%>%
   filter(trt_drop==0)%>%
   #transform to improve normality
   mutate(mean_change_transform=sqrt(mean_change), even_transform=log(even), S_transform=sqrt(S), anpp_change_transform=sqrt(anpp_change))%>%
@@ -266,7 +268,7 @@ correSEMyears <- correSEMdata%>%
   mutate(metric_year=paste(metric, treatment_year, sep='_'))
 
 
-####3 models: all data (across all years); year 2 vs year 3 (29 experiments, must run 2 separate SEMs and compare); year 2 vx year 10 (12 experiments, must run 2 separate SEMs and compare)
+####5 models: all data (across all years); year 2 vs year 5 (29 experiments, must run 2 separate SEMs and compare); year 2 vs year 10 (12 experiments, must run 2 separate SEMs and compare)
 
 #note that appearance/disappearance are count data, and must use a poisson model (need to figure out how to do this)
 #model 1 - all data
@@ -297,17 +299,17 @@ correModelFit <- sem(correModel, data=correSEMdata, meanstructure=TRUE)
 design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata)
 modelFit <- lavaan.survey(lavaan.fit=correModelFit, survey.design=design)
 summary(modelFit, standardize=T)
-modificationIndices <- modindices(modelFit, sort.=TRUE, minimum.value=3) #modification indices
+modificationIndices <- modindices(modelFit, sort.=TRUE, minimum.value=5) #modification indices
 print(modificationIndices[modificationIndices$op == "~",])
 print(modificationIndices[modificationIndices$op == "~~",])
-semPaths(modelFit, 'Standard', 'Estimates', layout='tree3', residuals=F, intercepts=F)
+semPaths(modelFit, 'Standard', 'Estimates', layout='tree5', residuals=F, intercepts=F)
 
 
 
 
-#model 2 - years 2 vs 3 - nothing matters
-correSEMdata3 <- correSEMyears%>%
-  filter(treatment_year!=1&treatment_year<4)%>%
+#model 2 - years 2 vs 5 - nothing matters
+correSEMdata5 <- correSEMyears%>%
+  filter(treatment_year!=1&treatment_year<5)%>%
   select(-metric, -treatment_year)%>%
   spread(key=metric_year, value=value)%>%
   na.omit()
@@ -335,51 +337,51 @@ even_transform_2~~MRSc_2
 even_transform_2~~S_transform_2
 MRSc_2~~S_transform_2'
 
-correModel2Fit <- sem(correModel2, data=correSEMdata3, meanstructure=TRUE)
+correModel2Fit <- sem(correModel2, data=correSEMdata5, meanstructure=TRUE)
 # adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata3)
+design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata5)
 model2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=design)
 summary(model2Fit, standardize=T)
-modificationIndices2 <- modindices(model2Fit, sort.=TRUE, minimum.value=3) #modification indices
+modificationIndices2 <- modindices(model2Fit, sort.=TRUE, minimum.value=5) #modification indices
 print(modificationIndices2[modificationIndices2$op == "~",])
 print(modificationIndices2[modificationIndices2$op == "~~",])
-semPaths(model2Fit, 'Standardized', 'Estimates', layout='tree3')
+semPaths(model2Fit, 'Standardized', 'Estimates', layout='tree5')
 
-correModel3 <- '
-#year 3
-anpp_change_transform_3 ~ mean_change_transform_3 + physiology_latent_3
-mean_change_transform_3 ~ gain_3 + loss_3 + even_transform_3 + MRSc_3 + S_transform_3
-physiology_latent_3 =~ treatment_binary
-gain_3 ~ treatment_binary
-loss_3 ~ treatment_binary
-even_transform_3 ~ treatment_binary
-MRSc_3 ~ treatment_binary
-S_transform_3 ~ treatment_binary
+correModel5 <- '
+#year 5
+anpp_change_transform_5 ~ mean_change_transform_5 + physiology_latent_5
+mean_change_transform_5 ~ gain_5 + loss_5 + even_transform_5 + MRSc_5 + S_transform_5
+physiology_latent_5 =~ treatment_binary
+gain_5 ~ treatment_binary
+loss_5 ~ treatment_binary
+even_transform_5 ~ treatment_binary
+MRSc_5 ~ treatment_binary
+S_transform_5 ~ treatment_binary
 
 #covariances
-gain_3~~loss_3
-gain_3~~even_transform_3
-gain_3~~MRSc_3
-gain_3~~S_transform_3
-loss_3~~even_transform_3
-loss_3~~MRSc_3
-loss_3~~S_transform_3
-even_transform_3~~MRSc_3
-even_transform_3~~S_transform_3
-MRSc_3~~S_transform_3'
+gain_5~~loss_5
+gain_5~~even_transform_5
+gain_5~~MRSc_5
+gain_5~~S_transform_5
+loss_5~~even_transform_5
+loss_5~~MRSc_5
+loss_5~~S_transform_5
+even_transform_5~~MRSc_5
+even_transform_5~~S_transform_5
+MRSc_5~~S_transform_5'
 
-correModel3Fit <- sem(correModel3, data=correSEMdata3, meanstructure=TRUE)
+correModel5Fit <- sem(correModel5, data=correSEMdata5, meanstructure=TRUE)
 # adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata3)
-model3Fit <- lavaan.survey(lavaan.fit=correModel3Fit, survey.design=design)
-summary(model3Fit, standardize=T)
-modificationIndices3 <- modindices(model3Fit, sort.=TRUE, minimum.value=3) #modification indices
-print(modificationIndices3[modificationIndices3$op == "~",])
-print(modificationIndices3[modificationIndices3$op == "~~",])
-semPaths(model3Fit, 'Standardized', 'Estimates', layout='tree3')
+design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata5)
+model5Fit <- lavaan.survey(lavaan.fit=correModel5Fit, survey.design=design)
+summary(model5Fit, standardize=T)
+modificationIndices5 <- modindices(model5Fit, sort.=TRUE, minimum.value=5) #modification indices
+print(modificationIndices5[modificationIndices5$op == "~",])
+print(modificationIndices5[modificationIndices5$op == "~~",])
+semPaths(model5Fit, 'Standardized', 'Estimates', layout='tree5')
 
 
-#model 3 - years 2 vs 10
+#model 5 - years 2 vs 10
 correSEMdata10 <- correSEMyears%>%
   filter(treatment_year==2|treatment_year==10)%>%
   select(-metric, -treatment_year)%>%
@@ -415,10 +417,10 @@ correModel10Fit <- sem(correModel10, data=correSEMdata10, meanstructure=TRUE)
 design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata10)
 model10Fit <- lavaan.survey(lavaan.fit=correModel10Fit, survey.design=design)
 summary(model10Fit, standardize=T)
-modificationIndices10 <- modindices(model10Fit, sort.=TRUE, minimum.value=3) #modification indices
+modificationIndices10 <- modindices(model10Fit, sort.=TRUE, minimum.value=5) #modification indices
 print(modificationIndices10[modificationIndices10$op == "~",])
 print(modificationIndices10[modificationIndices10$op == "~~",])
-semPaths(model10Fit, 'Standardized', 'Estimates', layout='tree3')
+semPaths(model10Fit, 'Standardized', 'Estimates', layout='tree5')
 
 
 # #Model 2 - remove mean change, and look at direct effects of community metrics on ANPP change
@@ -443,51 +445,324 @@ semPaths(model10Fit, 'Standardized', 'Estimates', layout='tree3')
 
 
 
-# #######OPTION 3: use change between treatment and control plots in each year (horizontal arrows); can't include treatment explicitly, as it is used to calculate difference at each time point---------------------------------------
-# ####data input
-# #community data
-# correCommChange <- read.csv('CORRE_ContTreat_Compare_OCT2017.csv')%>%
-#   select(-X)
-# #anpp data
-# correANPPchange <- read.csv('ForBayesianAnalysisANPP_Oct2017.csv')%>%
-#   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
-#   select(-X)
-# #merge
-# correSEMdata <- correANPPchange%>%
-#   left_join(correCommChange)%>%
-#   na.omit()%>%
-#   #transform to improve normality
-#   mutate(mean_change_transform=sqrt(mean_change), PCEvendiff_transform=log(PCEvendiff+1-min(PCEvendiff)),anpp_PC_transform=log(anpp_PC+1-min(anpp_PC)))
-# #all of these compare treatment to control!
-# 
-# ###exploratory correlations and histograms (all variables compare treatment to control plots)
-# dataVis <- correSEMdata%>%
-#   select(anpp_PC_transform, mean_change_transform, PCSdiff, PCEvendiff_transform, MRSc_diff, spdiffc) #make visualization dataframe
-# chart.Correlation(dataVis, histogram=T, pch=19)
-# 
-# 
-# ##PROBLEM - how to include physiology as latent variable if no path goes into it?
-# #Model 1 - force everything through mean change
-# correModel1   <-  'anpp_PC_transform ~ mean_change_transform 
-# mean_change_transform ~ PCSdiff + spdiffc + PCEvendiff_transform + MRSc_diff'
-# correModel1Fit <- sem(correModel1, data=correSEMdata, meanstructure=TRUE)
-# # adjusting for nested design
-# surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=correSEMdata)
-# survey1Fit <- lavaan.survey(lavaan.fit=correModel1Fit, survey.design=surveyDesign)
-# survey1Fit  #gives chi-square
-# summary(survey1Fit)
-# modificationIndices1 <- modindices(survey1Fit) #modification indices
-# print(modificationIndices1[modificationIndices1$op == "~",])
-# print(modificationIndices1[modificationIndices1$op == "~~",])
-# 
-# #Model 2 - remove mean change, and look at direct effects of community metrics on ANPP change
-# correModel2   <-  'anpp_PC_transform ~ PCSdiff + spdiffc + PCEvendiff_transform + MRSc_diff'
-# correModel2Fit <- sem(correModel2, data=correSEMdata, meanstructure=TRUE)
-# # adjusting for nested design
-# surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=correSEMdata)
-# survey2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=surveyDesign)
-# survey2Fit  #gives chi-square
-# summary(survey2Fit)
-# modificationIndices2 <- modindices(survey2Fit) #modification indices
-# print(modificationIndices2[modificationIndices2$op == "~",])
-# print(modificationIndices2[modificationIndices2$op == "~~",])
+#######OPTION 3: use change between treatment and control plots in each year (horizontal arrows); can't include treatment explicitly, as it is used to calculate difference at each time point---------------------------------------
+####data input
+#community data
+correCommChange <- read.csv('CORRE_ContTreat_Compare_OCT2017.csv')%>%
+  select(-X)
+#anpp data
+correANPPchange <- read.csv('ForBayesianAnalysisANPP_Oct2017.csv')%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
+  select(-X)
+#merge
+correSEMdata <- correANPPchange%>%
+  left_join(correCommChange)%>%
+  na.omit()%>%
+  #transform to improve normality
+  mutate(mean_change_transform=sqrt(mean_change), PCEvendiff_transform=log(PCEvendiff+1-min(PCEvendiff)),anpp_PC_transform=log(anpp_PC+1-min(anpp_PC)))
+#all of these compare treatment to control!
+
+###exploratory correlations and histograms (all variables compare treatment to control plots)
+dataVis <- correSEMdata%>%
+  select(anpp_PC_transform, mean_change_transform, PCSdiff, PCEvendiff_transform, MRSc_diff, spdiffc) #make visualization dataframe
+chart.Correlation(dataVis, histogram=T, pch=19)
+
+
+##add treatment info to get binary treatments of various manipulation types
+trt <- read.csv('ExperimentInformation_May2017.csv')%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
+  select(-site_code, -project_name, -community_type, -treatment_year, -public, -plot_mani)
+
+#subset out anything without 10 years
+numYears <- correSEMdata%>%
+  select(site_code, project_name, community_type, treatment, treatment_year)%>%
+  group_by(site_code, project_name, community_type, treatment)%>%
+  summarise(num_years=length(treatment_year))
+
+#subset out anything without years 1-10 of data
+correSEMdataTrt10 <- correSEMdata%>%
+  left_join(trt)%>%
+  mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
+  left_join(numYears)%>%
+  filter(num_years>9&project_name!='TMECE'&project_name!='RaMPs')%>%
+  mutate(test=1)
+
+#write.csv(correSEMdataTrt10, 'SEM_10yr.csv')
+
+#check the subset
+ggplot(data=correSEMdataTrt, aes(x=treatment_year, y=test)) +
+  geom_line() +
+  facet_wrap(~site_project_comm)
+
+#keep all data
+correSEMdataTrt <- correSEMdata%>%
+  left_join(trt)%>%
+  mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))
+
+#write.csv(correSEMdataTrt, 'SEM_allyr.csv')
+
+###all data-----------
+#put drought into "other_trt" because because long term experiments don't have drought
+correModel <-  '
+anpp_PC_transform ~ mean_change_transform + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+mean_change_transform ~ PCSdiff + spdiffc + PCEvendiff_transform + MRSc_diff + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+PCSdiff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+spdiffc ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+PCEvendiff_transform ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+MRSc_diff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+
+#covariances
+PCSdiff~~spdiffc
+PCSdiff~~PCEvendiff_transform
+PCSdiff~~MRSc_diff
+spdiffc~~PCEvendiff_transform
+spdiffc~~MRSc_diff
+PCEvendiff_transform~~MRSc_diff
+'
+#year 1
+correModelFit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==1), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==1))
+survey1Fit <- lavaan.survey(lavaan.fit=correModelFit, survey.design=surveyDesign)
+survey1Fit  #gives chi-square
+# summary(survey1Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst1 <- parameterEstimates(survey1Fit, standardized=TRUE)%>%
+  mutate(treatment_year=1)
+
+#year 2
+correModel2Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==2), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==2))
+survey2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=surveyDesign)
+survey2Fit  #gives chi-square
+# summary(survey2Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst2 <- parameterEstimates(survey2Fit, standardized=TRUE)%>%
+  mutate(treatment_year=2)
+
+#year 3
+correModel3Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==3), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==3))
+survey3Fit <- lavaan.survey(lavaan.fit=correModel3Fit, survey.design=surveyDesign)
+survey3Fit  #gives chi-square
+# summary(survey3Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst3 <- parameterEstimates(survey3Fit, standardized=TRUE)%>%
+  mutate(treatment_year=3)
+
+#year 4
+correModel4Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==4), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==4))
+survey4Fit <- lavaan.survey(lavaan.fit=correModel4Fit, survey.design=surveyDesign)
+survey4Fit  #gives chi-square
+# summary(survey4Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst4 <- parameterEstimates(survey4Fit, standardized=TRUE)%>%
+  mutate(treatment_year=4)
+
+#year 5
+correModel5Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==5), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==5))
+survey5Fit <- lavaan.survey(lavaan.fit=correModel5Fit, survey.design=surveyDesign)
+survey5Fit  #gives chi-square
+# summary(survey5Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst5 <- parameterEstimates(survey5Fit, standardized=TRUE)%>%
+  mutate(treatment_year=5)
+
+#year 6
+correModel6Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==6), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==6))
+survey6Fit <- lavaan.survey(lavaan.fit=correModel6Fit, survey.design=surveyDesign)
+survey6Fit  #gives chi-square
+# summary(survey6Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst6 <- parameterEstimates(survey6Fit, standardized=TRUE)%>%
+  mutate(treatment_year=6)
+
+#year 7
+correModel7Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==7), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==7))
+survey7Fit <- lavaan.survey(lavaan.fit=correModel7Fit, survey.design=surveyDesign)
+survey7Fit  #gives chi-square
+# summary(survey7Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst7 <- parameterEstimates(survey7Fit, standardized=TRUE)%>%
+  mutate(treatment_year=7)
+
+#year 8
+correModel8Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==8), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==8))
+survey8Fit <- lavaan.survey(lavaan.fit=correModel8Fit, survey.design=surveyDesign)
+survey8Fit  #gives chi-square
+# summary(survey8Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst8 <- parameterEstimates(survey8Fit, standardized=TRUE)%>%
+  mutate(treatment_year=8)
+
+#year 9
+correModel9Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==9), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==9))
+survey9Fit <- lavaan.survey(lavaan.fit=correModel9Fit, survey.design=surveyDesign)
+survey9Fit  #gives chi-square
+# summary(survey9Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst9 <- parameterEstimates(survey9Fit, standardized=TRUE)%>%
+  mutate(treatment_year=9)
+
+#year 10
+correModel10Fit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==10), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt, treatment_year==10))
+survey10Fit <- lavaan.survey(lavaan.fit=correModel10Fit, survey.design=surveyDesign)
+survey10Fit  #gives chi-square
+# summary(survey10Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst10 <- parameterEstimates(survey10Fit, standardized=TRUE)%>%
+  mutate(treatment_year=10)
+
+#bind together output from years 1-10
+stdEst <- rbind(stdEst1, stdEst2, stdEst3, stdEst4, stdEst5, stdEst6, stdEst7, stdEst8, stdEst9, stdEst10)%>%
+  na.omit()%>%
+  mutate(std_alt=ifelse(pvalue>0.1, 0, std.all), std_weighted=std.all/se, est_alt=ifelse(pvalue>0.1, 0, est), est_weighted=est/se, trt_alt=ifelse(rhs=='CO2_trt'|rhs=='irr_trt'|rhs=='k_trt'|rhs=='n_trt'|rhs=='other_trt'|rhs=='p_trt', 'physiology', 'mean_change_transform'))
+
+#all years figs-----------
+#std.all includes non-sig effects
+#std_alt sets non-sig effects to 0
+#est is non-standardized effects
+#est_alt sets non-sig non-standardized effects to 0
+ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=treatment_year, y=est, color=rhs)) +
+  geom_point(size=5) +
+  geom_smooth(method='lm', size=3, se=F) +
+  ylab('Effect Size') +
+  xlab('Treatment Year')
+
+ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=treatment_year, y=std.all, color=rhs)) +
+  geom_point(size=5) +
+  geom_line(size=3) +
+  ylab('Effect Size') +
+  xlab('Treatment Year')
+
+ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='MRSc_diff'&rhs!='PCEvendiff_transform'&rhs!='spdiffc'&rhs!='PCSdiff'), aes(x=treatment_year, y=est_alt, color=rhs)) +
+  geom_point(size=5) +
+  geom_line(size=3) +
+  facet_wrap(~lhs)
+
+
+
+###only 10 year datasets-----------
+#put drought into "other_trt" because because long term experiments don't have drought
+correModel <-  '
+anpp_PC_transform ~ mean_change_transform + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+mean_change_transform ~ PCSdiff + spdiffc + PCEvendiff_transform + MRSc_diff + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+PCSdiff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+spdiffc ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+PCEvendiff_transform ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+MRSc_diff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+
+#covariances
+PCSdiff~~spdiffc
+PCSdiff~~PCEvendiff_transform
+PCSdiff~~MRSc_diff
+spdiffc~~PCEvendiff_transform
+spdiffc~~MRSc_diff
+PCEvendiff_transform~~MRSc_diff
+'
+
+#year 1
+correModelFit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==1), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==1))
+survey1Fit <- lavaan.survey(lavaan.fit=correModelFit, survey.design=surveyDesign)
+survey1Fit  #gives chi-square
+# summary(survey1Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst1 <- parameterEstimates(survey1Fit, standardized=TRUE)%>%
+  mutate(treatment_year=1)
+
+#year 2
+correModel2Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==2), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==2))
+survey2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=surveyDesign)
+survey2Fit  #gives chi-square
+# summary(survey2Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst2 <- parameterEstimates(survey2Fit, standardized=TRUE)%>%
+  mutate(treatment_year=2)
+
+#year 3
+correModel3Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==3), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==3))
+survey3Fit <- lavaan.survey(lavaan.fit=correModel3Fit, survey.design=surveyDesign)
+survey3Fit  #gives chi-square
+# summary(survey3Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst3 <- parameterEstimates(survey3Fit, standardized=TRUE)%>%
+  mutate(treatment_year=3)
+
+#year 4
+correModel4Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==4), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==4))
+survey4Fit <- lavaan.survey(lavaan.fit=correModel4Fit, survey.design=surveyDesign)
+survey4Fit  #gives chi-square
+# summary(survey4Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst4 <- parameterEstimates(survey4Fit, standardized=TRUE)%>%
+  mutate(treatment_year=4)
+
+#year 5
+correModel5Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==5), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==5))
+survey5Fit <- lavaan.survey(lavaan.fit=correModel5Fit, survey.design=surveyDesign)
+survey5Fit  #gives chi-square
+# summary(survey5Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst5 <- parameterEstimates(survey5Fit, standardized=TRUE)%>%
+  mutate(treatment_year=5)
+
+#year 6
+correModel6Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==6), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==6))
+survey6Fit <- lavaan.survey(lavaan.fit=correModel6Fit, survey.design=surveyDesign)
+survey6Fit  #gives chi-square
+# summary(survey6Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst6 <- parameterEstimates(survey6Fit, standardized=TRUE)%>%
+  mutate(treatment_year=6)
+
+#year 7
+correModel7Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==7), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==7))
+survey7Fit <- lavaan.survey(lavaan.fit=correModel7Fit, survey.design=surveyDesign)
+survey7Fit  #gives chi-square
+# summary(survey7Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst7 <- parameterEstimates(survey7Fit, standardized=TRUE)%>%
+  mutate(treatment_year=7)
+
+#year 8
+correModel8Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==8), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==8))
+survey8Fit <- lavaan.survey(lavaan.fit=correModel8Fit, survey.design=surveyDesign)
+survey8Fit  #gives chi-square
+# summary(survey8Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst8 <- parameterEstimates(survey8Fit, standardized=TRUE)%>%
+  mutate(treatment_year=8)
+
+#year 9
+correModel9Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==9), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==9))
+survey9Fit <- lavaan.survey(lavaan.fit=correModel9Fit, survey.design=surveyDesign)
+survey9Fit  #gives chi-square
+# summary(survey9Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst9 <- parameterEstimates(survey9Fit, standardized=TRUE)%>%
+  mutate(treatment_year=9)
+
+#year 10
+correModel10Fit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==10), meanstructure=TRUE)
+surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==10))
+survey10Fit <- lavaan.survey(lavaan.fit=correModel10Fit, survey.design=surveyDesign)
+survey10Fit  #gives chi-square
+# summary(survey10Fit, fit.measures=TRUE, rsq=TRUE, standardized=TRUE)
+stdEst10 <- parameterEstimates(survey10Fit, standardized=TRUE)%>%
+  mutate(treatment_year=10)
+
+#bind together output from years 1-10
+stdEst <- rbind(stdEst1, stdEst2, stdEst3, stdEst4, stdEst5, stdEst6, stdEst7, stdEst8, stdEst9, stdEst10)%>%
+  na.omit()%>%
+  mutate(std_alt=ifelse(pvalue>0.05, 0, std.all))
+
+#10 year figs-----------
+ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=treatment_year, y=std_alt, color=rhs)) +
+  geom_point(size=5) +
+  geom_line(size=3)
+
+ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=treatment_year, y=std_alt, color=rhs)) +
+  geom_point(size=5) +
+  geom_line(size=3)
+
+ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='MRSc_diff'&rhs!='PCEvendiff_transform'&rhs!='spdiffc'&rhs!='PCSdiff'), aes(x=treatment_year, y=std_alt, color=rhs)) +
+  geom_point(size=5) +
+  geom_line(size=3) +
+  facet_wrap(~lhs)
