@@ -93,10 +93,8 @@ suppressWarnings( # ignore coerce factor to character message
 
 cntrl_df <- df %>%
   filter(site_project_comm != "KNZ_BGP_0") %>%
-  filter(plot_mani == 0) %>%
-  group_by(treatment_year) %>%
-  summarise(avg_bc = mean(bc_dissim)) %>%
-  mutate(treatment = "control")
+  filter(plot_mani == 0)
+
 
 
 ####
@@ -105,6 +103,19 @@ cntrl_df <- df %>%
 ### Bray-Curtis Time Series Plots
 
 ##  Nitrogen
+nitrogen_sites <- vpart_results %>%
+  filter(n > 0) %>%
+  mutate(non_n = p+k+CO2+precip+all_other_trt) %>%
+  filter(non_n == 0) %>%
+  .$site_project_comm %>%
+  unique()
+
+nitrogen_controls <- cntrl_df %>%
+  filter(site_project_comm %in% nitrogen_sites) %>%
+  group_by(treatment_year) %>%
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "Control")
+
 bc_nitrogen <- vpart_results %>%
   filter(n > 0) %>%
   mutate(non_n = p+k+CO2+precip+all_other_trt) %>%
@@ -113,8 +124,8 @@ bc_nitrogen <- vpart_results %>%
   unique() %>%
   group_by(treatment_year) %>%
   summarise(avg_bc = mean(bc_dissim)) %>%
-  mutate(treatment = "trt")
-bc_nitrogen <- rbind(bc_nitrogen, cntrl_df[which(cntrl_df$treatment_year %in% bc_nitrogen$treatment_year),])
+  mutate(treatment = "Treatment")
+bc_nitrogen <- rbind(bc_nitrogen, nitrogen_controls)
 
 bc_n <- ggplot(bc_nitrogen, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
@@ -125,6 +136,19 @@ bc_n <- ggplot(bc_nitrogen, aes(x=treatment_year, y=avg_bc, color=treatment))+
   theme(legend.position = c(0.25, 0.8))
 
 ##  Precipitation
+precip_sites <- vpart_results %>%
+  filter(precip > 0) %>%
+  mutate(non_n = p+k+CO2+n+all_other_trt) %>%
+  filter(non_n == 0) %>%
+  .$site_project_comm %>%
+  unique()
+
+precip_controls <- cntrl_df %>%
+  filter(site_project_comm %in% precip_sites) %>%
+  group_by(treatment_year) %>%
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "Control")
+
 bc_ppt <- vpart_results %>%
   filter(precip > 0) %>%
   mutate(non_n = p+k+CO2+n+all_other_trt) %>%
@@ -133,8 +157,8 @@ bc_ppt <- vpart_results %>%
   unique() %>%
   group_by(treatment_year) %>%
   summarise(avg_bc = mean(bc_dissim)) %>%
-  mutate(treatment = "trt")
-bc_ppt <- rbind(bc_ppt, cntrl_df[which(cntrl_df$treatment_year %in% bc_ppt$treatment_year),])
+  mutate(treatment = "Treatment")
+bc_ppt <- rbind(bc_ppt, precip_controls)
 
 bc_precip <- ggplot(bc_ppt, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
@@ -145,6 +169,19 @@ bc_precip <- ggplot(bc_ppt, aes(x=treatment_year, y=avg_bc, color=treatment))+
   guides(color=FALSE)
 
 ##  Phosphorous
+phos_sites <- vpart_results %>%
+  filter(p > 0) %>%
+  mutate(non_n = precip+k+CO2+n+all_other_trt) %>%
+  filter(non_n == 0) %>%
+  .$site_project_comm %>%
+  unique()
+
+phos_controls <- cntrl_df %>%
+  filter(site_project_comm %in% phos_sites) %>%
+  group_by(treatment_year) %>%
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "Control")
+
 bc_p <- vpart_results %>%
   filter(p > 0) %>%
   mutate(non_n = precip+k+CO2+n+all_other_trt) %>%
@@ -154,7 +191,7 @@ bc_p <- vpart_results %>%
   group_by(treatment_year) %>%
   summarise(avg_bc = mean(bc_dissim)) %>%
   mutate(treatment = "trt")
-bc_p <- rbind(bc_p, cntrl_df[which(cntrl_df$treatment_year %in% bc_p$treatment_year),])
+bc_p <- rbind(bc_p, phos_controls)
 
 bc_phos <- ggplot(bc_p, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
@@ -165,6 +202,19 @@ bc_phos <- ggplot(bc_p, aes(x=treatment_year, y=avg_bc, color=treatment))+
   guides(color=FALSE)
 
 ##  CO2
+co2_sites <- vpart_results %>%
+  filter(CO2 > 0) %>%
+  mutate(non_n = precip+k+p+n+all_other_trt) %>%
+  filter(non_n == 0) %>%
+  .$site_project_comm %>%
+  unique()
+
+co2_controls <- cntrl_df %>%
+  filter(site_project_comm %in% co2_sites) %>%
+  group_by(treatment_year) %>%
+  summarise(avg_bc = mean(bc_dissim)) %>%
+  mutate(treatment = "Control")
+
 bc_co2 <- vpart_results %>%
   filter(CO2 > 0) %>%
   mutate(non_n = precip+k+p+n+all_other_trt) %>%
@@ -174,7 +224,7 @@ bc_co2 <- vpart_results %>%
   group_by(treatment_year) %>%
   summarise(avg_bc = mean(bc_dissim)) %>%
   mutate(treatment = "trt")
-bc_co2 <- rbind(bc_co2, cntrl_df[which(cntrl_df$treatment_year %in% bc_co2$treatment_year),])
+bc_co2 <- rbind(bc_co2, co2_controls)
 
 bc_carbon <- ggplot(bc_co2, aes(x=treatment_year, y=avg_bc, color=treatment))+
   geom_line()+
@@ -263,8 +313,11 @@ bc_dynamics <- plot_grid(nitrogen, phosphorous, co2, precip,
                          bc_n, bc_phos, bc_carbon, bc_precip, 
                          nrow = 2, ncol = 4)
 
+bc_dynamics <- plot_grid(nitrogen, phosphorous, co2, precip,
+                         nrow = 1, ncol = 4)
+
 outfile <- paste0(data_dir,"bc_dynamics.pdf")
-ggsave(filename = outfile, plot = bc_dynamics, width = 14, height = 6, units = "in")
+ggsave(filename = outfile, plot = bc_dynamics, width = 14, height = 3.5, units = "in")
 
 
 # 
