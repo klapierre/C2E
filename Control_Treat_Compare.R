@@ -44,9 +44,10 @@ plotinfo<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInfor
 
 
 
-corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_May2017.csv")%>%
+corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_code!="RIO")
 
 plotinfo<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\ExperimentInformation_May2017.csv")%>%
   select(site_code, project_name, community_type, calendar_year, treatment, plot_mani)%>%
@@ -55,52 +56,35 @@ plotinfo<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongF
 #problems
 #Sakatchewan, says Error in mapply(FUN = f, ..., SIMPLIFY = FALSE)
 #zero-length inputs cannot be mixed with those of non-zero length 
+# RIO has NA in species_genus
 
-##fill in the zeros
-explist<-unique(corredat$site_project_comm)
+##not sure why i had to do this for the diversity measures.
+# ##fill in the zeros
+# explist<-unique(corredat$site_project_comm)
+# 
+# 
+# corredat_sppool<-data.frame()
+# 
+# for (i in 1:length(explist)){
+#   ##get zero abundances to be filled in for all species.
+#   ##this works the first time only
+#   subset<-corredat%>%
+#     filter(site_project_comm==explist[i])%>%
+#     spread(genus_species, relcov, fill=0)
+#   
+#   ##make long and get averages of each species by treatment
+#   long<-subset%>%
+#     gather(genus_species, relcov, 10:ncol(subset))%>%
+#     group_by(site_project_comm, calendar_year, treatment, treatment_year, genus_species)%>%
+#     summarize(relcov=mean(relcov))%>%
+#     ungroup
+#   
+#   corredat_sppool<-rbind(corredat_sppool, long)
+# }
 
 
-corredat_sppool<-data.frame()
 
-for (i in 1:length(explist)){
-  ##get zero abundances to be filled in for all species.
-  ##this works the first time only
-  subset<-corredat%>%
-    filter(site_project_comm==explist[i])%>%
-    spread(genus_species, relcov, fill=0)
-  
-  ##make long and get averages of each species by treatment
-  long<-subset%>%
-    gather(genus_species, relcov, 10:ncol(subset))%>%
-    group_by(site_project_comm, calendar_year, treatment, treatment_year, genus_species)%>%
-    summarize(relcov=mean(relcov))%>%
-    ungroup
-  
-  corredat_sppool<-rbind(corredat_sppool, long)
-}
-
-
-###richness and evenness
-diversity <- group_by(corredat_sppool, site_project_comm, calendar_year, treatment_year, treatment) %>% 
-  summarize(S=S(relcov),
-            Even=E_q(relcov))%>%
-  tbl_df()
-
-#subtract treatment from controls
-control<-merge(diversity, plotinfo, by=c("site_project_comm", "calendar_year","treatment"))%>%
-  filter(plot_mani==0)%>%
-  mutate(controlS=S,
-         controlEven=Even)%>%
-  select(-S, -Even)
-
-div_diff<-merge(control, diversity, by=c("site_project_comm","calendar_year","treatment_year"))%>%
-  mutate(PCSdiff=(S-controlS)/controlS,
-         PCEvendiff=(Even-controlEven)/controlEven,
-         treatment=treatment.y)%>%
-  filter(treatment.x!=treatment.y)%>%
-  select(site_project_comm, calendar_year, treatment_year, treatment, PCSdiff, PCEvendiff)
-
-###calculate species differences and reordering
+###calculate species differences and reordering and evenness and richness
 
 #label the control versus treatment plots
 
@@ -108,7 +92,7 @@ corredat_treat_control<-merge(plotinfo, corredat,by=c("site_code","project_name"
   mutate(expyear=paste(site_project_comm, calendar_year, sep="::"))
   
 
-reordering_ct=data.frame(site_project_comm=c(), treatment=c(), calendar_year=c(), MRSc_diff=c(), spdiffc=c())
+reordering_ct=data.frame(site_project_comm=c(), treatment=c(), calendar_year=c(), Sd=c(), Ed=c(), Rd=c(), spd=c())
 
 explist<-unique(corredat_treat_control$site_project_comm)
 
@@ -181,7 +165,16 @@ for (i in 1:length(explist)){
       
       spdiffc<-nrow(spdiff)/nrow(subset_ct)
       
-      metrics<-data.frame(site_project_comm=spc, treatment=treat_id, calendar_year=time_id, MRSc_diff=MRSc_diff, spdiffc=spdiffc)#spc_id
+      ##eveness richness
+      s_c <- S(subset_ct$relcov.x)
+      e_c <- E_q(subset_ct$relcov.x)
+      s_t <- S(subset_ct$relcov.y)
+      e_t <- E_q(subset_ct$relcov.y)
+      
+      sdiff<-abs(s_c-s_t)/nrow(subset_ct)
+      ediff<-abs(e_c-e_t)/nrow(subset_ct)
+      
+      metrics<-data.frame(site_project_comm=spc, treatment=treat_id, calendar_year=time_id, Sd=sdiff, Ed=ediff, Rd=MRSc_diff, spd=spdiffc)#spc_id
       ##calculate differences for these year comparison and rbind to what I want.
       
       reordering_ct=rbind(metrics, reordering_ct)  
@@ -266,7 +259,6 @@ corre_braycurtis_control_treat<-bray_curtis%>%
   separate(site_project_comm_year, into=c("site_project_comm","calendar_year"), sep="::")%>%
   filter(plot_mani!=0)
 
-merge1<-merge(div_diff, reordering_ct, by=c("site_project_comm","calendar_year","treatment"))
-all_Cont_Treat_Compare<-merge(merge1, corre_braycurtis_control_treat,by=c("site_project_comm","calendar_year","treatment"))
+all_Cont_Treat_Compare<-merge(reordering_ct, corre_braycurtis_control_treat,by=c("site_project_comm","calendar_year","treatment"))
 
-write.csv(all_Cont_Treat_Compare, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_ContTreat_Compare_OCT2017.csv")
+write.csv(all_Cont_Treat_Compare, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_ContTreat_Compare_Nov2017.csv")
