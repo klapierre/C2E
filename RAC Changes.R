@@ -34,7 +34,7 @@ E_q<-function(x){
 }
 
 #read in the data FIX THE PATH LATER
-
+####home
 corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -72,53 +72,62 @@ sak<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbund
 
 corredat<-rbind(corredat1, azi, jrn, knz, sak)
 
+###work
+corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_project_comm!="GVN_FACE_0")
+
+corredat1<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0")
+
+##several studies only have two measurments of a plot. I am dropping those plots
+azi<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_code=="AZI")%>%
+  filter(plot_id!=11&plot_id!=15&plot_id!=35&plot_id!=37)
+
+jrn<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_project_comm=="JRN_study278_0")%>%
+  filter(plot_id!=211&plot_id!=210)
+
+knz<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_project_comm=="KNZ_GFP_4F")%>%
+  filter(plot_id!="7_1_1"&plot_id!="7_2_1")
+
+sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_project_comm=="Saskatchewan_CCD_0")%>%
+  filter(plot_id!=2)
+
+corredat<-rbind(corredat1, azi, jrn, knz, sak)%>%
+  filter(site_code!="RIO")
+
+
+
 #problems
 #gvn face - only 2 years of data so will only have one point for the dataset.
+#RIO interaction has a NA for a species name. need to revisit this.
 
 
 plotinfo<-corredat%>%
   select(site_project_comm, calendar_year, plot_id, treatment, treatment_year)%>%
   unique()
 
-
-#####CALCULATING DIVERSITY METRICS ACROSS CONSECUTIVE TIME STEPS FOR EACH REPLICATE
-
-##need to get this working with NAs for mean calculations
-diversity <- group_by(corredat, site_project_comm, calendar_year, plot_id) %>% 
-  summarize(S=S(relcov),
-            E_q=E_q(relcov))%>%
-  ungroup()%>%
-  group_by(site_project_comm, plot_id)%>%
-  arrange(site_project_comm, plot_id, calendar_year)%>%
-  mutate(S_diff=c(999, diff(S)),
-         E_diff=c(999, diff(E_q)))%>%
-  filter(S_diff!=999)
-
-#####CALCULATING DIVERSITY METRICS ACROSS CONSECUTIVE TIME STEPS FOR EACH REPLICATE
-explist<-unique(corredat$site_project_comm)
-
-gain_loss<-data.frame()
-
-for (i in 1:length(explist)){
-  subset<-corredat%>%
-    filter(site_project_comm==explist[i])
-  
-  loss<-turnover(df=subset, time.var="calendar_year", species.var="genus_species", abundance.var="relcov", replicate.var="plot_id", metric="disappearance")
-  gain<-turnover(df=subset, time.var="calendar_year", species.var="genus_species", abundance.var="relcov", replicate.var="plot_id", metric="appearance")
-  
-  gain$site_project_comm<-explist[i]
-  loss$site_project_comm<-explist[i]
-  
-  gl<-merge(gain, loss, by=c("site_project_comm","plot_id","calendar_year"))
-  
-  gain_loss<-rbind(gain_loss, gl)
-}
-
-
+###SERGL
 ####New appraoch to Rank Shifts
 ###ranks - taking into account that all speices are not always present.
 ###Give all species with zerio abundace the S+1 rank for that year.
 ###includes species that are not present in year X but appear in year X+1 or are present in year X and disappear in year X+1
+explist<-unique(corredat$site_project_comm)
 
 ##add ranks 
 ranks<-corredat%>%
@@ -162,7 +171,7 @@ corre_rank<-rbind(ranks, corre_zero_rank)%>%
 
 ##calculate reordering between time steps by mean ranks shifts corrected for the size of the speceis pool
 
-reorder=data.frame(id=c(), calendar_year=c(), MRSc=c())#expeiment year is year of timestep2
+reorder=data.frame(id=c(), calendar_year=c(), S=c(), E=c(), R=c(), G=c(), L=c())#expeiment year is year of timestep2
 
 exp_plot_list<-unique(corre_rank$exp_plot)
 
@@ -188,10 +197,25 @@ for (i in 1:length(exp_plot_list)){
     
     subset_t12<-merge(subset_t1, subset_t2, by=c("genus_species","site_project_comm","site_code","project_name","community_type"), all=T)%>%
       filter(relcov.x!=0|relcov.y!=0)
-    
+    ##reordering
     MRSc<-mean(abs(subset_t12$rank.x-subset_t12$rank.y))/nrow(subset_t12)
+    ##eveness richness
+    s_t1 <- S(subset_t12$relcov.x)
+    e_t1 <- E_q(subset_t12$relcov.x)
+    s_t2 <- S(subset_t12$relcov.y)
+    e_t2 <- E_q(subset_t12$relcov.y)
     
-    metrics<-data.frame(id=id, calendar_year=timestep[i+1], MRSc=MRSc)#spc_id
+    sdiff<-abs(s_t1-s_t2)/nrow(subset_t12)
+    ediff<-abs(e_t1-e_t2)/nrow(subset_t12)
+    
+    #gains and losses
+    subset_t12$gain<-ifelse(subset_t12$relcov.x==0, 1, 0)
+    subset_t12$loss<-ifelse(subset_t12$relcov.y==0, 1, 0)
+    
+    gain<-sum(subset_t12$gain)/nrow(subset_t12)
+    loss<-sum(subset_t12$loss)/nrow(subset_t12)
+    
+    metrics<-data.frame(id=id, calendar_year=timestep[i+1], S=sdiff, E=ediff, R=MRSc, G=gain, L=loss)#spc_id
     ##calculate differences for these year comparison and rbind to what I want.
     
     reorder=rbind(metrics, reorder)  
@@ -274,28 +298,26 @@ corre_braycurtis<-bray_curtis%>%
 
 ##getting the average for each treatment in a year
 
-corre_diversity<-merge(plotinfo, diversity, by=c("site_project_comm","calendar_year","plot_id"))%>%
+corre_SERGLave<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
   group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
-  summarize(S_diff=mean(S_diff), even_diff=mean(E_diff, na.rm=T))
+  summarize(S=mean(S),
+             E=mean(E,na.rm=T),
+             R=mean(R),
+             G=mean(G),
+             L=mean(L))
 
-corre_gainloss<-merge(plotinfo, gain_loss, by=c("site_project_comm","calendar_year","plot_id"))%>%
-  group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
-  summarize(gain=mean(appearance), loss=mean(disappearance))
-
-corre_reordering<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
-  group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
-  summarize(MRSc=mean(MRSc))
+corre_SERGL<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
+  group_by(site_project_comm, calendar_year, treatment_year, treatment)
 
 ####MERGING TO A SINGE DATASET and exporting
 
-merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
-merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
-all_metrics<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"), all=T)
-
-write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears_2.csv")
+all_metrics<-merge(corre_braycurtis, corre_SERGLave, by=c("site_project_comm","calendar_year","treatment"), all=T)
 
 
-write.csv(all_metrics, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears_2.csv")
+write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Nov2017.csv")
+
+
+write.csv(corre_SERGL, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_SERGL_replicates.csv")
 
 #no longer necessary because everything is compared across years
 # merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
@@ -348,11 +370,6 @@ corre_braycurtis<-bray_curtis_dissim%>%
   separate(site_project_comm_plot, into=c("site_project_comm","plot_id"), sep="::")
 
 ###merging to a single dataset and adding treatment information
-merge1<-merge(gain_loss, diversity, by=c("site_project_comm","calendar_year","plot_id"))
-merge2<-merge(merge1, reordering,by=c("site_project_comm","calendar_year","plot_id")) 
-merge3<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","plot_id"))
-corre_all<-merge(plotinfo, merge3, by=c("site_project_comm","calendar_year","plot_id"))
+corre_all<-merge(corre_SERGL, corre_braycurtis, by=c("site_project_comm","calendar_year","plot_id"))
 
-write.csv(corre_all, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allReplicates.csv")
-
-write.csv(corre_all, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allReplicates_2.csv")
+write.csv(corre_all, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_NOV2017_allReplicates.csv")
