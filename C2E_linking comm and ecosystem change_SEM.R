@@ -24,7 +24,7 @@ theme_update(axis.title.x=element_text(size=40, vjust=-0.35, margin=margin(t=15)
 #######MODEL STRUCTURE: use differences between treatment and control plots in each year (horizontal arrows); include treatments as factors at the bottom, with multi-factor treatments having more than one greater than 0 (and make them categorical response variables)-------------------
 ####data input
 ###add treatment info to get binary treatments of various manipulation types
-trt <- read.csv('ExperimentInformation_May2017.csv')%>%
+trt <- read.csv('ExperimentInformation_Nov2017.csv')%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
   select(-site_code, -project_name, -community_type, -treatment_year, -public)
@@ -103,11 +103,11 @@ trtInteractionsANPP <- correSEMdataTrt%>%
 ggplot(data=trtInteractionsANPP, aes(x=treatment_year, y=anpp_PC_transform)) +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
   geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
-  xlab('Treatment Year') + ylab('log ANPP (%) Change')
+  xlab('Treatment Year') + ylab('log ANPP (%) Difference')
 ggplot(data=subset(trtInteractionsANPP, treatment_year<11), aes(x=treatment_year, y=anpp_PC_transform)) +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
   geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
-  xlab('Treatment Year') + ylab('log ANPP (%) Change')
+  xlab('Treatment Year') + ylab('log ANPP (%) Difference')
 #export at 1000 x 800
 
 
@@ -117,84 +117,84 @@ ggplot(data=subset(trtInteractionsANPP, treatment_year<11), aes(x=treatment_year
 anpp_mean_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 anpp_mean_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('Community Change') + ylim(0,0.7) + xlim(0,1)
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
 #with N
 anpp_n_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 anpp_n_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('ANPP Change') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
 
 pushViewport(viewport(layout=grid.layout(10,2)))
 print(anpp_mean_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
@@ -225,84 +225,84 @@ print(anpp_n_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 2))
 mean_Rd_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 mean_Rd_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=Rd, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 #with N
 mean_n_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 mean_n_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Change') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
 
 pushViewport(viewport(layout=grid.layout(10,2)))
 print(mean_Rd_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
@@ -450,7 +450,7 @@ ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transf
   geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se), width=0.5) +
   geom_line(size=2) +
   # geom_smooth(method='lm', size=3, se=F) +
-  ylab('ANPP Change Effect Size') +
+  ylab('ANPP Difference Effect Size') +
   xlab('Treatment Year') +
   geom_hline(yintercept=0) +
   facet_wrap(~rhs) +
@@ -460,7 +460,7 @@ ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_tr
   geom_point(size=3) +
   geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se), width=0.2) +
   geom_line(size=2) +
-  ylab('Mean Change Effect Size') +
+  ylab('Community Difference Effect Size') +
   xlab('Treatment Year') +
   geom_hline(yintercept=0) +
   facet_wrap(~rhs) +
@@ -476,31 +476,31 @@ ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'
   facet_wrap(~lhs) +
   theme(strip.text=element_text(size=24))
 
-#bin into first and last 5 years for bar graphs
-stdEstBin <- stdEst%>%
-  mutate(temporal_bin=ifelse(treatment_year>5, '1-5', '6-10'))%>%
-  group_by(lhs, rhs, temporal_bin)%>%
-  summarise(est_mean=mean(est), est_sd=sd(est), est_N=n(), std.all_mean=mean(std.all), std.all_sd=sd(std.all), std.all_N=n())%>%
-  ungroup()
-
-ggplot(data=subset(stdEstBin, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
-  geom_bar(stat='identity', position=position_dodge()) +
-  geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
-  ylab('Effect Size') +
-  xlab('Treatment Year')
-
-ggplot(data=subset(stdEstBin, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
-  geom_bar(stat='identity', position=position_dodge()) +
-  geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
-  geom_line(size=3) +
-  ylab('Effect Size') +
-  xlab('Treatment Year')
-
-ggplot(data=subset(stdEstBin, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='Sd_transform'&rhs!='Ed_transform'&rhs!='Rd'&rhs!='spd'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
-  geom_bar(stat='identity', position=position_dodge()) +
-  geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
-  geom_line(size=3) +
-  facet_wrap(~lhs)
+# #bin into first and last 5 years for bar graphs
+# stdEstBin <- stdEst%>%
+#   mutate(temporal_bin=ifelse(treatment_year>5, '1-5', '6-10'))%>%
+#   group_by(lhs, rhs, temporal_bin)%>%
+#   summarise(est_mean=mean(est), est_sd=sd(est), est_N=n(), std.all_mean=mean(std.all), std.all_sd=sd(std.all), std.all_N=n())%>%
+#   ungroup()
+# 
+# ggplot(data=subset(stdEstBin, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
+#   geom_bar(stat='identity', position=position_dodge()) +
+#   geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
+#   ylab('Effect Size') +
+#   xlab('Treatment Year')
+# 
+# ggplot(data=subset(stdEstBin, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
+#   geom_bar(stat='identity', position=position_dodge()) +
+#   geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
+#   geom_line(size=3) +
+#   ylab('Effect Size') +
+#   xlab('Treatment Year')
+# 
+# ggplot(data=subset(stdEstBin, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='Sd_transform'&rhs!='Ed_transform'&rhs!='Rd'&rhs!='spd'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
+#   geom_bar(stat='identity', position=position_dodge()) +
+#   geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
+#   geom_line(size=3) +
+#   facet_wrap(~lhs)
 
 
 
@@ -641,7 +641,7 @@ ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transf
   geom_point(size=3) +
   geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se)) +
   geom_line(size=2) +
-  xlab('ANPP Change Effect Size') + ylab('Treatment Year') +
+  ylab('ANPP Difference Effect Size') + xlab('Treatment Year') +
   geom_hline(yintercept=0) +
   facet_wrap(~rhs)
 
@@ -649,13 +649,13 @@ ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_tr
   geom_point(size=3) +
   geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se)) +
   geom_line(size=2) +
-  xlab('Mean Change Effect Size') + ylab('Treatment Year') +
+  ylab('Community Difference Effect Size') + xlab('Treatment Year') +
   geom_hline(yintercept=0) +
   facet_wrap(~rhs)
 
 ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='Rd'&rhs!='Ed_transform'&rhs!='Sd_transform'&rhs!='spd'), aes(x=treatment_year, y=std_alt, color=rhs)) +
   geom_point(size=3) +
   geom_line(size=2) +
-  xlab('Effect Size') + ylab('Treatment Year') +
+  ylab('Effect Size') + xlab('Treatment Year') +
   geom_hline(yintercept=0) +
   facet_wrap(~lhs)
