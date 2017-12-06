@@ -128,10 +128,6 @@ anpp_mean_y9 <- ggplot(data=subset(nutnetSEMdata, treatment_year==9), aes(x=mean
   geom_point() +
   geom_smooth(method='lm', se=F) +
   ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,1.2) + xlim(0,1)
-anpp_mean_y10 <- ggplot(data=subset(nutnetSEMdata, treatment_year==10), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
-  geom_point() +
-  geom_smooth(method='lm', se=F) +
-  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,1.2) + xlim(0,1)
 #with N
 anpp_n_y1 <- ggplot(data=subset(nutnetSEMdata, treatment_year==1), aes(x=n, y=anpp_PC_transform)) + 
   geom_point() +
@@ -169,12 +165,8 @@ anpp_n_y9 <- ggplot(data=subset(nutnetSEMdata, treatment_year==9), aes(x=n, y=an
   geom_point() +
   geom_smooth(method='lm', se=F) +
   ylab('ANPP Difference') + xlab('N') + ylim(0,1.2) + xlim(0,10)
-anpp_n_y10 <- ggplot(data=subset(nutnetSEMdata, treatment_year==10), aes(x=n, y=anpp_PC_transform)) + 
-  geom_point() +
-  geom_smooth(method='lm', se=F) +
-  ylab('ANPP Difference') + xlab('N') + ylim(0,1.2) + xlim(0,10)
 
-pushViewport(viewport(layout=grid.layout(10,2)))
+pushViewport(viewport(layout=grid.layout(9,2)))
 print(anpp_mean_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
 print(anpp_mean_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 1))
 print(anpp_mean_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 1))
@@ -184,7 +176,6 @@ print(anpp_mean_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 1))
 print(anpp_mean_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 1))
 print(anpp_mean_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 1))
 print(anpp_mean_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 1))
-print(anpp_mean_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 1))
 print(anpp_n_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
 print(anpp_n_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 2))
 print(anpp_n_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 2))
@@ -194,7 +185,6 @@ print(anpp_n_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 2))
 print(anpp_n_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 2))
 print(anpp_n_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 2))
 print(anpp_n_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 2))
-print(anpp_n_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 2))
 #export at 2000 x 4000
 
 
@@ -236,53 +226,45 @@ mean_Rd_y9 <- ggplot(data=subset(nutnetSEMdata, treatment_year==9), aes(x=Rd, y=
   geom_point() +
   geom_smooth(method='lm', se=F) +
   ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
-mean_Rd_y10 <- ggplot(data=subset(nutnetSEMdata, treatment_year==10), aes(x=Rd, y=mean_change_transform)) + 
-  geom_point() +
-  geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
 #with N
 mean_n_y1 <- ggplot(data=subset(nutnetSEMdata, treatment_year==1), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y2 <- ggplot(data=subset(nutnetSEMdata, treatment_year==2), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y3 <- ggplot(data=subset(nutnetSEMdata, treatment_year==3), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y4 <- ggplot(data=subset(nutnetSEMdata, treatment_year==4), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y5 <- ggplot(data=subset(nutnetSEMdata, treatment_year==5), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y6 <- ggplot(data=subset(nutnetSEMdata, treatment_year==6), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y7 <- ggplot(data=subset(nutnetSEMdata, treatment_year==7), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y8 <- ggplot(data=subset(nutnetSEMdata, treatment_year==8), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 mean_n_y9 <- ggplot(data=subset(nutnetSEMdata, treatment_year==9), aes(x=n, y=mean_change_transform)) + 
   geom_point() +
   geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
-mean_n_y10 <- ggplot(data=subset(nutnetSEMdata, treatment_year==10), aes(x=n, y=mean_change_transform)) + 
-  geom_point() +
-  geom_smooth(method='lm', se=F) +
-  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,10)
 
-pushViewport(viewport(layout=grid.layout(10,2)))
+pushViewport(viewport(layout=grid.layout(9,2)))
 print(mean_Rd_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
 print(mean_Rd_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 1))
 print(mean_Rd_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 1))
@@ -292,7 +274,6 @@ print(mean_Rd_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 1))
 print(mean_Rd_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 1))
 print(mean_Rd_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 1))
 print(mean_Rd_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 1))
-print(mean_Rd_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 1))
 print(mean_n_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
 print(mean_n_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 2))
 print(mean_n_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 2))
@@ -302,7 +283,6 @@ print(mean_n_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 2))
 print(mean_n_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 2))
 print(mean_n_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 2))
 print(mean_n_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 2))
-print(mean_n_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 2))
 #export at 2000 x 4000
 
 ###all data-----------
