@@ -34,7 +34,7 @@ correCommChange <- read.csv('CORRE_ContTreat_Compare_Nov2017.csv')%>%
   select(-X)
 
 ###anpp data
-correANPP <- read.csv('ANPP_Oct2017_2.csv')%>%
+correANPP <- read.csv('ANPP_Dec2017.csv')%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
   select(-X)%>%
   mutate(treatment_year_2=ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2004, 10, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2005, 11, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2006, 12, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2007, 13, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2008, 14, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2009, 15, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2010, 16, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2011, 17, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2012, 18, treatment_year))))))))))%>%
