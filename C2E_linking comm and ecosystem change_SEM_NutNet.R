@@ -35,6 +35,21 @@ nutnetANPP <- read.csv('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\NutNet dat
   filter(year_trt!=0, live==1)%>%
   group_by(site_code, plot, year_trt, trt)%>%
   summarise(anpp=sum(mass))
+
+
+#checking site level data for outliers in anpp
+ggplot(subset(nutnetANPP, category=='GRAMINOID'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='FORB'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='LEGUME'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='BRYOPHYTE'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='CACTUS'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='LIVE'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='PERENNIAL'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='WOODY'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+ggplot(subset(nutnetANPP, category=='VASCULAR'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+
+
+#calculating anpp difference
 #anpp ctl data
 nutnetANPPctl <- nutnetANPP%>%
   filter(trt=='Control')%>%
