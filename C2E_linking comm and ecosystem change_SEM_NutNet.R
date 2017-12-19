@@ -1,13 +1,13 @@
-library(tidyverse)
 library(ggplot2)
 library(grid)
 library(PerformanceAnalytics)
 library(lavaan)
 library(lavaan.survey)
 library(semPlot)
+library(tidyverse)
 
 #kim's desktop
-setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
 
 #kim's laptop
 setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
@@ -30,23 +30,31 @@ nutnetCommChange <- read.csv('NutNet_community differences_12052017.csv')%>%
   select(-X, -time)%>%
   mutate(n=ifelse(treatment=='N'|treatment=='NP'|treatment=='NK'|treatment=='NPK'|treatment=='NPK+Fence', 10, 0), p=ifelse(treatment=='P'|treatment=='NP'|treatment=='PK'|treatment=='NPK'|treatment=='NPK+Fence', 10, 0), k=ifelse(treatment=='K'|treatment=='NK'|treatment=='PK'|treatment=='NPK'|treatment=='NPK+Fence', 10, 0), fence=ifelse(treatment=='Fence'|treatment=='NPK+Fence', 1, 0))
 
+###anpp outliers
+nutnetANPPoutliers <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\NutNet data\\La Pierre_NutNet_anpp_potential outliers_12122017.csv')%>%
+  filter(checked.with.PI=='incorrect')%>%
+  select(-live, -notes)
+
 ###anpp data
-nutnetANPP <- read.csv('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\NutNet data\\full-biomass-04-December-2017.csv')%>%
+#remove outliers
+nutnetANPP <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\NutNet data\\full-biomass-04-December-2017.csv')%>%
   filter(year_trt!=0, live==1)%>%
+  merge(nutnetANPPoutliers, by=c("year", "year_trt", "trt", "site_name", "site_code", "block", "plot", "subplot", "mass", "category"), all.x=T)%>%
+  filter(is.na(checked.with.PI))%>%
   group_by(site_code, plot, year_trt, trt)%>%
   summarise(anpp=sum(mass))
 
 
-#checking site level data for outliers in anpp
-ggplot(subset(nutnetANPP, category=='GRAMINOID'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='FORB'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='LEGUME'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='BRYOPHYTE'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='CACTUS'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='LIVE'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='PERENNIAL'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='WOODY'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
-ggplot(subset(nutnetANPP, category=='VASCULAR'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# #checking site level data for outliers in anpp
+# ggplot(subset(nutnetANPP, category=='GRAMINOID'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='FORB'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='LEGUME'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='BRYOPHYTE'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='CACTUS'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='LIVE'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='PERENNIAL'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='WOODY'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+# ggplot(subset(nutnetANPP, category=='VASCULAR'), aes(mass)) + geom_histogram() + facet_wrap(~site_code, scales='free')
 
 
 #calculating anpp difference
@@ -89,7 +97,7 @@ nutnetSEMdata <- nutnetANPPchange%>%
 #all of these compare treatment to control!
 
 
-###exploratory nutnetlations and histograms (all variables compare treatment to control plots)
+###exploratory correlations and histograms (all variables compare treatment to control plots)
 dataVis <- nutnetSEMdata%>%
   select(anpp_PC_transform, mean_change_transform, Sd_transform, Ed_transform, Rd, spd) #make visualization dataframe
 chart.Correlation(dataVis, histogram=T, pch=19)
