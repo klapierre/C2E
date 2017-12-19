@@ -30,6 +30,9 @@ nutnetCommChange <- read.csv('NutNet_community differences_12052017.csv')%>%
   select(-X, -time)%>%
   mutate(n=ifelse(treatment=='N'|treatment=='NP'|treatment=='NK'|treatment=='NPK'|treatment=='NPK+Fence', 10, 0), p=ifelse(treatment=='P'|treatment=='NP'|treatment=='PK'|treatment=='NPK'|treatment=='NPK+Fence', 10, 0), k=ifelse(treatment=='K'|treatment=='NK'|treatment=='PK'|treatment=='NPK'|treatment=='NPK+Fence', 10, 0), fence=ifelse(treatment=='Fence'|treatment=='NPK+Fence', 1, 0))
 
+#checking community data for outliers
+ggplot(nutnetCommChange, aes(comp_diff)) + geom_histogram() + facet_wrap(~site_code, scales='free')
+
 ###anpp outliers
 nutnetANPPoutliers <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\NutNet data\\La Pierre_NutNet_anpp_potential outliers_12122017.csv')%>%
   filter(checked.with.PI=='incorrect')%>%
