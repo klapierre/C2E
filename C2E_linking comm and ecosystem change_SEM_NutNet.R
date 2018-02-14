@@ -7,10 +7,10 @@ library(semPlot)
 library(tidyverse)
 
 #kim's desktop
-setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
+setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
 
 #kim's laptop
-setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
 
 
 theme_set(theme_bw())
@@ -34,13 +34,13 @@ nutnetCommChange <- read.csv('NutNet_community differences_12052017.csv')%>%
 # ggplot(nutnetCommChange, aes(comp_diff)) + geom_histogram() + facet_wrap(~site_code, scales='free')
 
 ###anpp outliers
-nutnetANPPoutliers <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\NutNet data\\La Pierre_NutNet_anpp_potential outliers_12122017.csv')%>%
+nutnetANPPoutliers <- read.csv('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\NutNet data\\La Pierre_NutNet_anpp_potential outliers_12122017.csv')%>%
   filter(checked.with.PI=='incorrect')%>%
   select(-live, -notes)
 
 ###anpp data
 #remove outliers
-nutnetANPP <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\NutNet data\\full-biomass-04-December-2017.csv')%>%
+nutnetANPP <- read.csv('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\NutNet data\\full-biomass-04-December-2017.csv')%>%
   filter(year_trt!=0, live==1)%>%
   merge(nutnetANPPoutliers, by=c("year", "year_trt", "trt", "site_name", "site_code", "block", "plot", "subplot", "mass", "category"), all.x=T)%>%
   filter(is.na(checked.with.PI))%>%
