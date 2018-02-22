@@ -9,20 +9,26 @@ library(Kendall)
 theme_set(theme_bw(12))
 
 #read in the data
-dat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears_2.csv")%>%
+dat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Feb2018_allReplicates.csv")%>%
   select(-X)
 
-dat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears_2.csv")%>%
+dat_mult<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_Mult_Metrics_Feb2018.csv")%>%
   select(-X)
 
-trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_May2017.csv")%>%
+
+plotid<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  select(site_project_comm, plot_id, treatment)%>%
+  unique()
+
+trt<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\ExperimentInformation_Nov2017.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
-dat1<-merge(dat, trt, by=c("site_project_comm","treatment"))%>%
-  mutate(trt=ifelse(plot_mani==0,"C","T"))%>%
-  mutate(id=paste(site_project_comm, treatment, sep="::"))
+dat1<-dat%>%
+  left_join(plot_id)%>%
+  left_join(trt)
 
 ##overall what is the relationsip between the metrics
 #graphing this
@@ -35,28 +41,45 @@ panel.pearson <- function(x, y, ...) {
   text(horizontal, vertical, format(cor(x,y), digits=3, cex=10)) 
 }
 
-pairs(dat2[,c(5:11)], upper.panel = panel.pearson)
+pairs(dat2[,c(3:7)], upper.panel = panel.pearson)
 
-###graphing datat add line for controls and line for treatments
+ave<-dat2%>%
+  group_by(calendar_year_pair, site_project_comm, treatment, plot_mani)%>%
+  summarize(rich=mean(richness_change),
+            even=mean(evenness_change),
+            rank=mean(rank_change),
+            gain=mean(gains),
+            loss=mean(losses))%>%
+  mutate(trt=ifelse(plot_mani==0, "control","treatment"))
+
+merge<-ave%>%
+  left_join(dat_mult)
 
 
-S<-ggplot(data=dat1, aes(x=treatment_year, y=S_diff))+
-  geom_line(aes(group=id, color=trt), size=0.1)+
+###doing multiple regression
+summary(lm(composition_change~rich+even+rank+gain+loss, data=merge))
+
+###graphing data add line for controls and line for treatments
+S<-ggplot(data=ave, aes(x=calendar_year_pair, y=rich))+
+  geom_line(aes(group=treatment, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
-  ggtitle("Richness Change")
-even<-ggplot(data=dat1, aes(x=treatment_year, y=even_diff))+
+  ggtitle("Richness Change")+
+  facet_wrap(~site_project_comm, scales="free")
+
+
+even<-ggplot(data=dat1, aes(x=treatment_year, y=evenness_change))+
   geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
   ggtitle("Evenness Change")
-gain<-ggplot(data=dat1, aes(x=treatment_year, y=gain))+
+gain<-ggplot(data=dat1, aes(x=treatment_year, y=gains))+
   geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
   ggtitle("Gains")
-loss<-ggplot(data=dat1, aes(x=treatment_year, y=loss))+
+loss<-ggplot(data=dat1, aes(x=treatment_year, y=losses))+
   geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
   ggtitle("Losses")
-mrsc<-ggplot(data=dat1, aes(x=treatment_year, y=MRSc))+
+mrsc<-ggplot(data=dat1, aes(x=treatment_year, y=rank_change))+
   geom_line(aes(group=id, color=trt), size=0.1)+
   geom_smooth(method="lm", se=F,  size=3, aes(color=trt))+
   ggtitle("Reordering")
