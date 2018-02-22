@@ -127,6 +127,22 @@ for (i in 1:length(spc)){
 
 write.csv(delta_rac, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Feb2018_allReplicates.csv")
 
+###calculating multivariate changes
+spc<-unique(corredat$site_project_comm)
+delta_mult<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-multivariate_change(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment")
+  out$site_project_comm<-spc[i]
+  
+  delta_mult<-rbind(delta_mult, out)
+}
+
+write.csv(delta_mult, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_Mult_Metrics_Feb2018.csv")
+
 # ##getting the average for each treatment in a year
 # 
 # corre_diversity<-merge(plotinfo, diversity, by=c("site_project_comm","calendar_year","plot_id"))%>%
