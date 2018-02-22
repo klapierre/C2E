@@ -7,34 +7,9 @@ library(codyn)
 library(vegan)
 library(Kendall)
 
-#function to calculate richness
-#' @x the vector of abundances of each species
-S<-function(x){
-  x1<-x[x!=0]
-  length(x1)
-}
 
-#function to calculate EQ evenness from Smith and Wilson 1996
-#' @x the vector of abundances of each species
-#' if all abundances are equal it returns a 1
-E_q<-function(x){
-  x1<-x[x!=0]
-  if (length(x1)==1) {
-    return(NA)
-  }
-  if (abs(max(x1) - min(x1)) < .Machine$double.eps^0.5) {##bad idea to test for zero, so this is basically doing the same thing testing for a very small number
-    return(1)
-  }
-  r<-rank(x1, ties.method = "average")
-  r_scale<-r/max(r)
-  x_log<-log(x1)
-  fit<-lm(r_scale~x_log)
-  b<-fit$coefficients[[2]]
-  2/pi*atan(b)
-}
+#Files from home
 
-#read in the data FIX THE PATH LATER
-####home
 corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -72,7 +47,8 @@ sak<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbund
 
 corredat<-rbind(corredat1, azi, jrn, knz, sak)
 
-###work
+
+####files from work
 corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -109,267 +85,123 @@ sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\
   filter(plot_id!=2)
 
 corredat<-rbind(corredat1, azi, jrn, knz, sak)%>%
-  filter(site_code!="RIO")
-
-
+  filter(!is.na(genus_species))##get rid of problem with RIO
 
 #problems
 #gvn face - only 2 years of data so will only have one point for the dataset.
-#RIO interaction has a NA for a species name. need to revisit this.
 
 
 plotinfo<-corredat%>%
   select(site_project_comm, calendar_year, plot_id, treatment, treatment_year)%>%
   unique()
 
-###SERGL
-####New appraoch to Rank Shifts
-###ranks - taking into account that all speices are not always present.
-###Give all species with zerio abundace the S+1 rank for that year.
-###includes species that are not present in year X but appear in year X+1 or are present in year X and disappear in year X+1
-explist<-unique(corredat$site_project_comm)
 
-##add ranks 
-ranks<-corredat%>%
-  filter(relcov!=0)%>%
-  tbl_df()%>%
-  group_by(site_project_comm, calendar_year, plot_id)%>%
-  mutate(rank=rank(-relcov, ties.method = "average"))%>%
-  tbl_df()
+#####CALCULATING DIVERSITY METRICs
 
-#adding zeros
-addzero<-data.frame()
+spc<-unique(corredat$site_project_comm)
+div_eq<-data.frame()
 
-for (i in 1:length(explist)){
+for (i in 1:length(spc)){
   subset<-corredat%>%
-    filter(site_project_comm==explist[i])
+    filter(site_project_comm==spc[i])
   
-  wide<-subset%>%
-    spread(key=genus_species, value=relcov, fill=0)
+  out<-community_structure(subset, time.var = 'calendar_year', abundance.var = 'relcov', replicate.var = 'plot_id')
+  out$site_project_comm<-spc[i]
   
-  long<-wide%>%
-    gather(key=genus_species, value=relcov, 10:ncol(wide))
-  
-  addzero<-rbind(addzero, long)
+  div_eq<-rbind(div_eq, out)
 }
 
-###make zero abundant species have the rank S+1 (the size of the species pool plus 1)
-##pull out zeros
-corre_zeros<-addzero%>%
-  filter(relcov==0)
-##get species richness for each year
-corre_S<-group_by(corredat, site_project_comm, calendar_year, plot_id)%>%
-  summarize(S=S(relcov))
-##merge together make zero abundances rank S+1
-corre_zero_rank<-merge(corre_zeros, corre_S, by=c("site_project_comm","calendar_year","plot_id"))%>%
-  mutate(rank=S+1)%>%
-  select(-S)%>%
-  tbl_df()
-##combine all
-corre_rank<-rbind(ranks, corre_zero_rank)%>%
-  mutate(exp_plot=paste(site_project_comm, plot_id, sep="::"))
+#####CALCULATING RAC changes
+spc<-unique(corredat$site_project_comm)
+delta_rac<-data.frame()
 
-##calculate reordering between time steps by mean ranks shifts corrected for the size of the speceis pool
-
-reorder=data.frame(id=c(), calendar_year=c(), S=c(), E=c(), R=c(), G=c(), L=c())#expeiment year is year of timestep2
-
-exp_plot_list<-unique(corre_rank$exp_plot)
-
-for (i in 1:length(exp_plot_list)){
-  subset<-corre_rank%>%
-    filter(exp_plot==exp_plot_list[i])
-  id<-exp_plot_list[i]
+for (i in 1:length(spc)){
+  subset<-corredat%>%
+    filter(site_project_comm==spc[i])
   
-  splist<-subset%>%
-    select(genus_species)%>%
-    unique()
-  sppool<-length(splist$genus_species)
+  out<-RAC_change(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
+  out$site_project_comm<-spc[i]
   
-  #now get all timestep within an experiment
-  timestep<-sort(unique(subset$calendar_year))    
-  
-  for(i in 1:(length(timestep)-1)) {#minus 1 will keep me in year bounds NOT WORKING
-    subset_t1<-subset%>%
-      filter(calendar_year==timestep[i])
-    
-    subset_t2<-subset%>%
-      filter(calendar_year==timestep[i+1])
-    
-    subset_t12<-merge(subset_t1, subset_t2, by=c("genus_species","site_project_comm","site_code","project_name","community_type"), all=T)%>%
-      filter(relcov.x!=0|relcov.y!=0)
-    ##reordering
-    MRSc<-mean(abs(subset_t12$rank.x-subset_t12$rank.y))/nrow(subset_t12)
-    ##eveness richness
-    s_t1 <- S(subset_t12$relcov.x)
-    e_t1 <- E_q(subset_t12$relcov.x)
-    s_t2 <- S(subset_t12$relcov.y)
-    e_t2 <- E_q(subset_t12$relcov.y)
-    
-    sdiff<-abs(s_t1-s_t2)/nrow(subset_t12)
-    ediff<-abs(e_t1-e_t2)/nrow(subset_t12)
-    
-    #gains and losses
-    subset_t12$gain<-ifelse(subset_t12$relcov.x==0, 1, 0)
-    subset_t12$loss<-ifelse(subset_t12$relcov.y==0, 1, 0)
-    
-    gain<-sum(subset_t12$gain)/nrow(subset_t12)
-    loss<-sum(subset_t12$loss)/nrow(subset_t12)
-    
-    metrics<-data.frame(id=id, calendar_year=timestep[i+1], S=sdiff, E=ediff, R=MRSc, G=gain, L=loss)#spc_id
-    ##calculate differences for these year comparison and rbind to what I want.
-    
-    reorder=rbind(metrics, reorder)  
-  }
+  delta_rac<-rbind(delta_rac, out)
 }
 
-reordering<-reorder%>%
-  separate(id, c("site_project_comm","plot_id"), sep="::")
+write.csv(delta_rac, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Feb2018_allReplicates.csv")
 
-#####Calculating Bray-Curtis both comparing the mean community change between consequtive time steps and the change in dispersion between two time steps for all plots within a treatment.
-
-##Doing this for all years of an experiment at one time point because want to ensure all points are in the same space.
-
-###first, get bray curtis dissimilarity values for each all years within each experiment between all combinations of plots
-###second, get distance of each plot to its year centroid 
-###third: mean_change is the distance the centroids of consequtive years
-####fourth: dispersion_diff is the average dispersion of plots within a treatment to treatment centriod then compared between consequtive years
-
-###list of all treats within an experiment
-
-corredat$exptreat<-paste(corredat$site_project_comm, corredat$treatment, sep="::")
-
-exptreatlist<-unique(corredat$exptreat)
-
-#makes an empty dataframe
-bray_curtis=data.frame(site_project_comm_treat=c(), calendar_year=c(), bc_mean_change=c(), bc_dispersion_diff=c()) 
-##calculating bray-curtis mean change and disperison differecnes
-for(i in 1:length(exptreatlist)) {
-  
-  #subsets out each dataset
-  subset=corredat%>%
-    filter(exptreat==exptreatlist[i])%>%
-    select(site_project_comm, treatment, calendar_year, genus_species, relcov, plot_id)
-  
-  #get years
-  experiment_years<-sort(unique(subset$calendar_year))
-  
-  #transpose data
-  species=subset%>%
-    spread(genus_species, relcov, fill=0)
-  
-  #calculate bray-curtis dissimilarities
-  bc=vegdist(species[,5:ncol(species)], method="bray")
-  
-  #calculate distances of each plot to year centroid (i.e., dispersion)
-  disp=betadisper(bc, species$calendar_year, type="centroid")
-  
-  #getting distances between centroids over years; these centroids are in BC space, so that's why this uses euclidean distances
-  cent_dist=as.matrix(vegdist(disp$centroids, method="euclidean"))
-  
-  ##extracting only the comparisions we want year x to year x=1.
-  ###(experiment_year is year x+1
-  cent_dist_yrs=data.frame(site_project_comm_treat=exptreatlist[i],
-                           calendar_year=experiment_years[2:length(experiment_years)],
-                           mean_change=diag(cent_dist[2:nrow(cent_dist),1:(ncol(cent_dist)-1)]))
-  
-  #collecting and labeling distances to centroid from betadisper to get a measure of dispersion and then take the mean for a year
-  disp2=data.frame(site_project_comm_treat=exptreatlist[i],
-                   calendar_year=species$calendar_year,
-                   plot_id=species$plot_id,
-                   dist=disp$distances)%>%
-    tbl_df%>%
-    group_by(site_project_comm_treat, calendar_year)%>%
-    summarize(dispersion=mean(dist))
-  
-  ##subtract consequtive years subtracts year x+1 - x. So if it is positive there was greater dispersion in year x+1 and if negative less dispersion in year x+1
-  disp_yrs=data.frame(site_project_comm_treat=exptreatlist[i],
-                      calendar_year=experiment_years[2:length(experiment_years)],
-                      dispersion_diff=diff(disp2$dispersion))
-  
-  #merge together change in mean and dispersion data
-  distances<-merge(cent_dist_yrs, disp_yrs, by=c("site_project_comm_treat","calendar_year"))
-  
-  #pasting dispersions into the dataframe made for this analysis
-  bray_curtis=rbind(distances, bray_curtis)  
-}
-
-corre_braycurtis<-bray_curtis%>%
-  separate(site_project_comm_treat, into=c("site_project_comm","treatment"), sep="::")
-
-##getting the average for each treatment in a year
-
-corre_SERGLave<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
-  group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
-  summarize(S=mean(S),
-             E=mean(E,na.rm=T),
-             R=mean(R),
-             G=mean(G),
-             L=mean(L))
-
-corre_SERGL<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
-  group_by(site_project_comm, calendar_year, treatment_year, treatment)
-
-####MERGING TO A SINGE DATASET and exporting
-
-all_metrics<-merge(corre_braycurtis, corre_SERGLave, by=c("site_project_comm","calendar_year","treatment"), all=T)
-
-
-write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Nov2017.csv")
-
-
-write.csv(corre_SERGL, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_SERGL_replicates.csv")
-
-#no longer necessary because everything is compared across years
-# merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
-# merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"))
-# all_metrics2<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"))
+# ##getting the average for each treatment in a year
 # 
-# write.csv(all_metrics2, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_compareyears.csv")
+# corre_diversity<-merge(plotinfo, diversity, by=c("site_project_comm","calendar_year","plot_id"))%>%
+#   group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
+#   summarize(S_diff=mean(S_diff), even_diff=mean(E_diff, na.rm=T))
 # 
-# write.csv(all_metrics2, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_compareyears.csv")
+# corre_gainloss<-merge(plotinfo, gain_loss, by=c("site_project_comm","calendar_year","plot_id"))%>%
+#   group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
+#   summarize(gain=mean(appearance), loss=mean(disappearance))
+# 
+# corre_reordering<-merge(plotinfo, reordering, by=c("site_project_comm","calendar_year","plot_id"))%>%
+#   group_by(site_project_comm, calendar_year, treatment_year, treatment)%>%
+#   summarize(MRSc=mean(MRSc))
+# 
+# ####MERGING TO A SINGE DATASET and exporting
+# 
+# merge1<-merge(corre_diversity, corre_gainloss, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
+# merge2<-merge(merge1, corre_reordering, by=c("site_project_comm","calendar_year","treatment_year","treatment"), all=T)
+# all_metrics<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","treatment"), all=T)
+# 
+# write.csv(all_metrics, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allyears_2.csv")
+# 
+# 
+# write.csv(all_metrics, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allyears_2.csv")
 
 
-###Getting b-C distnace of each plot to itself comparing t1 to t2.
+# ###Getting b-C distnace of each plot to itself comparing t1 to t2.
+# 
+# corredat$expplot<-paste(corredat$site_project_comm, corredat$plot_id, sep="::")
+# 
+# exp_plot_list<-unique(corredat$expplot)
+# 
+# 
+# #makes an empty dataframe
+# bray_curtis_dissim=data.frame(site_project_comm_plot=c(), calendar_year=c(), bc_dissim=c()) 
+# 
+# ##calculating bray-curtis mean change and disperison differecnes
+# for(i in 1:length(exp_plot_list)) {
+#   
+#   #subsets out each dataset
+#   subset=corredat%>%
+#     filter(expplot==exp_plot_list[i])%>%
+#     select(site_project_comm, treatment, calendar_year, genus_species, relcov, plot_id)
+#   
+#   #get years
+#   experiment_years<-sort(unique(subset$calendar_year))
+#   
+#   #transpose data
+#   species=subset%>%
+#     spread(genus_species, relcov, fill=0)
+#   
+#   #calculate bray-curtis dissimilarities
+#   bc=as.matrix(vegdist(species[,5:ncol(species)], method="bray"))
+#   
+#   ###experiment_year is year x+1
+#   bc_dis=data.frame(site_project_comm_plot=exp_plot_list[i],
+#                     calendar_year=experiment_years[2:length(experiment_years)],
+#                     bc_dissim=diag(bc[2:nrow(bc),1:(ncol(bc)-1)]))
+#   
+#   #pasting dispersions into the dataframe made for this analysis
+#   bray_curtis_dissim=rbind(bc_dis, bray_curtis_dissim)  
+# }
+# 
+# corre_braycurtis<-bray_curtis_dissim%>%
+#   separate(site_project_comm_plot, into=c("site_project_comm","plot_id"), sep="::")
+# 
+# ###merging to a single dataset and adding treatment information
+# merge1<-merge(gain_loss, diversity, by=c("site_project_comm","calendar_year","plot_id"))
+# merge2<-merge(merge1, reordering,by=c("site_project_comm","calendar_year","plot_id")) 
+# merge3<-merge(merge2, corre_braycurtis, by=c("site_project_comm","calendar_year","plot_id"))
+# corre_all<-merge(plotinfo, merge3, by=c("site_project_comm","calendar_year","plot_id"))
+# 
+# write.csv(corre_all, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Oct2017_allReplicates.csv")
+# 
+# write.csv(corre_all, "~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Oct2017_allReplicates_2.csv")
 
-corredat$expplot<-paste(corredat$site_project_comm, corredat$plot_id, sep="::")
-
-exp_plot_list<-unique(corredat$expplot)
-
-
-#makes an empty dataframe
-bray_curtis_dissim=data.frame(site_project_comm_plot=c(), calendar_year=c(), bc_dissim=c()) 
-
-##calculating bray-curtis mean change and disperison differecnes
-for(i in 1:length(exp_plot_list)) {
-  
-  #subsets out each dataset
-  subset=corredat%>%
-    filter(expplot==exp_plot_list[i])%>%
-    select(site_project_comm, treatment, calendar_year, genus_species, relcov, plot_id)
-  
-  #get years
-  experiment_years<-sort(unique(subset$calendar_year))
-  
-  #transpose data
-  species=subset%>%
-    spread(genus_species, relcov, fill=0)
-  
-  #calculate bray-curtis dissimilarities
-  bc=as.matrix(vegdist(species[,5:ncol(species)], method="bray"))
-  
-  ###experiment_year is year x+1
-  bc_dis=data.frame(site_project_comm_plot=exp_plot_list[i],
-                    calendar_year=experiment_years[2:length(experiment_years)],
-                    bc_dissim=diag(bc[2:nrow(bc),1:(ncol(bc)-1)]))
-  
-  #pasting dispersions into the dataframe made for this analysis
-  bray_curtis_dissim=rbind(bc_dis, bray_curtis_dissim)  
-}
-
-corre_braycurtis<-bray_curtis_dissim%>%
-  separate(site_project_comm_plot, into=c("site_project_comm","plot_id"), sep="::")
-
-###merging to a single dataset and adding treatment information
-corre_all<-merge(corre_SERGL, corre_braycurtis, by=c("site_project_comm","calendar_year","plot_id"))
 
 write.csv(corre_all, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_NOV2017_allReplicates.csv")
