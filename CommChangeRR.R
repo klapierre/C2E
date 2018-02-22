@@ -5,29 +5,37 @@ library(gtable)
 library(codyn)
 library(vegan)
 library(Kendall)
+library(relaimpo)
+library(MASS)
+library(lme4)
 
 theme_set(theme_bw(12))
+#path work
+C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\
+#path home
+~/Dropbox/converge_diverge/datasets/LongForm/
 
 #read in the data
-dat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Feb2018_allReplicates.csv")%>%
+dat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_RAC_Metrics_Feb2018_allReplicates.csv")%>%
   select(-X)
 
-dat_mult<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_Mult_Metrics_Feb2018.csv")%>%
+dat_mult<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_Mult_Metrics_Feb2018.csv")%>%
   select(-X)
 
+plotid<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
-plotid<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+plotid2<-plotid%>%
   select(site_project_comm, plot_id, treatment)%>%
   unique()
 
-trt<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\ExperimentInformation_Nov2017.csv")%>%
+trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 dat1<-dat%>%
-  left_join(plot_id)%>%
+  left_join(plotid)%>%
   left_join(trt)
 
 ##overall what is the relationsip between the metrics
@@ -52,20 +60,77 @@ ave<-dat2%>%
             loss=mean(losses))%>%
   mutate(trt=ifelse(plot_mani==0, "control","treatment"))
 
-merge<-ave%>%
+merged_data<-ave%>%
   left_join(dat_mult)
 
 
 ###doing multiple regression
-summary(lm(composition_change~rich+even+rank+gain+loss, data=merge))
+stepAIC(lm(composition_change~rich+even+rank+gain+loss, data=merged_data))
+summary(m3<-lm(composition_change~rich+even+rank+gain+loss, data=merged_data))
+calc.relimp(m3, type="lmg", rela=F)
 
-###graphing data add line for controls and line for treatments
-S<-ggplot(data=ave, aes(x=calendar_year_pair, y=rich))+
-  geom_line(aes(group=treatment, color=trt), size=0.1)+
-  geom_smooth(method="lm", se=F, size=2, aes(color=trt))+
-  ggtitle("Richness Change")+
-  facet_wrap(~site_project_comm, scales="free")
+#mixed model - not sure of the code here.
+m2 <- lmer(composition_change ~ rich+even+rank+gain+loss+
+             (composition_change | site_project_comm),
+           data = merged_data)
+summary(m2)
+m2
+###datasets 10 yrs of longer
+datalen<-dat_mult%>%
+  ungroup()%>%
+  select(calendar_year_pair, site_project_comm)%>%
+  unique()%>%
+  group_by(site_project_comm)%>%
+  summarize(len=length(calendar_year_pair))%>%
+  mutate(keep=ifelse(len>7, 1, 0))
 
+long<-merged_data%>%
+  left_join(datalen)%>%
+  filter(keep==1)
+
+control<-long%>%
+  filter(plot_mani==0)%>%
+  ungroup()%>%
+  mutate(crich=rich, ceven=even, crank=rank, cgain=gain, closs=loss)%>%
+  select(site_project_comm, calendar_year_pair, crich, ceven, crank, cgain, closs)
+
+trt<-long%>%
+  filter(plot_mani>0)
+
+cont_trt<-trt%>%
+  left_join(control)%>%
+  mutate(rS=((rich-crich)/crich), rE=((even-ceven)/ceven), rG=((gain-cgain)/cgain), rL=((loss-closs)/closs), rR=((rank-crank)/crank),  trt=ifelse(plot_mani==0, "control","treatment"))%>%
+  separate(calendar_year_pair, into=c("year", "year1"), sep="-")%>%
+  filter(!is.infinite(rS), !is.infinite(rE), !is.infinite(rR), !is.infinite(rG), !is.infinite(rL),
+         !is.nan(rS), !is.nan(rE), !is.nan(rR), !is.nan(rG), !is.nan(rL))
+
+###graphing data add line for controls and line for treatments]
+
+  ggplot(data=cont_trt, aes(x=year, y=rS))+
+    geom_point(size=3)+
+    geom_smooth(method="lm", se=F, color="red", size=3)+
+    facet_wrap(~site_project_comm, scales="free")
+
+  ggplot(data=cont_trt, aes(x=year, y=rE))+
+    geom_point(size=3)+
+    geom_smooth(method="lm", se=F, color="red", size=3)+
+    facet_wrap(~site_project_comm, scales="free")
+  
+  ggplot(data=cont_trt, aes(x=year, y=rR))+
+    geom_point(size=3)+
+    geom_smooth(method="lm", se=F, color="red", size=3)+
+    facet_wrap(~site_project_comm, scales="free")
+  
+  ggplot(data=cont_trt, aes(x=year, y=rL))+
+    geom_point(size=3)+
+    geom_smooth(method="lm", se=F, color="red", size=3)+
+    facet_wrap(~site_project_comm, scales="free")
+  
+  ggplot(data=cont_trt, aes(x=year, y=rG))+
+    geom_point(size=3)+
+    geom_smooth(method="lm", se=F, color="red", size=3)+
+    facet_wrap(~site_project_comm, scales="free")
+  
 
 even<-ggplot(data=dat1, aes(x=treatment_year, y=evenness_change))+
   geom_line(aes(group=id, color=trt), size=0.1)+
@@ -110,7 +175,7 @@ even<-ggplot(data=logRR, aes(x=treatment_year, y=lrE))+
   geom_hline(yintercept=0, size=1)
 gain<-ggplot(data=logRR, aes(x=treatment_year, y=lrG))+
   geom_line(aes(group=id))+
-  geom_smooth(method="lm", se=F, color="red", size=3)+
+  q
   ggtitle("Gains")+
   geom_hline(yintercept=0, size=1)
 loss<-ggplot(data=logRR, aes(x=treatment_year, y=lrL))+
