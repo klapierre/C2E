@@ -313,15 +313,13 @@ bc_dynamics <- plot_grid(nitrogen, phosphorous, co2, precip,
                          bc_n, bc_phos, bc_carbon, bc_precip, 
                          nrow = 2, ncol = 4)
 
-bc_dynamics <- plot_grid(nitrogen, phosphorous, co2, precip,
-                         nrow = 1, ncol = 4)
+# bc_dynamics <- plot_grid(nitrogen, phosphorous, co2, precip,
+#                          nrow = 1, ncol = 4)
 
-outfile <- paste0(data_dir,"bc_dynamics.pdf")
-ggsave(filename = outfile, plot = bc_dynamics, width = 14, height = 3.5, units = "in")
+# outfile <- paste0(data_dir,"bc_dynamics.pdf")
+# ggsave(filename = outfile, plot = bc_dynamics, width = 14, height = 3.5, units = "in")
 
 
-# 
 # ggplot(subset(vpart_out, metric!="total_var_expl"&site_project_comm=="KNZ_pplots_0"),
 #        aes(x=treatment_year, y=var_expl_together, colour=metric)) +
 #   geom_line() + facet_wrap(~treatment) + theme_few()
-# 
