@@ -10,515 +10,353 @@ library(semPlot)
 setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
 
 #kim's laptop
-setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm')
 
-###NOTE: options 1 and2 may be a little messed up due to a find-replace error, double check code if using
 
-# #######OPTION 1: use all plots, looking at change from plot in yr 1 to yr x through time. compare treatment and control plot changes (vertical arrows); must group by site_project_comm!---------------------------------------
+theme_set(theme_bw())
+theme_update(axis.title.x=element_text(size=40, vjust=-0.35, margin=margin(t=15)), axis.text.x=element_text(size=34, color='black'),
+             axis.title.y=element_text(size=40, angle=90, vjust=0.5, margin=margin(r=15)), axis.text.y=element_text(size=34, color='black'),
+             plot.title = element_text(size=40, vjust=2),
+             panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
+             legend.title=element_blank(), legend.text=element_text(size=20))
+
+
+#######MODEL STRUCTURE: use differences between treatment and control plots in each year (horizontal arrows); include treatments as factors at the bottom, with multi-factor treatments having more than one greater than 0 (and make them categorical response variables)-------------------
 ####data input
-#treatment data
-correTrt <- read.csv('ExperimentInformation_May2017.csv')%>%
-  select(site_code, project_name, community_type, treatment_year, treatment, plot_mani)
-#community data
-correCommChange <- read.csv('CORRE_RAC_Metrics_Oct2017_allReplicates_2.csv')%>%
+###add treatment info to get binary treatments of various manipulation types
+trt <- read.csv('ExperimentInformation_anpp_Dec2017.csv')%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
+  select(-site_code, -project_name, -community_type, -public)
+
+###community data
+correCommChange <- read.csv('CORRE_ContTreat_Compare_Nov2017.csv')%>%
   select(-X)
-#anpp data
-correANPPchange <- read.csv('ANPP_Oct2017.csv')%>%
-  #need to fix data input issues that result in same plot having multiple anpp values
-  group_by(site_code, project_name, community_type, treatment, treatment_year, calendar_year, plot_id)%>%
+
+###anpp data
+correANPP <- read.csv('ANPP_Dec2017.csv')%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
+  select(-X)%>%
+  mutate(treatment_year_2=ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2004, 10, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2005, 11, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2006, 12, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2007, 13, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2008, 14, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2009, 15, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2010, 16, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2011, 17, ifelse(site_project_comm=='SEV_Nfert_0'&calendar_year==2012, 18, treatment_year))))))))))%>%
+  select(-treatment_year)%>%mutate(treatment_year=treatment_year_2)%>%select(-treatment_year_2)%>%
+  #remove subset of CDR trts and KNZ BGP mowed treatment (they herbicided)
+  mutate(drop=ifelse(site_code=='CDR'&treatment=='2', 1, ifelse(site_code=='CDR'&treatment=='3', 1, ifelse(site_code=='CDR'&treatment=='4', 1, ifelse(site_code=='CDR'&treatment=='5', 1, ifelse(site_code=='CDR'&treatment=='7', 1, ifelse(site_code=='CDR'&treatment=='2_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='3_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='4_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='5_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='7_f_u_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_p', 1, ifelse(project_name=='BGP'&treatment=='u_m_b', 1, ifelse(project_name=='BGP'&treatment=='u_m_c', 1, ifelse(project_name=='BGP'&treatment=='b_m_n', 1, ifelse(project_name=='BGP'&treatment=='b_m_p', 1, ifelse(project_name=='BGP'&treatment=='b_m_b', 1, ifelse(project_name=='BGP'&treatment=='b_m_c', 1, 0)))))))))))))))))))%>%
+  #remove NANT wet because it only has ANPP in one year and has a much higher rate of N added (67.2 gm-2)
+  filter(site_code!='NANT')%>%
+  filter(drop==0)%>%
+  ####NOTE: check outliers with data providers and omit this step when data is correct
+  mutate(outlier=ifelse(site_code=='ORNL'&anpp>1080, 1, ifelse(project_name=='snow'&anpp>1010, 1, ifelse(project_name=='T7'&anpp>1860, 1, 0))))%>%
+  filter(outlier==0)%>%
+  filter(anpp>0)%>%
+  select(-drop, -outlier)%>%
+  left_join(trt)
+
+
+# #checking site level data for outliers in anpp
+# ggplot(correANPP, aes(anpp)) + geom_histogram() + facet_wrap(~project_name, scales='free')
+
+
+#calculating anpp difference
+#anpp ctl data
+correANPPctl <- correANPP%>%
+  filter(plot_mani==0)%>%
+  select(site_code, project_name, community_type, calendar_year, treatment_year, anpp)%>%
+  group_by(site_code, project_name, community_type, calendar_year, treatment_year)%>%
+  summarise(anpp_ctl=mean(anpp))%>%
+  ungroup()
+#anpp change
+correANPPchange <- correANPP%>%
+  filter(plot_mani!=0)%>%
+  group_by(site_code, project_name, community_type, calendar_year, treatment_year, treatment)%>%
   summarise(anpp=mean(anpp))%>%
   ungroup()%>%
+  left_join(correANPPctl)%>%
+  #calculate anpp change as percent change from ctl in each year
+  mutate(anpp_PC=(anpp-anpp_ctl)/anpp_ctl)%>%
+  select(-anpp, -anpp_ctl)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))
-#calculate experiment length
-expLength <- correANPPchange%>%
-  group_by(site_project_comm)%>%
-  mutate(experiment_length=max(treatment_year))%>%
-  ungroup()%>%
-  select(site_project_comm, experiment_length)%>%
-  unique() #mean experiment length is 10.56 across ANPP data
-#merge
-correSEMdata <- correANPPchange%>%
-  left_join(correCommChange)%>%
-  left_join(expLength)%>%
-  na.omit()%>%
-  #remove CDR e001 and e002 intermediate treatments (before CDR e001/e002 make up 55.8% of the data; after removal drops to 5 trts todal, to make up only 18.5% of total data)
-  mutate(trt_drop=ifelse(project_name=='e001'&treatment==2, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==7, 1, ifelse(project_name=='e002'&treatment=='2_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='7_f_u_n', 1, 0)))))))))))%>%
-  filter(trt_drop==0)%>%
-  #transform to improve normality
-  mutate(mean_change_transform=sqrt(bc_dissim), E_q_transform=log(E_q), S_transform=sqrt(S), anpp_change_transform=log(anpp))%>%
-  #make a binary treatment variable
-  left_join(correTrt)%>%
-  mutate(treatment_binary=ifelse(plot_mani==0, 0, 1))
 
-###exploratory correlations and histograms (all variables compare treatment to control plots)
-dataVis <- correSEMdata%>%
-  select(anpp_change_transform, mean_change_transform, appearance, disappearance, E_q_transform, MRSc, S_transform) #make visualization dataframe
-chart.Correlation(dataVis, histogram=T, pch=19)
-
-
-####5 models: all data (across all years); year 2 vs year 5 (29 experiments, must run 2 separate SEMs and compare); year 2 vx year 10 (12 experiments, must run 2 separate SEMs and compare)
-
-#note that appearance/disappearance are count data, and must use a poisson model (need to figure out how to do this)
-#model 1 - all data
-correModel <- '
-anpp_change_transform ~ mean_change_transform + treatment_binary
-mean_change_transform ~ appearance + disappearance + E_q_transform + MRSc + S_transform
-appearance ~ treatment_binary
-disappearance ~ treatment_binary
-E_q_transform ~ treatment_binary
-MRSc ~ treatment_binary
-S_transform ~ treatment_binary
-
-#covariances
-appearance~~disappearance
-appearance~~E_q_transform
-appearance~~MRSc
-appearance~~S_transform
-disappearance~~E_q_transform
-disappearance~~MRSc
-disappearance~~S_transform
-E_q_transform~~MRSc
-E_q_transform~~S_transform
-MRSc~~S_transform'
-
-correModelFit <- sem(correModel, data=correSEMdata, meanstructure=TRUE)
-# adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata)
-modelFit <- lavaan.survey(lavaan.fit=correModelFit, survey.design=design)
-summary(modelFit, standardize=T)
-modificationIndices <- modindices(modelFit, sort.=TRUE, minimum.value=5) #modification indices
-print(modificationIndices[modificationIndices$op == "~",])
-print(modificationIndices[modificationIndices$op == "~~",])
-semPaths(modelFit, 'Standard', 'Estimates', layout='tree5', residuals=F, intercepts=F)
-
-
-
-correSEMyears <- correSEMdata%>%
-  #gather to combine metric with year
-  select(site_code, project_name, community_type, site_project_comm, experiment_length, treatment, treatment_binary, treatment_year, calendar_year, plot_id, anpp_change_transform, mean_change_transform, S_transform, E_q_transform, appearance, disappearance, MRSc)%>%
-  gather(key=metric, value=value, anpp_change_transform:MRSc, na.rm=F)%>%
-  mutate(metric_year=paste(metric, treatment_year, sep='_'))%>%
-  na.omit()
-
-#model 2 - years 2 vs 5
-correSEMdata5 <- correSEMyears%>%
-  filter(treatment_year==2|treatment_year==10|treatment_year==6)%>%
-  select(-metric, -treatment_year, -calendar_year)%>%
-  spread(key=metric_year, value=value)%>%
-  na.omit()
-
-correModel2 <- '
-#year 2
-anpp_change_transform_2 ~ mean_change_transform_2 + treatment_binary
-mean_change_transform_2 ~ appearance_2 + disappearance_2 + E_q_transform_2 + MRSc_2 + S_transform_2
-appearance_2 ~ treatment_binary
-disappearance_2 ~ treatment_binary
-E_q_transform_2 ~ treatment_binary
-MRSc_2 ~ treatment_binary
-S_transform_2 ~ treatment_binary
-
-#covariances
-appearance_2~~disappearance_2
-appearance_2~~E_q_transform_2
-appearance_2~~MRSc_2
-appearance_2~~S_transform_2
-disappearance_2~~E_q_transform_2
-disappearance_2~~MRSc_2
-disappearance_2~~S_transform_2
-E_q_transform_2~~MRSc_2
-E_q_transform_2~~S_transform_2
-MRSc_2~~S_transform_2
-
-
-#year 5
-anpp_change_transform_6 ~ mean_change_transform_6 + treatment_binary
-mean_change_transform_6 ~ appearance_6 + disappearance_6 + E_q_transform_6 + MRSc_6 + S_transform_6
-appearance_6 ~ treatment_binary
-disappearance_6 ~ treatment_binary
-E_q_transform_6 ~ treatment_binary
-MRSc_6 ~ treatment_binary
-S_transform_6 ~ treatment_binary
-
-#covariances
-appearance_6~~disappearance_6
-appearance_6~~E_q_transform_6
-appearance_6~~MRSc_6
-appearance_6~~S_transform_6
-disappearance_6~~E_q_transform_6
-disappearance_6~~MRSc_6
-disappearance_6~~S_transform_6
-E_q_transform_6~~MRSc_6
-E_q_transform_6~~S_transform_6
-MRSc_6~~S_transform_6
-
-
-#year 10
-anpp_change_transform_10 ~ mean_change_transform_10 + treatment_binary
-mean_change_transform_10 ~ appearance_10 + disappearance_10 + E_q_transform_10 + MRSc_10 + S_transform_10
-appearance_10 ~ treatment_binary
-disappearance_10 ~ treatment_binary
-E_q_transform_10 ~ treatment_binary
-MRSc_10 ~ treatment_binary
-S_transform_10 ~ treatment_binary
-
-#covariances
-appearance_10~~disappearance_10
-appearance_10~~E_q_transform_10
-appearance_10~~MRSc_10
-appearance_10~~S_transform_10
-disappearance_10~~E_q_transform_10
-disappearance_10~~MRSc_10
-disappearance_10~~S_transform_10
-E_q_transform_10~~MRSc_10
-E_q_transform_10~~S_transform_10
-MRSc_10~~S_transform_10
-
-
-#temporal covariances
-mean_change_transform_2~~mean_change_transform_6
-anpp_change_transform_2~~anpp_change_transform_6
-appearance_2~~appearance_6
-disappearance_2~~disappearance_6
-E_q_transform_2~~E_q_transform_6
-MRSc_2~~MRSc_6
-S_transform_2~~S_transform_6
-mean_change_transform_2~~mean_change_transform_10
-anpp_change_transform_2~~anpp_change_transform_10
-appearance_2~~appearance_10
-disappearance_2~~disappearance_10
-E_q_transform_2~~E_q_transform_10
-MRSc_2~~MRSc_10
-S_transform_2~~S_transform_10
-mean_change_transform_6~~mean_change_transform_10
-anpp_change_transform_6~~anpp_change_transform_10
-appearance_6~~appearance_10
-disappearance_6~~disappearance_10
-E_q_transform_6~~E_q_transform_10
-MRSc_6~~MRSc_10
-S_transform_6~~S_transform_10
-'
-
-correModel2Fit <- sem(correModel2, data=correSEMdata5, meanstructure=TRUE)
-# adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata5)
-model2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=design)
-summary(model2Fit, standardize=T)
-modificationIndices2 <- modindices(model2Fit, sort.=TRUE, minimum.value=5) #modification indices
-print(modificationIndices2[modificationIndices2$op == "~",])
-print(modificationIndices2[modificationIndices2$op == "~~",])
-semPaths(model2Fit, 'Standardized', 'Estimates', layout='tree5', intercepts=F)
-
-
-
-
-
-
-
-
-
-#######OPTION 2: use mean across plots within a treatment, looking at change from plot in yr 1 to yr x through time. compare treatment and control plot changes (vertical arrows)---------------------------------------
-####data input
-#treatment data
-correTrt <- read.csv('ExperimentInformation_May2017.csv')%>%
-  select(site_code, project_name, community_type, treatment_year, treatment, plot_mani)
-#community data
-correCommChange <- read.csv('CORRE_RAC_Metrics_Oct2017_allyears.csv')%>%
-  select(-X)
-#anpp data
-correANPPchange <- read.csv('ANPP_Oct2017.csv')%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
-  select(-X)%>%
-  group_by(site_code, project_name, treatment_year, calendar_year, treatment, community_type, site_project_comm)%>%
-  summarise(anpp_change=mean(anpp))%>%
-  ungroup()
-#calculate experiment length
-expLength <- correANPPchange%>%
-  group_by(site_project_comm)%>%
-  mutate(experiment_length=max(treatment_year))%>%
-  ungroup()%>%
-  select(site_project_comm, experiment_length)%>%
-  unique() #mean experiment length is 10.56 across ANPP data
-
-#merge
-correSEMdata <- correANPPchange%>%
-  left_join(correCommChange)%>%
-  left_join(expLength)%>%
-  na.omit()%>%
-  #remove CDR e001 and e002 intermediate treatments (before CDR e001/e002 make up 55.8% of the data; after removal drops to 5 trts todal, to make up only 18.5% of total data)
-  mutate(trt_drop=ifelse(project_name=='e001'&treatment==2, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==5, 1, ifelse(project_name=='e001'&treatment==7, 1, ifelse(project_name=='e002'&treatment=='2_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='5_f_u_n', 1, ifelse(project_name=='e002'&treatment=='7_f_u_n', 1, 0)))))))))))%>%
-  filter(trt_drop==0)%>%
-  #transform to improve normality
-  mutate(mean_change_transform=sqrt(mean_change), even_transform=log(even), S_transform=sqrt(S), anpp_change_transform=sqrt(anpp_change))%>%
-  #make a site_code:community_type column
-  mutate(site_comm=paste(site_code, community_type, sep='::'))%>%
-  #make a binary treatment variable
-  left_join(correTrt)%>%
-  mutate(treatment_binary=ifelse(plot_mani==0, 0, 1))%>%
-  #remove non-transformed variables
-  select(site_code, project_name, community_type, site_project_comm, site_comm, treatment, treatment_binary, experiment_length, treatment_year, anpp_change_transform, mean_change_transform, gain, loss, S_transform, even_transform, MRSc)
-
-###exploratory correlations and histograms (all variables compare treatment to control plots)
-dataVis <- correSEMdata%>%
-  select(anpp_change_transform, mean_change_transform, gain, loss, even_transform, MRSc, S_transform) #make visualization dataframe
-chart.Correlation(dataVis, histogram=T, pch=19)
-
-correSEMyears <- correSEMdata%>%
-  #gather to combine metric with year
-  gather(key=metric, value=value, anpp_change_transform:MRSc, na.rm=F)%>%
-  mutate(metric_year=paste(metric, treatment_year, sep='_'))
-
-
-####5 models: all data (across all years); year 2 vs year 5 (29 experiments, must run 2 separate SEMs and compare); year 2 vs year 10 (12 experiments, must run 2 separate SEMs and compare)
-
-#note that appearance/disappearance are count data, and must use a poisson model (need to figure out how to do this)
-#model 1 - all data
-correModel <- '
-anpp_change_transform ~ mean_change_transform + treatment_binary
-mean_change_transform ~ gain + loss + even_transform + MRSc + S_transform
-# physiology_latent =~ treatment_binary
-gain ~ treatment_binary
-loss ~ treatment_binary
-even_transform ~ treatment_binary
-MRSc ~ treatment_binary
-S_transform ~ treatment_binary
-
-#covariances
-gain~~loss
-gain~~even_transform
-gain~~MRSc
-gain~~S_transform
-loss~~even_transform
-loss~~MRSc
-loss~~S_transform
-even_transform~~MRSc
-even_transform~~S_transform
-MRSc~~S_transform'
-
-correModelFit <- sem(correModel, data=correSEMdata, meanstructure=TRUE)
-# adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata)
-modelFit <- lavaan.survey(lavaan.fit=correModelFit, survey.design=design)
-summary(modelFit, standardize=T)
-modificationIndices <- modindices(modelFit, sort.=TRUE, minimum.value=5) #modification indices
-print(modificationIndices[modificationIndices$op == "~",])
-print(modificationIndices[modificationIndices$op == "~~",])
-semPaths(modelFit, 'Standard', 'Estimates', layout='tree5', residuals=F, intercepts=F)
-
-
-
-
-#model 2 - years 2 vs 5 - nothing matters
-correSEMdata5 <- correSEMyears%>%
-  filter(treatment_year!=1&treatment_year<5)%>%
-  select(-metric, -treatment_year)%>%
-  spread(key=metric_year, value=value)%>%
-  na.omit()
-
-correModel2 <- '
-#year 2
-anpp_change_transform_2 ~ mean_change_transform_2 + physiology_latent_2
-mean_change_transform_2 ~ gain_2 + loss_2 + even_transform_2 + MRSc_2 + S_transform_2
-physiology_latent_2 =~ treatment_binary
-gain_2 ~ treatment_binary
-loss_2 ~ treatment_binary
-even_transform_2 ~ treatment_binary
-MRSc_2 ~ treatment_binary
-S_transform_2 ~ treatment_binary
-
-#covariances
-gain_2~~loss_2
-gain_2~~even_transform_2
-gain_2~~MRSc_2
-gain_2~~S_transform_2
-loss_2~~even_transform_2
-loss_2~~MRSc_2
-loss_2~~S_transform_2
-even_transform_2~~MRSc_2
-even_transform_2~~S_transform_2
-MRSc_2~~S_transform_2'
-
-correModel2Fit <- sem(correModel2, data=correSEMdata5, meanstructure=TRUE)
-# adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata5)
-model2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=design)
-summary(model2Fit, standardize=T)
-modificationIndices2 <- modindices(model2Fit, sort.=TRUE, minimum.value=5) #modification indices
-print(modificationIndices2[modificationIndices2$op == "~",])
-print(modificationIndices2[modificationIndices2$op == "~~",])
-semPaths(model2Fit, 'Standardized', 'Estimates', layout='tree5')
-
-correModel5 <- '
-#year 5
-anpp_change_transform_5 ~ mean_change_transform_5 + physiology_latent_5
-mean_change_transform_5 ~ gain_5 + loss_5 + even_transform_5 + MRSc_5 + S_transform_5
-physiology_latent_5 =~ treatment_binary
-gain_5 ~ treatment_binary
-loss_5 ~ treatment_binary
-even_transform_5 ~ treatment_binary
-MRSc_5 ~ treatment_binary
-S_transform_5 ~ treatment_binary
-
-#covariances
-gain_5~~loss_5
-gain_5~~even_transform_5
-gain_5~~MRSc_5
-gain_5~~S_transform_5
-loss_5~~even_transform_5
-loss_5~~MRSc_5
-loss_5~~S_transform_5
-even_transform_5~~MRSc_5
-even_transform_5~~S_transform_5
-MRSc_5~~S_transform_5'
-
-correModel5Fit <- sem(correModel5, data=correSEMdata5, meanstructure=TRUE)
-# adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata5)
-model5Fit <- lavaan.survey(lavaan.fit=correModel5Fit, survey.design=design)
-summary(model5Fit, standardize=T)
-modificationIndices5 <- modindices(model5Fit, sort.=TRUE, minimum.value=5) #modification indices
-print(modificationIndices5[modificationIndices5$op == "~",])
-print(modificationIndices5[modificationIndices5$op == "~~",])
-semPaths(model5Fit, 'Standardized', 'Estimates', layout='tree5')
-
-
-#model 5 - years 2 vs 10
-correSEMdata10 <- correSEMyears%>%
-  filter(treatment_year==2|treatment_year==10)%>%
-  select(-metric, -treatment_year)%>%
-  spread(key=metric_year, value=value)%>%
-  na.omit()
-
-#year 10 of data - model significant (not good)
-correModel10 <- '
-#year 10
-anpp_change_transform_10 ~ mean_change_transform_10 + physiology_latent_10
-mean_change_transform_10 ~ gain_10 + loss_10 + even_transform_10 + MRSc_10 + S_transform_10
-physiology_latent_10 =~ treatment_binary
-gain_10 ~ treatment_binary
-loss_10 ~ treatment_binary
-even_transform_10 ~ treatment_binary
-MRSc_10 ~ treatment_binary
-S_transform_10 ~ treatment_binary
-
-#covariances
-gain_10~~loss_10
-gain_10~~even_transform_10
-gain_10~~MRSc_10
-gain_10~~S_transform_10
-loss_10~~even_transform_10
-loss_10~~MRSc_10
-loss_10~~S_transform_10
-even_transform_10~~MRSc_10
-even_transform_10~~S_transform_10
-MRSc_10~~S_transform_10'
-
-correModel10Fit <- sem(correModel10, data=correSEMdata10, meanstructure=TRUE)
-# adjusting for nested design
-design <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata10)
-model10Fit <- lavaan.survey(lavaan.fit=correModel10Fit, survey.design=design)
-summary(model10Fit, standardize=T)
-modificationIndices10 <- modindices(model10Fit, sort.=TRUE, minimum.value=5) #modification indices
-print(modificationIndices10[modificationIndices10$op == "~",])
-print(modificationIndices10[modificationIndices10$op == "~~",])
-semPaths(model10Fit, 'Standardized', 'Estimates', layout='tree5')
-
-
-# #Model 2 - remove mean change, and look at direct effects of community metrics on ANPP change
-# correModel2 <- 'anpp_transform ~ gain + loss + even_transform + MRSc + S_transform + physiology_latent
-#                 physiology_latent =~ treatment
-#                 gain ~ treatment
-#                 loss ~ treatment
-#                 even_transform ~ treatment
-#                 MRSc ~ treatment
-#                 S_transform ~ treatment'
-# correModel2Fit <- sem(correModel2, data=correSEMdata, meanstructure=TRUE)
-# # adjusting for nested design
-# surveyDesign <- svydesign(ids=~site_code, nest=TRUE, data=correSEMdata)
-# survey2Fit <- lavaan.survey(lavaan.fit=correModel2Fit, survey.design=surveyDesign)
-# survey2Fit  #gives chi-square
-# summary(survey2Fit)
-# modificationIndices2 <- modindices(survey2Fit) #modification indices
-# print(modificationIndices2[modificationIndices2$op == "~",])
-# print(modificationIndices2[modificationIndices2$op == "~~",])
-
-
-
-
-
-#######OPTION 3: use change between treatment and control plots in each year (horizontal arrows); can't include treatment explicitly, as it is used to calculate difference at each time point---------------------------------------
-####data input
-#community data
-correCommChange <- read.csv('CORRE_ContTreat_Compare_OCT2017.csv')%>%
-  select(-X)
-#anpp data
-correANPPchange <- read.csv('ForBayesianAnalysisANPP_Oct2017.csv')%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
-  select(-X)
 #merge
 correSEMdata <- correANPPchange%>%
   left_join(correCommChange)%>%
   na.omit()%>%
   #transform to improve normality
-  mutate(mean_change_transform=sqrt(mean_change), PCEvendiff_transform=log(PCEvendiff+1-min(PCEvendiff)),anpp_PC_transform=log(anpp_PC+1-min(anpp_PC)))
+  mutate(mean_change_transform=sqrt(mean_change), Ed_transform=log10(as.numeric(Ed)), Sd_transform=log10(as.numeric(Sd)+1), anpp_PC_transform=log10(anpp_PC+1-min(anpp_PC)))
 #all of these compare treatment to control!
 
+
 ###exploratory correlations and histograms (all variables compare treatment to control plots)
 dataVis <- correSEMdata%>%
-  select(anpp_PC_transform, mean_change_transform, PCSdiff, PCEvendiff_transform, MRSc_diff, spdiffc) #make visualization dataframe
+  select(anpp_PC_transform, mean_change_transform, Sd_transform, Ed_transform, Rd, spd) #make visualization dataframe
 chart.Correlation(dataVis, histogram=T, pch=19)
 
+# #detour: are sites with lower gamma diversity more prone to high Ed?
+# siteInfo <- read.csv('SiteExperimentDetails_Dec2016.csv')%>%
+#   left_join(correSEMdata)
+# with(siteInfo, plot(Ed~rrich)) #yes! but we can transform.
 
-##add treatment info to get binary treatments of various manipulation types
-trt <- read.csv('ExperimentInformation_May2017.csv')%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
-  select(-site_code, -project_name, -community_type, -treatment_year, -public, -plot_mani)
 
-#subset out anything without 10 years
-numYears <- correSEMdata%>%
-  select(site_code, project_name, community_type, treatment, treatment_year)%>%
-  group_by(site_code, project_name, community_type, treatment)%>%
-  summarise(num_years=length(treatment_year))
-
-#subset out anything without years 1-10 of data
-correSEMdataTrt10 <- correSEMdata%>%
-  left_join(trt)%>%
-  mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
-  left_join(numYears)%>%
-  filter(num_years>9&project_name!='TMECE'&project_name!='RaMPs')%>%
-  mutate(test=1)
-
-#write.csv(correSEMdataTrt10, 'SEM_10yr.csv')
-
-#check the subset
-ggplot(data=correSEMdataTrt, aes(x=treatment_year, y=test)) +
-  geom_line() +
-  facet_wrap(~site_project_comm)
 
 #keep all data
 correSEMdataTrt <- correSEMdata%>%
   left_join(trt)%>%
-  mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))
+  #drop successional and pulse treatments
+  filter(successional!=1, pulse!=1)%>%
+  mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt+drought_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
+  na.omit()
 
-#write.csv(correSEMdataTrt, 'SEM_allyr.csv')
+#get treatment types
+trtInteractions <- read.csv('treatment interactions_11152017.csv')%>%
+  select(site_code, project_name, community_type, treatment, trt_type)
+trtInteractionsANPP <- correSEMdataTrt%>%
+  left_join(trtInteractions)
+
+##anpp change through time by trt type
+#all yrs
+ggplot(data=trtInteractionsANPP, aes(x=treatment_year, y=anpp_PC_transform)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('log ANPP (%) Difference')
+ggplot(data=subset(trtInteractionsANPP, treatment_year<11), aes(x=treatment_year, y=anpp_PC_transform)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('log ANPP (%) Difference')
+#export at 1000 x 800
+
+
+
+###anpp change correlations
+#with mean_change
+anpp_mean_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+anpp_mean_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=mean_change_transform, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('Community Difference') + ylim(0,0.7) + xlim(0,1)
+#with N
+anpp_n_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+anpp_n_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=n, y=anpp_PC_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('ANPP Difference') + xlab('N') + ylim(0,0.7) + xlim(0,60)
+
+pushViewport(viewport(layout=grid.layout(10,2)))
+print(anpp_mean_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(anpp_mean_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(anpp_mean_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 1))
+print(anpp_mean_y4, vp=viewport(layout.pos.row = 4, layout.pos.col = 1))
+print(anpp_mean_y5, vp=viewport(layout.pos.row = 5, layout.pos.col = 1))
+print(anpp_mean_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 1))
+print(anpp_mean_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 1))
+print(anpp_mean_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 1))
+print(anpp_mean_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 1))
+print(anpp_mean_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 1))
+print(anpp_n_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
+print(anpp_n_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 2))
+print(anpp_n_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 2))
+print(anpp_n_y4, vp=viewport(layout.pos.row = 4, layout.pos.col = 2))
+print(anpp_n_y5, vp=viewport(layout.pos.row = 5, layout.pos.col = 2))
+print(anpp_n_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 2))
+print(anpp_n_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 2))
+print(anpp_n_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 2))
+print(anpp_n_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 2))
+print(anpp_n_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 2))
+#export at 2000 x 4000
+
+
+###Community Change correlations
+#with mean_change
+mean_Rd_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+mean_Rd_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=Rd, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('Rd') + ylim(0,1) + xlim(0,0.41)
+#with N
+mean_n_y1 <- ggplot(data=subset(correSEMdataTrt, treatment_year==1), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y2 <- ggplot(data=subset(correSEMdataTrt, treatment_year==2), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y3 <- ggplot(data=subset(correSEMdataTrt, treatment_year==3), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y4 <- ggplot(data=subset(correSEMdataTrt, treatment_year==4), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y5 <- ggplot(data=subset(correSEMdataTrt, treatment_year==5), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y6 <- ggplot(data=subset(correSEMdataTrt, treatment_year==6), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y7 <- ggplot(data=subset(correSEMdataTrt, treatment_year==7), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y8 <- ggplot(data=subset(correSEMdataTrt, treatment_year==8), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y9 <- ggplot(data=subset(correSEMdataTrt, treatment_year==9), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+mean_n_y10 <- ggplot(data=subset(correSEMdataTrt, treatment_year==10), aes(x=n, y=mean_change_transform)) + 
+  geom_point() +
+  geom_smooth(method='lm', se=F) +
+  ylab('Community Difference') + xlab('N') + ylim(0,1) + xlim(0,60)
+
+pushViewport(viewport(layout=grid.layout(10,2)))
+print(mean_Rd_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(mean_Rd_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(mean_Rd_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 1))
+print(mean_Rd_y4, vp=viewport(layout.pos.row = 4, layout.pos.col = 1))
+print(mean_Rd_y5, vp=viewport(layout.pos.row = 5, layout.pos.col = 1))
+print(mean_Rd_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 1))
+print(mean_Rd_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 1))
+print(mean_Rd_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 1))
+print(mean_Rd_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 1))
+print(mean_Rd_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 1))
+print(mean_n_y1, vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
+print(mean_n_y2, vp=viewport(layout.pos.row = 2, layout.pos.col = 2))
+print(mean_n_y3, vp=viewport(layout.pos.row = 3, layout.pos.col = 2))
+print(mean_n_y4, vp=viewport(layout.pos.row = 4, layout.pos.col = 2))
+print(mean_n_y5, vp=viewport(layout.pos.row = 5, layout.pos.col = 2))
+print(mean_n_y6, vp=viewport(layout.pos.row = 6, layout.pos.col = 2))
+print(mean_n_y7, vp=viewport(layout.pos.row = 7, layout.pos.col = 2))
+print(mean_n_y8, vp=viewport(layout.pos.row = 8, layout.pos.col = 2))
+print(mean_n_y9, vp=viewport(layout.pos.row = 9, layout.pos.col = 2))
+print(mean_n_y10, vp=viewport(layout.pos.row = 10, layout.pos.col = 2))
+#export at 2000 x 4000
 
 ###all data-----------
-#put drought into "other_trt" because because long term experiments don't have drought
+#drought and irrigation are considered negative and positive precip
 correModel <-  '
-anpp_PC_transform ~ mean_change_transform + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-mean_change_transform ~ PCSdiff + spdiffc + PCEvendiff_transform + MRSc_diff + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-PCSdiff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-spdiffc ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-PCEvendiff_transform ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-MRSc_diff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+anpp_PC_transform ~ mean_change_transform + n + p + k + CO2 + precip + other_trt
+mean_change_transform ~ Sd_transform + Ed_transform + Rd + spd + n + p + k + CO2 + precip + other_trt
+Sd_transform ~ n + p + k + CO2 + precip + other_trt
+Ed_transform ~ n + p + k + CO2 + precip + other_trt
+Rd ~ n + p + k + CO2 + precip + other_trt
+spd ~ n + p + k + CO2 + precip + other_trt
 
 #covariances
-PCSdiff~~spdiffc
-PCSdiff~~PCEvendiff_transform
-PCSdiff~~MRSc_diff
-spdiffc~~PCEvendiff_transform
-spdiffc~~MRSc_diff
-PCEvendiff_transform~~MRSc_diff
+Sd_transform~~Ed_transform
+Sd_transform~~Rd
+Sd_transform~~spd
+Ed_transform~~Rd
+Ed_transform~~spd
+Rd~~spd
 '
 #year 1
 correModelFit <- sem(correModel, data=subset(correSEMdataTrt, treatment_year==1), meanstructure=TRUE)
@@ -613,51 +451,109 @@ stdEst10 <- parameterEstimates(survey10Fit, standardized=TRUE)%>%
 #bind together output from years 1-10
 stdEst <- rbind(stdEst1, stdEst2, stdEst3, stdEst4, stdEst5, stdEst6, stdEst7, stdEst8, stdEst9, stdEst10)%>%
   na.omit()%>%
-  mutate(std_alt=ifelse(pvalue>0.1, 0, std.all), std_weighted=std.all/se, est_alt=ifelse(pvalue>0.1, 0, est), est_weighted=est/se, trt_alt=ifelse(rhs=='CO2_trt'|rhs=='irr_trt'|rhs=='k_trt'|rhs=='n_trt'|rhs=='other_trt'|rhs=='p_trt', 'physiology', 'mean_change_transform'))
+  mutate(std_alt=ifelse(pvalue>0.1, 0, std.all), std_weighted=std.all/se, est_alt=ifelse(pvalue>0.1, 0, est), est_weighted=est/se, trt_alt=ifelse(rhs=='CO2'|rhs=='precip'|rhs=='k'|rhs=='n'|rhs=='other_trt'|rhs=='p', 'physiology', 'mean_change_transform'))
 
 #all years figs-----------
 #std.all includes non-sig effects
 #std_alt sets non-sig effects to 0
 #est is non-standardized effects
 #est_alt sets non-sig non-standardized effects to 0
-ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=treatment_year, y=est, color=rhs)) +
-  geom_point(size=5) +
-  geom_smooth(method='lm', size=3, se=F) +
-  ylab('Effect Size') +
-  xlab('Treatment Year')
+ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=treatment_year, y=std.all)) +
+  geom_point(size=3) +
+  geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se), width=0.5) +
+  geom_line(size=2) +
+  # geom_smooth(method='lm', size=3, se=F) +
+  ylab('ANPP Difference Effect Size') +
+  xlab('Treatment Year') +
+  geom_hline(yintercept=0) +
+  facet_wrap(~rhs) +
+  theme(strip.text=element_text(size=24))
 
-ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=treatment_year, y=std.all, color=rhs)) +
-  geom_point(size=5) +
-  geom_line(size=3) +
-  ylab('Effect Size') +
-  xlab('Treatment Year')
+ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=treatment_year, y=std.all)) +
+  geom_point(size=3) +
+  geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se), width=0.2) +
+  geom_line(size=2) +
+  ylab('Community Difference Effect Size') +
+  xlab('Treatment Year') +
+  geom_hline(yintercept=0) +
+  facet_wrap(~rhs) +
+  theme(strip.text=element_text(size=24))
 
-ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='MRSc_diff'&rhs!='PCEvendiff_transform'&rhs!='spdiffc'&rhs!='PCSdiff'), aes(x=treatment_year, y=est_alt, color=rhs)) +
-  geom_point(size=5) +
-  geom_line(size=3) +
-  facet_wrap(~lhs)
+ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='Sd_transform'&rhs!='Ed_transform'&rhs!='Rd'&rhs!='spd'), aes(x=treatment_year, y=std.all, color=rhs)) +
+  geom_point(size=3) +
+  geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se)) +
+  geom_line(size=2) +
+  ylab('Effect Size') +
+  xlab('Treatment Year') +
+  geom_hline(yintercept=0) +
+  facet_wrap(~lhs) +
+  theme(strip.text=element_text(size=24))
+
+# #bin into first and last 5 years for bar graphs
+# stdEstBin <- stdEst%>%
+#   mutate(temporal_bin=ifelse(treatment_year>5, '1-5', '6-10'))%>%
+#   group_by(lhs, rhs, temporal_bin)%>%
+#   summarise(est_mean=mean(est), est_sd=sd(est), est_N=n(), std.all_mean=mean(std.all), std.all_sd=sd(std.all), std.all_N=n())%>%
+#   ungroup()
+# 
+# ggplot(data=subset(stdEstBin, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
+#   geom_bar(stat='identity', position=position_dodge()) +
+#   geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
+#   ylab('Effect Size') +
+#   xlab('Treatment Year')
+# 
+# ggplot(data=subset(stdEstBin, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
+#   geom_bar(stat='identity', position=position_dodge()) +
+#   geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
+#   geom_line(size=3) +
+#   ylab('Effect Size') +
+#   xlab('Treatment Year')
+# 
+# ggplot(data=subset(stdEstBin, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='Sd_transform'&rhs!='Ed_transform'&rhs!='Rd'&rhs!='spd'), aes(x=temporal_bin, y=std.all_mean, color=rhs)) +
+#   geom_bar(stat='identity', position=position_dodge()) +
+#   geom_errorbar(aes(ymin=std.all_mean-(std.all_sd/sqrt(std.all_N)), ymax=std.all_mean+(std.all_sd/sqrt(std.all_N))), position=position_dodge(0.9), width=0.2) +
+#   geom_line(size=3) +
+#   facet_wrap(~lhs)
+
+
+
+
 
 
 
 ###only 10 year datasets-----------
-#put drought into "other_trt" because because long term experiments don't have drought
+#subset out anything without 10 years
+numYears <- correSEMdata%>%
+  select(site_code, project_name, community_type, treatment, treatment_year)%>%
+  group_by(site_code, project_name, community_type, treatment)%>%
+  summarise(num_years=length(treatment_year))
+
+#subset out anything without years 1-10 of data
+correSEMdataTrt10 <- correSEMdata%>%
+  left_join(trt)%>%
+  mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
+  left_join(numYears)%>%
+  filter(num_years>9&project_name!='TMECE'&project_name!='RaMPs')%>%
+  na.omit()
+
+#precip becomes an "other_trt" because only 2 trts manipulate precip (knz irg upland and lowland)
+
 correModel <-  '
-anpp_PC_transform ~ mean_change_transform + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-mean_change_transform ~ PCSdiff + spdiffc + PCEvendiff_transform + MRSc_diff + n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-PCSdiff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-spdiffc ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-PCEvendiff_transform ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
-MRSc_diff ~ n_trt + p_trt + k_trt + CO2_trt + irr_trt + other_trt
+anpp_PC_transform ~ mean_change_transform + n + p + k + CO2 + other_trt
+mean_change_transform ~ Sd_transform + Ed_transform + Rd + spd + n + p + k + CO2 + other_trt
+Sd_transform ~ n + p + k + CO2 + other_trt
+Ed_transform ~ n + p + k + CO2 + other_trt
+Rd ~ n + p + k + CO2 + other_trt
+spd ~ n + p + k + CO2 + other_trt
 
 #covariances
-PCSdiff~~spdiffc
-PCSdiff~~PCEvendiff_transform
-PCSdiff~~MRSc_diff
-spdiffc~~PCEvendiff_transform
-spdiffc~~MRSc_diff
-PCEvendiff_transform~~MRSc_diff
+Sd_transform~~Ed_transform
+Sd_transform~~Rd
+Sd_transform~~spd
+Ed_transform~~Rd
+Ed_transform~~spd
+Rd~~spd
 '
-
 #year 1
 correModelFit <- sem(correModel, data=subset(correSEMdataTrt10, treatment_year==1), meanstructure=TRUE)
 surveyDesign <- svydesign(ids=~site_project_comm, nest=TRUE, data=subset(correSEMdataTrt10, treatment_year==1))
@@ -754,15 +650,25 @@ stdEst <- rbind(stdEst1, stdEst2, stdEst3, stdEst4, stdEst5, stdEst6, stdEst7, s
   mutate(std_alt=ifelse(pvalue>0.05, 0, std.all))
 
 #10 year figs-----------
-ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=treatment_year, y=std_alt, color=rhs)) +
-  geom_point(size=5) +
-  geom_line(size=3)
+ggplot(data=subset(stdEst, lhs=='anpp_PC_transform'&rhs!=''&rhs!='anpp_PC_transform'), aes(x=treatment_year, y=std.all)) +
+  geom_point(size=3) +
+  geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se)) +
+  geom_line(size=2) +
+  ylab('ANPP Difference Effect Size') + xlab('Treatment Year') +
+  geom_hline(yintercept=0) +
+  facet_wrap(~rhs)
 
-ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=treatment_year, y=std_alt, color=rhs)) +
-  geom_point(size=5) +
-  geom_line(size=3)
+ggplot(data=subset(stdEst, lhs=='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'), aes(x=treatment_year, y=std.all)) +
+  geom_point(size=3) +
+  geom_errorbar(aes(ymin=std.all-se, ymax=std.all+se)) +
+  geom_line(size=2) +
+  ylab('Community Difference Effect Size') + xlab('Treatment Year') +
+  geom_hline(yintercept=0) +
+  facet_wrap(~rhs)
 
-ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='MRSc_diff'&rhs!='PCEvendiff_transform'&rhs!='spdiffc'&rhs!='PCSdiff'), aes(x=treatment_year, y=std_alt, color=rhs)) +
-  geom_point(size=5) +
-  geom_line(size=3) +
+ggplot(data=subset(stdEst, lhs!='anpp_PC_transform'&lhs!='mean_change_transform'&rhs!=''&rhs!='anpp_PC_transform'&rhs!='mean_change_transform'&rhs!='Rd'&rhs!='Ed_transform'&rhs!='Sd_transform'&rhs!='spd'), aes(x=treatment_year, y=std.all, color=rhs)) +
+  geom_point(size=3) +
+  geom_line(size=2) +
+  ylab('Effect Size') + xlab('Treatment Year') +
+  geom_hline(yintercept=0) +
   facet_wrap(~lhs)
