@@ -33,25 +33,25 @@ metricsTrt <- metrics%>%
   left_join(trt)
 
 #lines of change for KBS across all treatements
-metricsSFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KBS_T7_0'), aes(x=treatment_year, y=richness_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+metricsSFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KBS_T7_0'), aes(x=treatment_year, y=abs(richness_change), color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsEFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KBS_T7_0'), aes(x=treatment_year, y=evenness_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsRFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KBS_T7_0'), aes(x=treatment_year, y=rank_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsLFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KBS_T7_0'), aes(x=treatment_year, y=losses, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsGFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KBS_T7_0'), aes(x=treatment_year, y=gains, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 pushViewport(viewport(layout=grid.layout(5,1)))
 print(metricsSFig, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
@@ -62,25 +62,25 @@ print(metricsGFig, vp=viewport(layout.pos.row = 5, layout.pos.col = 1))
 
 
 #lines of change for KUFS across all treatements
-metricsSFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KUFS_E6_type2'), aes(x=treatment_year, y=richness_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+metricsSFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KUFS_E6_type2'), aes(x=treatment_year, y=abs(richness_change), color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsEFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KUFS_E6_type2'), aes(x=treatment_year, y=evenness_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsRFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KUFS_E6_type2'), aes(x=treatment_year, y=rank_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsLFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KUFS_E6_type2'), aes(x=treatment_year, y=losses, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsGFig <- ggplot(data=subset(metricsTrt, site_project_comm=='KUFS_E6_type2'), aes(x=treatment_year, y=gains, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 pushViewport(viewport(layout=grid.layout(5,1)))
 print(metricsSFig, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
@@ -90,27 +90,58 @@ print(metricsLFig, vp=viewport(layout.pos.row = 4, layout.pos.col = 1))
 print(metricsGFig, vp=viewport(layout.pos.row = 5, layout.pos.col = 1))
 
 
-
 #lines of change for NANT across all treatements
-metricsSFig <- ggplot(data=subset(metricsTrt, site_project_comm=='NANT_wet_Nant-Mrsh_BSA_S'), aes(x=treatment_year, y=richness_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+metricsSFig <- ggplot(data=subset(metricsTrt, site_project_comm=='NANT_wet_Nant-Mrsh_BSA_S'), aes(x=treatment_year, y=abs(richness_change), color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsEFig <- ggplot(data=subset(metricsTrt, site_project_comm=='NANT_wet_Nant-Mrsh_BSA_S'), aes(x=treatment_year, y=evenness_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsRFig <- ggplot(data=subset(metricsTrt, site_project_comm=='NANT_wet_Nant-Mrsh_BSA_S'), aes(x=treatment_year, y=rank_change, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsLFig <- ggplot(data=subset(metricsTrt, site_project_comm=='NANT_wet_Nant-Mrsh_BSA_S'), aes(x=treatment_year, y=losses, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 metricsGFig <- ggplot(data=subset(metricsTrt, site_project_comm=='NANT_wet_Nant-Mrsh_BSA_S'), aes(x=treatment_year, y=gains, color=treatment)) +
-  geom_point() +
-  geom_smooth(method='loess', se=F, size=2) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
+  geom_abline(slope=0, intercept=0)
+pushViewport(viewport(layout=grid.layout(5,1)))
+print(metricsSFig, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(metricsEFig, vp=viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(metricsRFig, vp=viewport(layout.pos.row = 3, layout.pos.col = 1))
+print(metricsLFig, vp=viewport(layout.pos.row = 4, layout.pos.col = 1))
+print(metricsGFig, vp=viewport(layout.pos.row = 5, layout.pos.col = 1))
+
+
+pplots <- metricsTrt%>%
+  filter(treatment=='N1P0'|treatment=='N2P0'|treatment=='N2P3')
+
+#lines of change for pplots across all treatements
+metricsSFig <- ggplot(data=pplots, aes(x=treatment_year, y=abs(richness_change), color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
+  geom_abline(slope=0, intercept=0)
+metricsEFig <- ggplot(data=pplots, aes(x=treatment_year, y=evenness_change, color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
+  geom_abline(slope=0, intercept=0)
+metricsRFig <- ggplot(data=pplots, aes(x=treatment_year, y=rank_change, color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
+  geom_abline(slope=0, intercept=0)
+metricsLFig <- ggplot(data=pplots, aes(x=treatment_year, y=losses, color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
+  geom_abline(slope=0, intercept=0)
+metricsGFig <- ggplot(data=pplots, aes(x=treatment_year, y=gains, color=treatment)) +
+  # geom_point() +
+  geom_smooth(method='loess', se=T, size=2) +
   geom_abline(slope=0, intercept=0)
 pushViewport(viewport(layout=grid.layout(5,1)))
 print(metricsSFig, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
