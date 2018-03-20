@@ -209,3 +209,47 @@ print(lrRFig, vp=viewport(layout.pos.row = 3, layout.pos.col = 1))
 print(lrLFig, vp=viewport(layout.pos.row = 4, layout.pos.col = 1))
 print(lrGFig, vp=viewport(layout.pos.row = 5, layout.pos.col = 1))
 
+
+##get slopes for each treatment including controls
+spc<-unique(anpp_precip$spc_trt)
+lm.slopes<-data.frame()
+for (i in 1:length(spc)){
+  subset<-anpp_precip%>%
+    filter(spc_trt==spc[i])
+  test.lm<-lm(anpp~precip_mm, data=subset)
+  output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm), 
+                        treatment=unique(subset$treatment), 
+                        plot_mani=unique(subset$plot_mani), 
+                        est=summary(test.lm)$coef["precip_mm", c("Estimate")], 
+                        st.er=summary(test.lm)$coef["precip_mm", c("Std. Error")], 
+                        p.val=summary(test.lm)$coef["precip_mm","Pr(>|t|)"])
+  lm.slopes<-rbind(lm.slopes, output.lm)
+}
+
+##test for sig diff between trt-control slopes
+##there are so few differences that not going to pay attention to this.
+
+# spc2<-unique(anpp_precip$site_project_comm)
+# test.lm<-data.frame()
+# for (i in 1:length(spc2)){
+#   subset<-anpp_precip%>%
+#     filter(site_project_comm==spc2[i])
+#   control<-subset%>%
+#     filter(plot_mani==0)
+#   treat<-subset%>%
+#   filter(plot_mani!=0)
+# trt_list<-unique(treat$treatment)
+# for (i in 1:length(trt_list)){
+#   subset2<-treat%>%
+#     filter(treatment==trt_list[i])
+#   trt<-trt_list[i]
+#   ct<-rbind(subset2, control)
+#   ct.lm<-lm(anpp~precip_mm*trt, data=ct)
+#   output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm), 
+#                         treatment=trt, 
+#                         est=summary(ct.lm)$coef["precip_mm:trtT", c("Estimate")],
+#                         val=summary(ct.lm)$coef["precip_mm:trtT","Pr(>|t|)"])
+#   test.lm<-rbind(test.lm, output.lm)
+# }
+# }
+
