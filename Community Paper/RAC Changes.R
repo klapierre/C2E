@@ -1,15 +1,14 @@
+library(devtools)
+install_github("mavolio/codyn", ref = "RACs_cleaner")
 library(tidyverse)
 library(gridExtra)
-library(reldist)
 library(grid)
 library(gtable)
 library(codyn)
 library(vegan)
-library(Kendall)
 
 
 #Files from home
-
 corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -84,9 +83,6 @@ sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
   filter(plot_id!=2)
 
-corredat<-rbind(corredat1, azi, jrn, knz, sak)%>%
-  filter(!is.na(genus_species))##get rid of problem with RIO
-
 #problems
 #gvn face - only 2 years of data so will only have one point for the dataset.
 
@@ -126,6 +122,24 @@ for (i in 1:length(spc)){
 }
 
 write.csv(delta_rac, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Feb2018_allReplicates.csv")
+
+
+write.csv(delta_rac, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018.csv")
+
+####based on treatment_year
+spc<-unique(corredat$site_project_comm)
+delta_rac<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
+  out$site_project_comm<-spc[i]
+  
+  delta_rac<-rbind(delta_rac, out)
+}
+write.csv(delta_rac, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018_trtyr.csv")
 
 ###calculating multivariate changes
 spc<-unique(corredat$site_project_comm)
