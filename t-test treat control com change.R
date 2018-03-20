@@ -26,18 +26,31 @@ for (i in 1:length(spc)){
   
   treat_list<-unique(subset(subset, plot_mani>0)$treatment)
   
-  for(i in 1:length(treat_list)) {
+  for(j in 1:length(treat_list)) {
+    spc1<-spc[i]
+    trt <- treat_list[j]
+    
     subset_trt<-subset%>%
-      filter(treatment==treat_list[i])
+      filter(treatment==treat_list[j])
     
     #dataset of two treatments    
     subset_t12<-rbind(control, subset_trt)
     
     out<-t.test(composition_change~treatment, data=subset_t12)
 
-    output<-as.data.frame(site_project_comm = spc[i],
-                         treatment = treat_list[i],
+    output<-data.frame(site_project_comm = spc1,
+                         treatment = trt,
                          p.value = out$p.value)
   
     ttest_output <- rbind(ttest_output, output)
   }}
+
+##designate if sig
+sig<-ttest_output%>%
+  mutate(sig = ifelse(p.value < 0.1, 1, 0))%>%
+  filter(sig ==1)%>%
+  mutate(method = "ttest")%>%
+  select(-p.value, -sig)
+
+write.csv(sig, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/sig_ttest.csv")
+          
