@@ -15,6 +15,85 @@ theme_update(axis.title.x=element_text(size=20, vjust=-0.35), axis.text.x=elemen
              panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
              legend.title=element_blank(), legend.text=element_text(size=20))
 
+
+#plotting treatment and control separately for only treatments that changed the community according to the bayesian analysis in kim's paper
+metrics <- read.csv('CORRE_RACS_Subset_Bayes.csv')
+rawAbund <- read.csv('SpeciesRawAbundance_Oct2017.csv')%>%
+  select(-X, -abundance, -genus_species, -block, -calendar_year, -treatment_year)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
+  unique()
+trt <- read.csv('ExperimentInformation_Nov2017.csv')%>%
+  mutate(site_project_comm=as.factor(paste(site_code, project_name, community_type, sep='_')))%>%
+  select(-X)
+
+forplotting=merge(metrics, rawAbund, by=c("plot_id", "site_project_comm", "treatment", "project_name", "community_type", "site_code")) 
+forplotting=merge(forplotting, trt, by=c("site_project_comm", "treatment", "treatment_year",  "project_name", "community_type", "site_code", "plot_mani")) 
+forplotting$X=NULL
+forplotting$CorT=ifelse(forplotting$plot_mani<1, "C", "T")
+
+#box plots (Fig 1a)
+
+subset<-forplotting%>%
+  group_by(site_project_comm, treatment, plot_id)%>%
+  summarize(num=length(treatment_year))
+
+forplotting2<-forplotting%>%
+  left_join(subset)
+
+ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(richness_change), color=CorT)) +
+  geom_boxplot() +
+  geom_abline(slope=0, intercept=0) + 
+  facet_wrap(~site_project_comm, scales="free_x") #+ coord_cartesian(ylim=c(0,1))
+ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(evenness_change), color=CorT)) +
+  geom_boxplot() +
+  geom_abline(slope=0, intercept=0) + 
+  facet_wrap(~site_project_comm, scales="free") 
+ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(rank_change), color=CorT)) +
+  geom_boxplot() +
+  geom_abline(slope=0, intercept=0) + 
+  facet_wrap(~site_project_comm, scales="free_x")
+ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(gains), color=CorT)) +
+  geom_boxplot() +
+  geom_abline(slope=0, intercept=0) + 
+  facet_wrap(~site_project_comm, scales="free_x")
+ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(losses), color=CorT)) +
+  geom_boxplot() +
+  geom_abline(slope=0, intercept=0) + 
+  facet_wrap(~site_project_comm, scales="free_x")
+
+#lines (Fig 2a)
+
+forplotting.rand=forplotting[forplotting$site_project_comm %in% c("TAS_FACE_0", "MNR_watfer_0", "LEFT_PME_0", "LG_HerbWood_0", "ARC_MAT2_0", "SCL_TER_0"),]
+
+ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(richness_change), color=treatment)) +
+  geom_point() +
+  geom_smooth(method="loess") +
+  geom_abline(slope=0, intercept=0) +
+  facet_wrap(~site_project_comm, scales="free")
+ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(evenness_change), color=treatment)) +
+  geom_point() +
+  geom_smooth(method="loess") +
+  geom_abline(slope=0, intercept=0) +
+  facet_wrap(~site_project_comm, scales="free")
+ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(rank_change), color=treatment)) +
+  geom_point() +
+  geom_smooth(method="loess") +
+  geom_abline(slope=0, intercept=0) +
+  facet_wrap(~site_project_comm, scales="free")
+ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(gains), color=treatment)) +
+  geom_point() +
+  geom_smooth(method="loess") +
+  geom_abline(slope=0, intercept=0) +
+  facet_wrap(~site_project_comm, scales="free")
+ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(losses), group=treatment)) +
+  geom_point() +
+  geom_smooth(method="loess", aes(color=CorT)) +
+  geom_abline(slope=0, intercept=0) +
+  facet_wrap(~site_project_comm, scales="free")
+
+
+
+#plotting LRR for all site_project_comm
 lnRR <- read.csv('CORRE_RAC_LogRR_March2018_trtyr.csv')
 metrics <- read.csv('CORRE_RAC_Metrics_March2018_trtyr.csv')
 
