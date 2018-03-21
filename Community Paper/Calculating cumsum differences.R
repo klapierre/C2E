@@ -1,22 +1,154 @@
-?cumsum
-rm(list=ls())
-df <- data.frame(group=c(rep("a",6),rep("b",6)), a=1:6, b=1:12)
+### Calculating cumulative sum of change metrics
+### Author: Keivn Wilcox (wilcoxkr@gmail.com)
+###
+### Last updated March 21, 2018
 
-### pull # of comparisons
-cumsum(df$a)
-
-g_csum <- df %>%
-  group_by(group) %>%
-  mutate(cumsum=cumsum(b))
-
+### Set up workspace
 library(tidyverse)
-library(ggplot2)
+library(ggthemes)
+library(RColorBrewer)
 
-rr_full <- read.csv("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_LogRR_March2018_trtyr.csv")
+setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
 
-site_project_comm_vec <- unique(rr_full$site_project_comm)
+### Read in data 
+change_metrics_bayes <- read.csv("CORRE_RACS_Subset_Bayes.csv")
 
-rr_test <- filter(rr_full, site_project_comm==site_project_comm_vec[1])
+### Calculate cumulative sums of each metric
+change_cumsum <- change_metrics_bayes %>%
+  group_by(site_project_comm, treatment, plot_id) %>%
+  mutate(richness_change_abs = abs(richness_change)) %>%
+  mutate(evenness_change = abs(evenness_change)) %>%
+  mutate_at(vars(richness_change, richness_change_abs, evenness_change, rank_change, gains, losses), funs(cumsum) ) %>%
+  mutate(control = ifelse(plot_mani==0,"control","treatment"))
 
-rr_cumsum <- rr_test %>%
-  
+### plot - faceted by site_project_comm and color by treatment
+## absolute value of richness change
+absrich_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=richness_change_abs, group=treatment)) +
+  geom_point(aes(col=control),pch=1) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+##  richness change
+rich_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=richness_change, group=treatment)) +
+  geom_point(aes(col=control),pch=1) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## evenness change
+even_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=evenness_change, group=treatment)) +
+  geom_point(aes(col=control),pch=1) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## rank change
+rank_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=rank_change, group=treatment)) +
+  geom_point(aes(col=control),pch=1) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## gains change
+gains_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=gains, group=treatment)) +
+  geom_point(aes(col=control),pch=1) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## losses change
+losses_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=losses, group=treatment)) +
+  geom_point(aes(col=control),pch=1) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+
+png(paste0("figures\\absrich cumsum plot_", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(absrich_plot)
+dev.off()
+
+png(paste0("figures\\rich cumsum plot_", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(rich_plot)
+dev.off()
+
+png(paste0("figures\\evenness cumsum plot_", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(even_plot)
+dev.off()
+
+png(paste0("figures\\rank cumsum plot_", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(rank_plot)
+dev.off()
+
+png(paste0("figures\\gains cumsum plot_", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(gains_plot)
+dev.off()
+
+png(paste0("figures\\losses cumsum plot_", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(losses_plot)
+dev.off()
+
+
+### plotting just trendlines
+## absolute value of richness change
+absrich_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=richness_change_abs, group=treatment)) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+##  richness change
+rich_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=richness_change, group=treatment)) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## evenness change
+even_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=evenness_change, group=treatment)) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## rank change
+rank_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=rank_change, group=treatment)) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## gains change
+gains_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=gains, group=treatment)) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+## losses change
+losses_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=losses, group=treatment)) +
+  geom_smooth(aes(col=control)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+
+png(paste0("figures\\absrich cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(absrich_plot2)
+dev.off()
+
+png(paste0("figures\\rich cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(rich_plot2)
+dev.off()
+
+png(paste0("figures\\evenness cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(even_plot2)
+dev.off()
+
+png(paste0("figures\\rank cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(rank_plot2)
+dev.off()
+
+png(paste0("figures\\gains cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(gains_plot2)
+dev.off()
+
+png(paste0("figures\\losses cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+print(losses_plot2)
+dev.off()
+
