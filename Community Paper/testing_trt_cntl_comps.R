@@ -101,13 +101,30 @@ ggplot(response_ratios, aes(x = treatment_year, y = ratio))+
   ylab(expression(paste("Glass's ", Delta)))+
   xlab("Treatment year")+
   theme_few()
+# ggsave(filename = paste0(data_dir,"figures/glass_by_metric.pdf"), height = 5, width = 8.5, units = "in")
 
-ggplot(response_ratios, aes(x = treatment_year, y = ratio, color = metric))+
-  # geom_point(aes(group = metric))+
-  geom_smooth(se = FALSE, method = "loess")+
-  facet_wrap(~id, scales = "free") +
-  theme_few()
-ggsave(filename = paste0(data_dir,"figures/glass_loess_large.pdf"), height = 15, width = 15, units = "in")
+# ggplot(response_ratios, aes(x = treatment_year, y = ratio, color = metric))+
+#   # geom_point(aes(group = metric))+
+#   geom_smooth(se = FALSE, method = "loess")+
+#   facet_wrap(~id, scales = "free") +
+#   theme_few()
+# ggsave(filename = paste0(data_dir,"figures/glass_loess_large.pdf"), height = 15, width = 15, units = "in")
 
 
+
+
+####
+####  GENERATE FAKE DATA TO GAIN INTUITION -------------------------------------
+####
+n <- 1000
+sd_c <- 1
+sd_t <- 1
+mu_c <- 10
+mu_t <- 14
+treatments <- rnorm(n,mu_t,sd_t)
+controls <- rnorm(n,mu_c,sd_c)
+glass_delta <- (mean(treatments) - mean(controls)) / sd_c
+
+plot(density(controls), xlim = c(8,20), main = paste("Glass's = ",round(glass_delta,2)))
+lines(density(treatments), lty=2)
 
