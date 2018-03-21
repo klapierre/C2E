@@ -149,13 +149,13 @@ for (i in 1:length(spc)){
   subset<-corredat%>%
     filter(site_project_comm==spc[i])
   
-  out<-multivariate_change(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment")
+  out<-centroid_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment")
   out$site_project_comm<-spc[i]
   
   delta_mult<-rbind(delta_mult, out)
 }
 
-write.csv(delta_mult, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_Mult_Metrics_Feb2018.csv")
+write.csv(delta_mult, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_March2018.csv")
 
 # ##getting the average for each treatment in a year
 # 
