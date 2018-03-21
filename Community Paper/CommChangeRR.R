@@ -12,8 +12,16 @@ theme_set(theme_bw(12))
 dat<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018_trtyr.csv")%>%
   select(-X)
 
-# dat_mult<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_Mult_Metrics_Feb2018.csv")%>%
-#   select(-X)
+dat_mult<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_March2018.csv")%>%
+select(-X)
+
+sig_exp <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatments_sig mult diff.csv")%>%
+  filter(variable=='mean')%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), bayesian_intercept=intercept, bayesian_linear=linear, bayesian_quadratic=quadratic, bayesian=1, any=(intercept+linear+quadratic))%>%
+  filter(any>0)%>%
+  ungroup()%>%
+  select(site_project_comm, treatment)
+
 
 plotid<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -26,6 +34,17 @@ trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformatio
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
+
+#filtering down to experiments and treatments that have sig change
+dat2<-dat%>%
+  left_join(plotid2)%>%
+  left_join(trt)%>%
+  right_join(sig_exp)
+
+
+write.csv(dat2, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Bayes.csv")
+
+unique(dat2$site_project_comm)
 
 dat1<-dat%>%
   left_join(plotid2)%>%
@@ -184,8 +203,8 @@ singleResource <- diff%>%
   select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, DS, DE, DR, DL, DG)
 
 #analysis 2: single non-resource
-singleNonresource <- logRR%>%
-  left_join(expInfo)%>%
+singleNonresource <- diff%>%
+  left_join(trt)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -195,11 +214,11 @@ singleNonresource <- logRR%>%
   #create categorical treatment type column
   mutate(trt_type=ifelse(burn==1, 'burn', ifelse(mow_clip==1, 'mow_clip', ifelse(herb_removal==1, 'herb_rem', ifelse(temp>0, 'temp', ifelse(plant_trt==1, 'plant_mani', 'other'))))))%>%
   #keep just relevent column names for this analysis
-  select(site_code, project_name, community_type, exp_year, treatment_year, calendar_year, treatment, trt_type, mean_change, S_PC, experiment_length, rrich, anpp, MAT, MAP)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, DS, DE, DR, DL, DG)
 
 #analysis 3: 2-way interactions
-twoWay <- ForAnalysis%>%
-  left_join(expInfo)%>%
+twoWay <- diff%>%
+  left_join(trt)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -211,11 +230,11 @@ twoWay <- ForAnalysis%>%
   #drop R*herb_removal (single rep)
   filter(trt_type!='R*herb_rem')%>%
   #keep just relevent column names for this analysis
-  select(site_code, project_name, community_type, exp_year, treatment_year, calendar_year, treatment, trt_type, mean_change, S_PC, experiment_length, rrich, anpp, MAT, MAP)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, DS, DE, DR, DL, DG)
 
 #analysis 4: 3+ way interactions
-threeWay <- ForAnalysis%>%
-  left_join(expInfo)%>%
+threeWay <- diff%>%
+  left_join(trt)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -227,7 +246,9 @@ threeWay <- ForAnalysis%>%
   #drop single all-nonresource treatment (NIN herbdiv 5NF)
   filter(trt_type!='all_nonresource')%>%
   #keep just relevent column names for this analysis
-  select(site_code, project_name, community_type, exp_year, treatment_year, calendar_year, treatment, trt_type, mean_change, S_PC, experiment_length, rrich, anpp, MAT, MAP)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, DS, DE, DR, DL, DG)
+
+
 
 ###figures for the treatments
 ##single resources
