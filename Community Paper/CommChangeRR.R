@@ -12,8 +12,11 @@ theme_set(theme_bw(12))
 dat<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018_trtyr.csv")%>%
   select(-X)
 
-# dat_mult<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/CORRE_Mult_Metrics_Feb2018.csv")%>%
-#   select(-X)
+dat_mult<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_March2018.csv")%>%
+select(-X)
+
+sig_exp <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatments_sig mult diff.csv")%>%
+  select(site_project_comm, treatment)
 
 plotid<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -27,13 +30,35 @@ trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformatio
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
+#filtering down to experiments and treatments that have sig change
+dat2<-dat%>%
+  left_join(plotid2)%>%
+  left_join(trt)%>%
+  right_join(sig_exp)
+
+sig_exp2<-sig_exp%>%
+  select(-treatment)%>%
+  unique()
+
+controls<-dat%>%
+  left_join(plotid2)%>%
+  left_join(trt)%>%
+  filter(plot_mani==0)%>%
+  right_join(sig_exp2)
+
+sig_exp_dat<-rbind(controls, dat2)
+
+write.csv(sig_exp_dat, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Bayes.csv")
+
+unique(dat2$site_project_comm)
+
 dat1<-dat%>%
   left_join(plotid2)%>%
   left_join(trt)
 
 ##overall what is the relationsip between the metrics
 #graphing this
-dat2<-dat1%>%
+dat3<-dat1%>%
   na.omit
 
 panel.pearson <- function(x, y, ...) {
@@ -42,13 +67,7 @@ panel.pearson <- function(x, y, ...) {
   text(horizontal, vertical, format(cor(x,y), digits=3, cex=10)) 
 }
 
-pairs(dat2[,c(3:7)], upper.panel = panel.pearson)
-
-ave<-dat1%>%
-  mutate_at(vars(richness_change, evenness_change, rank_change, gains, losses), abs)%>%
-  group_by(treatment_year, treatment_year2, site_project_comm, treatment, plot_mani)%>%
-  summarize_at(vars(richness_change, evenness_change, rank_change, gains, losses), funs(mean), na.rm = T)%>%
-  mutate(trt=ifelse(plot_mani==0, "control","treatment"))
+pairs(dat3[,c(3:7)], upper.panel = panel.pearson)
 
 # merged_data<-ave%>%
 #   left_join(dat_mult)
@@ -66,13 +85,22 @@ ave<-dat1%>%
 # summary(m2)
 # m2
 
-###do some log reponse ratio (natural log(T/C)) and add a constant for when 0 is present.
+####get average of all replicates in a treatment.
+ave<-sig_exp_dat%>%
+  mutate_at(vars(richness_change, evenness_change, rank_change, gains, losses), abs)%>%
+  group_by(treatment_year, treatment_year2, site_project_comm, treatment, plot_mani)%>%
+  summarize_at(vars(richness_change, evenness_change, rank_change, gains, losses), funs(mean), na.rm = T)%>%
+  mutate(trt=ifelse(plot_mani==0, "control","treatment"))
+
+
 control<-ave%>%
   filter(plot_mani==0)%>%
   ungroup()%>%
   mutate(C_S=richness_change, C_even=evenness_change, C_gain=gains, C_loss=losses, C_rank=rank_change)%>%
   select(site_project_comm, treatment_year, treatment_year2, C_S, C_even, C_gain, C_loss, C_rank)
 
+
+###do some log reponse ratio (natural log(T/C)) and add a constant for when 0 is present.
 # how much to add for when it is zero
 #rich
   rich <- ave$richness_change
@@ -121,42 +149,41 @@ logRR<-merge(ave, control, by=c("site_project_comm","treatment_year", "treatment
          lrG= log((gains1/C_gain1)))%>%
  select(site_project_comm, treatment_year, treatment_year2, treatment,lrS, lrE, lrR, lrL, lrG)
 
+
+###we do not like this because there are so many outliers when there is a zero in the dataset it really pulls it the data adding a lot of noise.
 write.csv(logRR, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_LogRR_March2018_trtyr.csv")
 
 #####doing difference
 diff<-merge(ave, control, by=c("site_project_comm","treatment_year", "treatment_year2"))%>%
   ungroup()%>%
   filter(plot_mani!=0)%>%
-  mutate(DS = richness_change - C_S,
-         DE = evenness_change - C_even,
-         DR = rank_change - C_rank,
-         DL= losses - C_loss,
-         DG= gains - C_gain)%>%
-  select(site_project_comm, treatment_year, treatment_year2, treatment,DS, DE, DR, DL, DG)%>%
+  mutate(D_Rich = richness_change - C_S,
+         D_Even = evenness_change - C_even,
+         D_Rank = rank_change - C_rank,
+         D_Loss= losses - C_loss,
+         D_Gain= gains - C_gain)%>%
+  select(site_project_comm, treatment_year, treatment_year2, treatment,D_Rich, D_Even, D_Rank, D_Loss, D_Gain)%>%
   mutate(id = paste(site_project_comm, treatment, sep = "::"))
 
 ###making graphs of all treatments
 
-logRR<-logRR%>%
-  mutate(id = paste(site_project_comm, treatment, sep = "::"))
-
-S<-ggplot(data=diff, aes(x=treatment_year, y=DS))+
+S<-ggplot(data=diff, aes(x=treatment_year, y=D_Rich))+
   geom_line(aes(group=id))+
   geom_smooth(method="loess", se=F, color="red", size=1)+
   ggtitle("Richness")
-even<-ggplot(data=logRR, aes(x=treatment_year, y=lrS))+
+even<-ggplot(data=diff, aes(x=treatment_year, y=D_Even))+
   geom_line(aes(group=id))+
   geom_smooth(method="loess", se=F, color="red", size=1)+
   ggtitle("Evenness")
-gain<-ggplot(data=logRR, aes(x=treatment_year, y=lrG))+
+gain<-ggplot(data=diff, aes(x=treatment_year, y=D_Gain))+
   geom_line(aes(group=id))+
   geom_smooth(method="loess", se=F, color="red", size=1)+
   ggtitle("Gains")
-loss<-ggplot(data=logRR, aes(x=treatment_year, y=lrL))+
+loss<-ggplot(data=diff, aes(x=treatment_year, y=D_Loss))+
   geom_line(aes(group=id))+
   geom_smooth(method="loess", se=F, color="red", size=1)+
   ggtitle("Losses")
-rank<-ggplot(data=logRR, aes(x=treatment_year, y=lrR))+
+rank<-ggplot(data=diff, aes(x=treatment_year, y=D_Rank))+
   geom_line(aes(group=id))+
   geom_smooth(method="loess", se=F, color="red", size=1)+
   ggtitle("Rank")
@@ -164,12 +191,20 @@ rank<-ggplot(data=logRR, aes(x=treatment_year, y=lrR))+
 grid.arrange(S, even, gain, loss, rank)
 
 #trying to color by treatments
-trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
+trt2<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
   select(-calendar_year, -treatment_year, -X)%>%
   unique()
 
+##code to add to the end of these steps to figure out how many experimetn-treatment compbinations are in each manipulation type.
+
+# %>%
+#   select(site_project_comm, treatment, trt_type)%>%
+#   unique()%>%
+#   group_by(trt_type)%>%
+#   summarize(num=length(trt_type))
+
 singleResource <- diff%>%
-  left_join(trt)%>%
+  left_join(trt2)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -181,11 +216,12 @@ singleResource <- diff%>%
   #create categorical treatment type column
   mutate(trt_type=ifelse(n2>0, 'N', ifelse(p2>0, 'P', ifelse(k2>0, 'K', ifelse(precip<0, 'drought', ifelse(precip>0, 'irr', ifelse(CO2>0, 'CO2', 'precip_vari')))))))%>%
   #keep just relevent column names for this analysis
-  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, DS, DE, DR, DL, DG)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, D_Rich, D_Even, D_Rank, D_Loss, D_Gain)%>%
+  gather(metric, value, D_Rich:D_Gain)
 
 #analysis 2: single non-resource
-singleNonresource <- logRR%>%
-  left_join(expInfo)%>%
+singleNonresource <- diff%>%
+  left_join(trt2)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -195,11 +231,13 @@ singleNonresource <- logRR%>%
   #create categorical treatment type column
   mutate(trt_type=ifelse(burn==1, 'burn', ifelse(mow_clip==1, 'mow_clip', ifelse(herb_removal==1, 'herb_rem', ifelse(temp>0, 'temp', ifelse(plant_trt==1, 'plant_mani', 'other'))))))%>%
   #keep just relevent column names for this analysis
-  select(site_code, project_name, community_type, exp_year, treatment_year, calendar_year, treatment, trt_type, mean_change, S_PC, experiment_length, rrich, anpp, MAT, MAP)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, D_Rich, D_Even, D_Rank, D_Loss, D_Gain)%>%
+  gather(metric, value, D_Rich:D_Gain)
+
 
 #analysis 3: 2-way interactions
-twoWay <- ForAnalysis%>%
-  left_join(expInfo)%>%
+twoWay <- diff%>%
+  left_join(trt2)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -211,11 +249,12 @@ twoWay <- ForAnalysis%>%
   #drop R*herb_removal (single rep)
   filter(trt_type!='R*herb_rem')%>%
   #keep just relevent column names for this analysis
-  select(site_code, project_name, community_type, exp_year, treatment_year, calendar_year, treatment, trt_type, mean_change, S_PC, experiment_length, rrich, anpp, MAT, MAP)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, D_Rich, D_Even, D_Rank, D_Loss, D_Gain)%>%
+  gather(metric, value, D_Rich:D_Gain)
 
 #analysis 4: 3+ way interactions
-threeWay <- ForAnalysis%>%
-  left_join(expInfo)%>%
+threeWay <- diff%>%
+  left_join(trt2)%>%
   #filter pretrt data
   filter(treatment_year!=0)%>%
   #filter just single resource manipulations
@@ -227,40 +266,40 @@ threeWay <- ForAnalysis%>%
   #drop single all-nonresource treatment (NIN herbdiv 5NF)
   filter(trt_type!='all_nonresource')%>%
   #keep just relevent column names for this analysis
-  select(site_code, project_name, community_type, exp_year, treatment_year, calendar_year, treatment, trt_type, mean_change, S_PC, experiment_length, rrich, anpp, MAT, MAP)
+  select(site_project_comm, treatment_year, treatment_year2, treatment, id, trt_type, D_Rich, D_Even, D_Rank, D_Loss, D_Gain)%>%
+  gather(metric, value, D_Rich:D_Gain)
+
 
 ###figures for the treatments
 ##single resources
-S<-ggplot(data=singleResource, aes(x=treatment_year, y=DG)) +
+ggplot(data=singleResource, aes(x=treatment_year, y=value)) +
   geom_line(aes(group = id)) +
-  geom_smooth(method='loess', se=T, aes(color=trt_type)) +
-  xlab('Treatment Year') + ylab('log(Richness Change)') +
-  facet_wrap(~trt_type)
-
-singleNonresourceFig <- ggplot(data=singleNonresource, aes(x=treatment_year, y=mean_change)) +
-  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
-  geom_point(aes(color=project_name)) +
-  xlab('Treatment Year') + ylab('Mean Difference') +
-  scale_y_continuous(limits=c(0,1)) +
-  theme(legend.position="none", legend.justification=c(0,1)) +
-  facet_wrap(~trt_type)
-
-twoWayFig <- ggplot(data=subset(twoWay, treatment_year<9), aes(x=treatment_year, y=mean_change)) +
-  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
-  geom_point(aes(color=trt_type)) +
-  xlab('Treatment Year') + ylab('Mean Difference') +
-  scale_y_continuous(limits=c(0,1)) +
-  theme(legend.position=c(0.05,0.95), legend.justification=c(0,1)) +
-  facet_wrap(~trt_type)
-
-threeWayFig <- ggplot(data=subset(threeWay, treatment_year<9), aes(x=treatment_year, y=mean_change)) +
-  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=treatment)) +
-  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=5) +
-  geom_point() +
-  xlab('Treatment Year') + ylab('Mean Difference') +
-  scale_y_continuous(limits=c(0,1)) +
-  theme(legend.position=c(0.05,0.95), legend.justification=c(0,1)) +
-  facet_wrap(~project_name)
+  geom_smooth(method='lm', se=T, aes(color=trt_type)) +
+  xlab('Treatment Year') + ylab('Diff (Trt-Cont)') +
+  geom_hline(yintercept = 0)+
+  facet_wrap(~metric, scales = "free")
+##single nonresources
+ggplot(data=singleNonresource, aes(x=treatment_year, y=value)) +
+  geom_line(aes(group = id)) +
+  geom_smooth(method='lm', se=T, aes(color=trt_type)) +
+  xlab('Treatment Year') + ylab('Diff (Trt-Cont)') +
+  geom_hline(yintercept = 0)+
+  facet_wrap(~metric, scales = "free")
+##twoWay
+ggplot(data=twoWay, aes(x=treatment_year, y=value)) +
+  geom_line(aes(group = id)) +
+  geom_smooth(method='lm', se=T, aes(color=trt_type)) +
+  xlab('Treatment Year') + ylab('Diff (Trt-Cont)') +
+  geom_hline(yintercept = 0)+
+  facet_wrap(~metric, scales = "free")
+##three way
+ggplot(data=threeWay, aes(x=treatment_year, y=value)) +
+  geom_line(aes(group = id)) +
+  geom_smooth(method='lm', se=T, aes(color=trt_type)) +
+  xlab('Treatment Year') + ylab('Diff (Trt-Cont)') +
+  geom_hline(yintercept = 0)+
+  facet_wrap(~metric, scales = "free")
 
 
+#####doing this for cumulative
 

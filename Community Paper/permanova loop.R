@@ -112,6 +112,7 @@ permanova_out_mod <- permanova_out_master %>%
 
 #write.csv(permanova_out_mod, file= "C2E\\Products\\CommunityChange\\March2018 WG\\permanova out.csv",row.names=F)
 
+filter(permanova_out_master, site_project_comm =="ASGA_clonal_0")
 
 
 
