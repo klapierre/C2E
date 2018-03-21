@@ -103,11 +103,11 @@ ggplot(response_ratios, aes(x = treatment_year, y = ratio))+
   theme_few()
 # ggsave(filename = paste0(data_dir,"figures/glass_by_metric.pdf"), height = 5, width = 8.5, units = "in")
 
-# ggplot(response_ratios, aes(x = treatment_year, y = ratio, color = metric))+
-#   # geom_point(aes(group = metric))+
-#   geom_smooth(se = FALSE, method = "loess")+
-#   facet_wrap(~id, scales = "free") +
-#   theme_few()
+ggplot(response_ratios, aes(x = treatment_year, y = ratio, color = metric))+
+  # geom_point(aes(group = metric))+
+  geom_smooth(se = FALSE, method = "loess")+
+  facet_wrap(~id, scales = "free") +
+  theme_few()
 # ggsave(filename = paste0(data_dir,"figures/glass_loess_large.pdf"), height = 15, width = 15, units = "in")
 
 
