@@ -17,8 +17,8 @@ change_metrics_bayes <- read.csv("CORRE_RACS_Subset_Bayes.csv")
 change_cumsum <- change_metrics_bayes %>%
   group_by(site_project_comm, treatment, plot_id) %>%
   mutate(richness_change_abs = abs(richness_change)) %>%
-  mutate(evenness_change = abs(evenness_change)) %>%
-  mutate_at(vars(richness_change, richness_change_abs, evenness_change, rank_change, gains, losses), funs(cumsum) ) %>%
+  mutate(evenness_change_abs = abs(evenness_change)) %>%
+  mutate_at(vars(richness_change, richness_change_abs, evenness_change,evenness_change_abs, rank_change, gains, losses), funs(cumsum) ) %>%
   mutate(control = ifelse(plot_mani==0,"control","treatment"))
 
 ### plot - faceted by site_project_comm and color by treatment
