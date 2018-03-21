@@ -1,5 +1,6 @@
 library(tidyverse)
 library(ggplot2)
+library(ggthemes)
 library(grid)
 
 #kim's working directory
@@ -16,8 +17,8 @@ theme_update(axis.title.x=element_text(size=20, vjust=-0.35), axis.text.x=elemen
              legend.title=element_blank(), legend.text=element_text(size=20))
 
 
-#plotting treatment and control separately for only treatments that changed the community according to the bayesian analysis in kim's paper
-metrics <- read.csv('CORRE_RACS_Subset_Bayes.csv')
+#plotting treatment and control separately for only treatments that changed the community 
+metrics <- read.csv('CORRE_RACS_Subset_Perm.csv')
 rawAbund <- read.csv('SpeciesRawAbundance_Oct2017.csv')%>%
   select(-X, -abundance, -genus_species, -block, -calendar_year, -treatment_year)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'))%>%
@@ -40,60 +41,85 @@ subset<-forplotting%>%
 forplotting2<-forplotting%>%
   left_join(subset)
 
-ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(richness_change), color=CorT)) +
+absrich_plot=ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(richness_change), color=CorT)) +
   geom_boxplot() +
   geom_abline(slope=0, intercept=0) + 
   facet_wrap(~site_project_comm, scales="free_x") #+ coord_cartesian(ylim=c(0,1))
-ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(evenness_change), color=CorT)) +
+ggsave("figures/absrich NOT cumsum plot_boxplots_Perm.png", plot=absrich_plot, width=15, height=8, units="in")
+
+abseven_plot=ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(evenness_change), color=CorT)) +
   geom_boxplot() +
   geom_abline(slope=0, intercept=0) + 
   facet_wrap(~site_project_comm, scales="free") 
-ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(rank_change), color=CorT)) +
+ggsave("figures/absevenness NOT cumsum plot_boxplots_Perm.png", plot=abseven_plot, width=15, height=8, units="in")
+
+absrank_plot=ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(rank_change), color=CorT)) +
   geom_boxplot() +
   geom_abline(slope=0, intercept=0) + 
   facet_wrap(~site_project_comm, scales="free_x")
-ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(gains), color=CorT)) +
+ggsave("figures/absrank NOT cumsum plot_boxplots_Perm.png", plot=absrank_plot, width=15, height=8, units="in")
+
+absgain_plot=ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(gains), color=CorT)) +
   geom_boxplot() +
   geom_abline(slope=0, intercept=0) + 
   facet_wrap(~site_project_comm, scales="free_x")
-ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(losses), color=CorT)) +
+ggsave("figures/absgains NOT cumsum plot_boxplots_Perm.png", plot=absgain_plot, width=15, height=8, units="in")
+
+absloss_plot=ggplot(data=subset(forplotting2, num>2), aes(x=as.factor(treatment_year), y=abs(losses), color=CorT)) +
   geom_boxplot() +
   geom_abline(slope=0, intercept=0) + 
   facet_wrap(~site_project_comm, scales="free_x")
+ggsave("figures/abslosses NOT cumsum plot_boxplots_Perm.png", plot=absloss_plot, width=15, height=8, units="in")
+
 
 #lines (Fig 2a)
 
-forplotting.rand=forplotting[forplotting$site_project_comm %in% c("TAS_FACE_0", "MNR_watfer_0", "LEFT_PME_0", "LG_HerbWood_0", "ARC_MAT2_0", "SCL_TER_0"),]
+### plotting just trendlines
+## absolute value of richness change
+absrich_plot2 <- ggplot(forplotting, aes(x=treatment_year, y=abs(richness_change), group=treatment)) +
+  geom_smooth(aes(col=CorT)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+ggsave("figures/absrich NOT cumsum plot_trendlines only_Perm.png", plot=absrich_plot2, width=15, height=8, units="in")
 
-ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(richness_change), color=treatment)) +
-  geom_point() +
-  geom_smooth(method="loess") +
-  geom_abline(slope=0, intercept=0) +
-  facet_wrap(~site_project_comm, scales="free")
-ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(evenness_change), color=treatment)) +
-  geom_point() +
-  geom_smooth(method="loess") +
-  geom_abline(slope=0, intercept=0) +
-  facet_wrap(~site_project_comm, scales="free")
-ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(rank_change), color=treatment)) +
-  geom_point() +
-  geom_smooth(method="loess") +
-  geom_abline(slope=0, intercept=0) +
-  facet_wrap(~site_project_comm, scales="free")
-ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(gains), color=treatment)) +
-  geom_point() +
-  geom_smooth(method="loess") +
-  geom_abline(slope=0, intercept=0) +
-  facet_wrap(~site_project_comm, scales="free")
-ggplot(data=forplotting.rand, aes(x=treatment_year, y=abs(losses), group=treatment)) +
-  geom_point() +
-  geom_smooth(method="loess", aes(color=CorT)) +
-  geom_abline(slope=0, intercept=0) +
-  facet_wrap(~site_project_comm, scales="free")
+## evenness change
+even_plot2 <- ggplot(forplotting, aes(x=treatment_year, y=abs(evenness_change), group=treatment)) +
+  geom_smooth(aes(col=CorT)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+ggsave("figures/absevenness NOT cumsum plot_trendlines only_Perm.png", plot=even_plot2, width=15, height=8, units="in")
+
+## rank change
+rank_plot2 <- ggplot(forplotting, aes(x=treatment_year, y=abs(rank_change), group=treatment)) +
+  geom_smooth(aes(col=CorT)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+ggsave("figures/absrank NOT cumsum plot_trendlines only_Perm.png", plot=rank_plot2, width=15, height=8, units="in")
+
+## gains change
+gains_plot2 <- ggplot(forplotting, aes(x=treatment_year, y=abs(gains), group=treatment)) +
+  geom_smooth(aes(col=CorT)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+ggsave("figures/absgains NOT cumsum plot_trendlines only_Perm.png", plot=gains_plot2, width=15, height=8, units="in")
+
+## losses change
+losses_plot2 <- ggplot(forplotting, aes(x=treatment_year, y=abs(losses), group=treatment)) +
+  geom_smooth(aes(col=CorT)) +
+  facet_wrap(~site_project_comm, scales="free") +
+  theme_few() +
+  theme(legend.position="none") 
+ggsave("figures/abslosses NOT cumsum plot_trendlines only_Perm.png", plot=losses_plot2, width=15, height=8, units="in")
+
 
 
 
 #plotting LRR for all site_project_comm
+
 lnRR <- read.csv('CORRE_RAC_LogRR_March2018_trtyr.csv')
 metrics <- read.csv('CORRE_RAC_Metrics_March2018_trtyr.csv')
 
