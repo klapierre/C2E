@@ -49,8 +49,8 @@ for (j in 1:length(trt_list)){
 }
 
 list <- test.lm%>%
-  mutate(sig_intercept=ifelse(val_intercept<0.05, 1, 0), sig_slope=ifelse(val_slope<0.05, 1, 0), sig_any=(sig_intercept+sig_slope), method='regression')%>%
+  mutate(sig_intercept=ifelse(val_intercept<0.1, 1, 0), sig_slope=ifelse(val_slope<0.1, 1, 0), sig_any=(sig_intercept+sig_slope), regression=1)%>%
   filter(sig_any>0)%>%
-  select(site_project_comm, treatment, sig_intercept, sig_slope, method)
+  select(site_project_comm, treatment, sig_intercept, sig_slope, regression)
 
-write.csv(list, 'treatments_sig regression.csv')
+write.csv(list, 'treatments_sig regression.csv', row.names=F)
