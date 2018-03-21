@@ -3,6 +3,7 @@
 ### Author: Kevin Wilcox (wilcoxkr@gmail.com)
 ### Last updated March 19th, 2018
 
+install.packages("devtools")
 ### set up workspace
 library(vegan)
 library(devtools)
