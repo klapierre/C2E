@@ -11,7 +11,7 @@ library(RColorBrewer)
 setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
 
 ### Read in data 
-change_metrics_bayes <- read.csv("CORRE_RACS_Subset_Bayes.csv")
+change_metrics_bayes <- read.csv("CORRE_RACS_Subset_Perm.csv")
 
 ### Calculate cumulative sums of each metric
 change_cumsum <- change_metrics_bayes %>%
@@ -106,13 +106,13 @@ rich_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=richness_change, gr
   theme_few() +
   theme(legend.position="none") 
 ## evenness change
-even_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=evenness_change, group=treatment)) +
+even_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=evenness_change_abs, group=treatment)) +
   geom_smooth(aes(col=control)) +
   facet_wrap(~site_project_comm, scales="free") +
   theme_few() +
   theme(legend.position="none") 
 ## rank change
-rank_plot2 <- ggplot(subset(change_cumsum,site_project_comm=="SKY_UK_0"), aes(x=treatment_year2, y=rank_change, group=treatment)) +
+rank_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=rank_change, group=treatment)) +
   geom_smooth(aes(col=control)) +
   facet_wrap(~site_project_comm, scales="free") +
   theme_few() +
@@ -130,27 +130,27 @@ losses_plot2 <- ggplot(change_cumsum, aes(x=treatment_year2, y=losses, group=tre
   theme_few() +
   theme(legend.position="none") 
 
-png(paste0("figures\\absrich cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+png(paste0("figures\\absrich cumsum plot_trendlines only_perm", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
 print(absrich_plot2)
 dev.off()
 
-png(paste0("figures\\rich cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+png(paste0("figures\\rich cumsum plot_trendlines only_perm", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
 print(rich_plot2)
 dev.off()
 
-png(paste0("figures\\evenness cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+png(paste0("figures\\evenness cumsum plot_trendlines only_perm", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
 print(even_plot2)
 dev.off()
 
-png(paste0("figures\\rank cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+png(paste0("figures\\rank cumsum plot_trendlines only_perm", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
 print(rank_plot2)
 dev.off()
 
-png(paste0("figures\\gains cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+png(paste0("figures\\gains cumsum plot_trendlines only_perm", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
 print(gains_plot2)
 dev.off()
 
-png(paste0("figures\\losses cumsum plot_trendlines only", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
+png(paste0("figures\\losses cumsum plot_trendlines only_perm", Sys.Date(),".png"), width=11, height=8, units="in", res=600)
 print(losses_plot2)
 dev.off()
 
