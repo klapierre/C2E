@@ -49,8 +49,8 @@ for (i in 1:length(spc)){
 sig<-ttest_output%>%
   mutate(sig = ifelse(p.value < 0.1, 1, 0))%>%
   filter(sig ==1)%>%
-  mutate(method = "ttest")%>%
+  mutate(ttest = 1)%>%
   select(-p.value, -sig)
 
-write.csv(sig, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/sig_ttest.csv")
+write.csv(sig, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/sig_ttest.csv", row.names= F)
           
