@@ -2,6 +2,7 @@
 rm(list=ls())
 df <- data.frame(group=c(rep("a",6),rep("b",6)), a=1:6, b=1:12)
 
+### pull # of comparisons
 cumsum(df$a)
 
 g_csum <- df %>%
