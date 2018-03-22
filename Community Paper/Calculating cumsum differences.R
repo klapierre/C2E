@@ -23,6 +23,8 @@ change_cumsum <- change_metrics_bayes %>%
 
 unique(subset(change_cumsum, site_project_comm=="Alberta_CCD_0")$treatment)
 
+ggplot(subset(change_cumsum,site_project_comm=="CDR_e002_B"), aes(x=treatment_year2, y=rank_change))+
+  geom_smooth()
 ### plot - faceted by site_project_comm and color by treatment
 ## absolute value of richness change
 absrich_plot <- ggplot(subset(change_cumsum, site_project_comm=="Alberta_CCD_0"), aes(x=treatment_year2, y=richness_change_abs, group=treatment)) +
