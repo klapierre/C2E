@@ -44,7 +44,10 @@ glass_metrics <- change_glass_d%>%
   mutate(treatment=treatment.x)%>%
   left_join(trt)%>%
   left_join(site)%>%
-  select(site_project_comm, site_code, project_name, community_type, treatment, treatment_year, abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass, MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp)
+  select(site_project_comm, site_code, project_name, community_type, treatment, treatment_year, abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass, MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp)%>%
+  group_by(site_project_comm, site_code, project_name, community_type, treatment, MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp)%>%
+  summarise(abs_richness_mean=mean(abs_richness_glass), abs_evenness_mean=mean(abs_evenness_glass), rank_mean=mean(rank_glass), gains_mean=mean(gains_glass), losses_mean=mean(losses_glass))%>%
+  ungroup()
 
 
 
@@ -52,9 +55,9 @@ glass_metrics <- change_glass_d%>%
 set.seed(71)
 #richness
 glass_richness <- glass_metrics%>%
-  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, abs_richness_glass)
+  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, abs_richness_mean)
 glass_richness <- glass_richness[complete.cases(glass_richness), ]
-richnessRandomForest <- randomForest(abs_richness_glass ~ ., data=glass_richness, importance=TRUE,
+richnessRandomForest <- randomForest(abs_richness_mean ~ ., data=glass_richness, importance=TRUE,
                         proximity=TRUE)
 print(richnessRandomForest)
 richnessImportance <- as.data.frame(round(importance(richnessRandomForest), 2))%>%
@@ -62,9 +65,9 @@ richnessImportance <- as.data.frame(round(importance(richnessRandomForest), 2))%
   mutate(metric='abs_richness')
 #evenness
 glass_evenness <- glass_metrics%>%
-  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, abs_evenness_glass)
+  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, abs_evenness_mean)
 glass_evenness <- glass_evenness[complete.cases(glass_evenness), ]
-evennessRandomForest <- randomForest(abs_evenness_glass ~ ., data=glass_evenness, importance=TRUE,
+evennessRandomForest <- randomForest(abs_evenness_mean ~ ., data=glass_evenness, importance=TRUE,
                                      proximity=TRUE)
 print(evennessRandomForest)
 evennessImportance <- as.data.frame(round(importance(evennessRandomForest), 2))%>%
@@ -72,9 +75,9 @@ evennessImportance <- as.data.frame(round(importance(evennessRandomForest), 2))%
   mutate(metric='evenness')
 #rank
 glass_rank <- glass_metrics%>%
-  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, rank_glass)
+  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, rank_mean)
 glass_rank <- glass_rank[complete.cases(glass_rank), ]
-rankRandomForest <- randomForest(rank_glass ~ ., data=glass_rank, importance=TRUE,
+rankRandomForest <- randomForest(rank_mean ~ ., data=glass_rank, importance=TRUE,
                                      proximity=TRUE)
 print(rankRandomForest)
 rankImportance <- as.data.frame(round(importance(rankRandomForest), 2))%>%
@@ -82,10 +85,10 @@ rankImportance <- as.data.frame(round(importance(rankRandomForest), 2))%>%
   mutate(metric='rank')
 #gains
 glass_gains <- glass_metrics%>%
-  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, gains_glass)%>%
-  filter(!is.infinite(gains_glass))
+  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, gains_mean)%>%
+  filter(!is.infinite(gains_mean))
 glass_gains <- glass_gains[complete.cases(glass_gains), ]
-gainsRandomForest <- randomForest(gains_glass ~ ., data=glass_gains, importance=TRUE,
+gainsRandomForest <- randomForest(gains_mean ~ ., data=glass_gains, importance=TRUE,
                                      proximity=TRUE)
 print(gainsRandomForest)
 gainsImportance <- as.data.frame(round(importance(gainsRandomForest), 2))%>%
@@ -93,10 +96,10 @@ gainsImportance <- as.data.frame(round(importance(gainsRandomForest), 2))%>%
   mutate(metric='gains')
 #losses
 glass_loss <- glass_metrics%>%
-  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, losses_glass)%>%
-  filter(!is.infinite(losses_glass))
+  select(MAP, MAT, rrich, anpp, n, p, k, CO2, precip, temp, losses_mean)%>%
+  filter(!is.infinite(losses_mean))
 glass_loss <- glass_loss[complete.cases(glass_loss), ]
-lossRandomForest <- randomForest(losses_glass ~ ., data=glass_loss, importance=TRUE,
+lossRandomForest <- randomForest(losses_mean ~ ., data=glass_loss, importance=TRUE,
                                      proximity=TRUE)
 print(lossRandomForest)
 lossImportance <- as.data.frame(round(importance(lossRandomForest), 2))%>%
@@ -117,17 +120,21 @@ ggplot(data=allImportance, aes(x=factor, y=importance)) +
 
 #what drives compositional change?
 comp <- read.csv('CORRE_Mult_Metrics_March2018.csv')%>%
-  select(-X)
+  select(-X)%>%
+  group_by(site_project_comm, treatment)%>%
+  summarise(comp_mean=mean(composition_change))%>%
+  ungroup()
 
 glassComp <- glass_metrics%>%
   left_join(comp)%>%
-  filter(!is.infinite(gains_glass))%>%
-  filter(!is.infinite(losses_glass))%>%
-  select(abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass, composition_change)
+  filter(!is.infinite(gains_mean))%>%
+  filter(!is.infinite(losses_mean))%>%
+  select(abs_richness_mean, abs_evenness_mean, rank_mean, gains_mean, losses_mean, MAT, MAP, rrich, anpp, n, p, k, CO2, precip, temp, comp_mean)
+  
 glassComp <- glassComp[complete.cases(glassComp), ]
 
 #random forest
-compRandomForest <- randomForest(composition_change ~ ., data=glassComp, importance=TRUE,
+compRandomForest <- randomForest(comp_mean ~ ., data=glassComp, importance=TRUE,
                                  proximity=TRUE)
 print(compRandomForest)
 compImportance <- as.data.frame(round(importance(compRandomForest), 2))%>%
@@ -140,9 +147,30 @@ names(compImportance)[names(compImportance) == '%IncMSE'] <- 'importance'
 #figure
 ggplot(data=compImportance, aes(x=factor, y=importance)) +
   geom_bar(stat='identity') +
-  scale_x_discrete(limits=c("abs_richness_glass", "abs_evenness_glass", "rank_glass", "gains_glass", "losses_glass"))
+  scale_x_discrete(limits=c("MAP","MAT","anpp", "rrich", "n", "p", "k", "CO2", "precip", "temp", "abs_richness_mean", "abs_evenness_mean", "rank_mean", "gains_mean", "losses_mean"))
 
 
+#without the site-level predictors
+glassComp2 <- glass_metrics%>%
+  left_join(comp)%>%
+  filter(!is.infinite(gains_mean))%>%
+  filter(!is.infinite(losses_mean))%>%
+  select(abs_richness_mean, abs_evenness_mean, rank_mean, gains_mean, losses_mean, comp_mean)
+
+glassComp2 <- glassComp[complete.cases(glassComp), ]
+compRandomForest2 <- randomForest(comp_mean ~ ., data=glassComp2, importance=TRUE,
+                                 proximity=TRUE)
+print(compRandomForest2)
+compImportance2 <- as.data.frame(round(importance(compRandomForest2), 2))%>%
+  rownames_to_column()%>%
+  mutate(factor=rowname)%>%
+  select(-rowname)
+names(compImportance2)[names(compImportance2) == '%IncMSE'] <- 'importance'
+
+#figure
+ggplot(data=compImportance2, aes(x=factor, y=importance)) +
+  geom_bar(stat='identity') +
+  scale_x_discrete(limits=c("abs_richness_mean", "abs_evenness_mean", "rank_mean", "gains_mean", "losses_mean"))
 
 
 # #### example for randomForest
