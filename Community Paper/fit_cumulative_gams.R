@@ -196,7 +196,7 @@ delta_aics <- read.csv(paste0(data_dir,"gam_delta_aic_table.csv"),
                        row.names = 1) %>%
   gather(key = metric, value = delta_aic, rich_delta_aic:loss_delta_aic) %>%
   mutate(site_treatment = paste(site_project_comm, treatment, sep = "::"),
-         different = ifelse(delta_aic < -2, "yes", "no"))
+         different = ifelse(delta_aic < -10, "yes", "no"))
 
 ggplot(delta_aics, aes(y = site_treatment, x = metric))+
   geom_tile(aes(fill = different))+
