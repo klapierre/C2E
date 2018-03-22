@@ -6,6 +6,12 @@
 ##  Date created: March 21, 2018
 ################################################################################
 
+#########
+### TODO: Make figures for each comparison and save in one big PDF
+### TODO: Make sure model structure is correct (i.e., do your homework)
+########
+
+
 ##  Clear the workspace
 rm(list = ls(all.names = TRUE))
 
@@ -200,7 +206,10 @@ ggplot(delta_aics, aes(y = site_treatment, x = metric))+
   scale_x_discrete(labels = c("Evenness","Gains","Losses","Rank Change", "Richness"))+
   xlab("Metric")+
   ylab("Site and Treatment")
-ggsave(filename = paste0(data_dir,"figures/delta_aic_figure.pdf"), height = 14, width = 7, units = "in")
+ggsave(filename = paste0(data_dir,"figures/delta_aic_figure.pdf"),
+       height = 14, 
+       width = 7, 
+       units = "in")
 
 
 ####
