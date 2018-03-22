@@ -183,6 +183,25 @@ write.csv(x = all_delta_aics,
 
 
 
+####
+####  VISUALIZE THE DLETA AIC TABLE --------------------------------------------
+####
+delta_aics <- read.csv(paste0(data_dir,"gam_delta_aic_table.csv"), 
+                       row.names = 1) %>%
+  gather(key = metric, value = delta_aic, rich_delta_aic:loss_delta_aic) %>%
+  mutate(site_treatment = paste(site_project_comm, treatment, sep = "::"),
+         different = ifelse(delta_aic < -2, "yes", "no"))
+
+ggplot(delta_aics, aes(y = site_treatment, x = metric))+
+  geom_tile(aes(fill = different))+
+  scale_fill_brewer(type = "qual", 
+                    labels = c("C and T not different", "C and T different", "NA"), 
+                    name = NULL)+
+  scale_x_discrete(labels = c("Evenness","Gains","Losses","Rank Change", "Richness"))+
+  xlab("Metric")+
+  ylab("Site and Treatment")
+ggsave(filename = paste0(data_dir,"figures/delta_aic_figure.pdf"), height = 14, width = 7, units = "in")
+
 
 ####
 ####  TEST FIT USING JUST PPLOTS -----------------------------------------------
