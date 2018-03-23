@@ -30,7 +30,8 @@ max <- dat%>%
          Lmax = ifelse(L == losses, treatment_year, 0))%>%
   gather(max_metric, max_value, Smax:Lmax)%>%
   select(site_project_comm, treatment, plot_id, max_metric, max_value)%>%
-  mutate(merge = ifelse(max_metric == "Smax","Richness",ifelse(max_metric=="Emax","Evenness",ifelse(max_metric=="Rmax","Rank",ifelse(max_metric=="Gmax","Gains", "Losses")))))
+  mutate(merge = ifelse(max_metric == "Smax","Richness",ifelse(max_metric=="Emax","Evenness",ifelse(max_metric=="Rmax","Rank",ifelse(max_metric=="Gmax","Gains", "Losses")))))%>%
+  filter(max_value!=0)
 
 change_value<-dat%>%
   group_by(site_project_comm, treatment, plot_id)%>%
@@ -49,9 +50,12 @@ change_value<-dat%>%
 max_toplot<-max%>%
   left_join(plotid2)%>%
   left_join(trt)%>%
-  mutate(trt = ifelse(plot_mani == 0, "C", "T"))
+  mutate(trt = ifelse(plot_mani == 0, "C", "T"))%>%
+  left_join(change_value)
 
 ggplot(data = max_toplot, aes(x = max_metric, y = max_value, color = change_value))+
   geom_point()+
+  geom_jitter()+
+  
   facet_wrap(~trt)
   
