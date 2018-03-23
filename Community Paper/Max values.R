@@ -1,15 +1,15 @@
 library(tidyverse)
+setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
+dat <- read.csv("CORRE_RACS_Subset_Bayes.csv")
 
-dat <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Bayes.csv")
-
-plotid<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+plotid<-read.csv("SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotid2<-plotid%>%
   select(site_project_comm, plot_id, treatment)%>%
   unique()
 
-trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
+trt<-read.csv("ExperimentInformation_Nov2017.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
