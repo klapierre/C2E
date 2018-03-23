@@ -5,7 +5,7 @@ library(gtable)
 library(codyn)
 library(vegan)
 library(lme4)
-#library(relaimpo)
+library(relaimpo)
 
 theme_set(theme_bw(12))
 
