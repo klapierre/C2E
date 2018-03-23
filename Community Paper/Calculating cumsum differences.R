@@ -21,13 +21,9 @@ change_cumsum <- change_metrics_bayes %>%
   mutate_at(vars(richness_change, richness_change_abs, evenness_change,evenness_change_abs, rank_change, gains, losses), funs(cumsum) ) %>%
   mutate(control = ifelse(plot_mani==0,"control","treatment"))
 
-unique(subset(change_cumsum, site_project_comm=="Alberta_CCD_0")$treatment)
-
-ggplot(subset(change_cumsum,site_project_comm=="CDR_e002_B"), aes(x=treatment_year2, y=rank_change))+
-  geom_smooth()
 ### plot - faceted by site_project_comm and color by treatment
 ## absolute value of richness change
-absrich_plot <- ggplot(subset(change_cumsum, site_project_comm=="Alberta_CCD_0"), aes(x=treatment_year2, y=richness_change_abs, group=treatment)) +
+absrich_plot <- ggplot(change_cumsum, aes(x=treatment_year2, y=richness_change_abs, group=treatment)) +
   geom_point(aes(col=control),pch=1) +
   geom_smooth(aes(col=control),se=F) +
 #  facet_wrap(~site_project_comm, scales="free") +
