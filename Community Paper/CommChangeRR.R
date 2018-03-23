@@ -5,7 +5,7 @@ library(gtable)
 library(codyn)
 library(vegan)
 library(lme4)
-#library(relaimpo)
+library(relaimpo)
 
 theme_set(theme_bw(12))
 
@@ -44,9 +44,9 @@ trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformatio
 dat2<-dat%>%
   left_join(plotid2)%>%
   left_join(trt)%>%
-  right_join(sig_exp_perm)
+  right_join(sig_exp_bayes)
 
-sig_exp_perm2<-sig_exp_perm%>%
+sig_exp2<-sig_exp_bayes%>%
   select(-treatment)%>%
   unique()
 
@@ -54,11 +54,11 @@ controls<-dat%>%
   left_join(plotid2)%>%
   left_join(trt)%>%
   filter(plot_mani==0)%>%
-  right_join(sig_exp_perm2)
+  right_join(sig_exp2)
 
-sig_exp_dat_perm<-rbind(controls, dat2)
+sig_exp_dat<-rbind(controls, dat2)
 
-write.csv(sig_exp_dat_perm, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Perm.csv")
+write.csv(sig_exp_dat, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Perm.csv")
 
 
 dat1<-dat%>%
@@ -67,7 +67,7 @@ dat1<-dat%>%
 
 ##overall what is the relationsip between the metrics
 #graphing this
-dat3<-sig_exp_dat_perm%>%
+dat3<-sig_exp_dat%>%
   left_join(dat_mult)%>%
   na.omit
 
@@ -81,15 +81,9 @@ pairs(dat3[,c(4:8,15)], upper.panel = panel.pearson)
 
 ###doing multiple regression
 stepAIC(lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=dat3))
-summary(m3<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=dat3))
+summary(m3<-lm(composition_change~richness_change+rank_change+gains, data=dat3))
 calc.relimp(m3, type="lmg", rela=F)
 
-#mixed model - not sure of the code here.
-m2 <- lmer(composition_change ~ rich+even+rank+gain+loss+
-             (composition_change | site_project_comm),
-           data = merged_data)
-summary(m2)
-m2
 
 ####get average of all replicates in a treatment.
 ave<-sig_exp_dat_perm%>%
@@ -454,3 +448,23 @@ sub<-sig_exp_dat_perm%>%
 ggplot(data=sub, aes(x = as.factor(treatment_year), y = rank_change))+
   geom_boxplot()+
   facet_grid(~treatment)
+
+###historgrams
+hist<-dat%>%
+  gather(metric, value, richness_change:losses)
+
+ggplot(data=subset(hist, metric == "evenness_change"), aes(x = value))+
+  geom_histogram()+
+  stat_bin(binwidth = 0.0001)+
+  xlim(-0.01, 0.01)
+
+ggplot(data=hist, aes(x = value))+
+  geom_histogram()+
+  facet_wrap(~metric, scales = "free")
+
+hist_evar<-delta_rac%>%
+  gather(metric, value, richness_change:losses)
+
+ggplot(data=hist_evar, aes(x = value))+
+  geom_histogram()+
+  facet_wrap(~metric, scales = "free")
