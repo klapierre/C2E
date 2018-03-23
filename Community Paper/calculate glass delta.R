@@ -46,5 +46,6 @@ change_glass_d <- change_metrics_perm %>%
   dplyr::select(site_project_comm:plot_mani, abs_richness_glass:losses_glass)
 
 
-
-
+as.data.frame(filter(change_glass_d, is.na(gains_glass)))
+filter(change_metrics_perm, site_project_comm=="CDR_e001_A" & treatment=="8" & treatment_year2==7)
+filter(change_metrics_perm, site_project_comm=="SERC_CXN_0" & treatment=="t2" & treatment_year2==2)
