@@ -107,6 +107,29 @@ for (i in 1:length(spc)){
   div_eq<-rbind(div_eq, out)
 }
 
+div_evar<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-community_structure(subset, time.var = 'calendar_year', abundance.var = 'relcov', replicate.var = 'plot_id', metric = "Evar")
+  out$site_project_comm<-spc[i]
+  
+  div_evar<-rbind(div_evar, out)
+}
+div_simp<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-community_structure(subset, time.var = 'calendar_year', abundance.var = 'relcov', replicate.var = 'plot_id', metric = "SimpsonEvenness")
+  out$site_project_comm<-spc[i]
+  
+  div_simp<-rbind(div_simp, out)
+}
+
 #####CALCULATING RAC changes
 spc<-unique(corredat$site_project_comm)
 delta_rac<-data.frame()
@@ -236,3 +259,57 @@ write.csv(delta_mult, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE
 
 write.csv(corre_all, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_NOV2017_allReplicates.csv")
 
+#investigating patterns of change
+corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
+corredat$site_project_comm <- with(corredat, paste(site_code, project_name, community_type, sep="_"))
+cul<-subset(corredat, site_project_comm == "CUL_Culardoch_0"& plot_id == 17 & treatment_year %in% c(2,3))
+
+cdr<-subset(corredat, site_project_comm == "CDR_e001_A"& plot_id == 13 & treatment_year %in% c(11,12))
+
+car<-subset(corredat, site_project_comm == "CAR_salt marsh_DisSal"& plot_id == 6.2 & treatment_year %in% c(1,2))
+
+
+even<-div_eq%>%
+  right_join(div_evar)%>%
+  right_join(div_simp)%>%
+  select(site_project_comm, calendar_year, plot_id, richness, EQ, Evar, SimpsonEvenness)%>%
+  gather(metric, value, EQ:SimpsonEvenness)
+
+ggplot(data=even, aes(x=value))+
+  geom_histogram()+
+  facet_wrap(~metric)
+
+ggplot(data=even, aes(x = richness, y = value))+
+  geom_point()+
+  facet_wrap(~metric)
+
+even_change<-delta_rac%>%
+  left_join(even)
+ggplot(data=even_change, aes(x = richness, y = evenness_change))+
+  geom_point()
+
+colnames(delta_rac)
+
+even_test<-delta_rac%>%
+  gather(metric, value, richness_change:losses)%>%
+  filter(metric != "evenness_change_divrich"& metric!= 'evenness_change_multrich')
+
+ggplot(data=even_test, aes(x = sppool, y = value))+
+  geom_point()+
+  facet_wrap(~metric, scales = "free")
+
+ggplot(data=even_test, aes(x=value))+
+  geom_histogram()+
+  facet_wrap(~metric, scales = "free")
+
+
+ggplot(data=delta_rac, aes(x = rank_change, y = gains))+
+  geom_point()
+
+jsp<-subset(corredat, site_project_comm == "JSP_GCE_0"& plot_id == 62 & treatment_year %in% c(3,4))%>%
+  group_by(treatment_year)%>%
+  mutate(rank = rank(-relcov, ties.method = "average"))
+
+ggplot(data = jsp, aes(x = rank, y= relcov ))+
+  geom_line()+
+  facet_wrap(~treatment_year)
