@@ -30,12 +30,13 @@ change_control <- change_metrics_perm %>%
                
 change_glass_d <- change_metrics_perm %>%
   filter(plot_mani != 0) %>%
-  group_by(site_project_comm, treatment, treatment_year2, plot_mani) %>%
+  group_by(site_project_comm, treatment, treatment_year, treatment_year2, plot_mani) %>%
   summarise(abs_richness_change = mean(abs_richness_change,na.rm=T),
             abs_evenness_change = mean(abs_evenness_change, na.rm=T),
             rank_change = mean(rank_change, na.rm=T),
             gains = mean(gains, na.rm=T),
             losses = mean(losses, na.rm=T)) %>%
+  ungroup()%>%
   left_join(change_control, by=c("site_project_comm","treatment_year2")) %>%
   mutate(abs_richness_glass = (abs_richness_change-abs_richness_change_ctrl_mean)/abs_richness_change_ctrl_sd,
          abs_evenness_glass = (abs_evenness_change-abs_evenness_change_ctrl_mean)/abs_evenness_change_ctrl_sd,
