@@ -82,7 +82,7 @@ sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
   filter(plot_id!=2)
-
+corredat<-rbind(corredat1, azi, jrn, knz, sak)
 #problems
 #gvn face - only 2 years of data so will only have one point for the dataset.
 
