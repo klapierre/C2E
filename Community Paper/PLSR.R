@@ -59,6 +59,12 @@ change_glass_d <- change_metrics_perm %>%
 
 #change_glass_d is the thing that we want
 
+## replace Inf with NAs in change_glass_d
+change_glass_d <- change_glass_d %>%
+  mutate(gains_glass=replace(gains_glass, gains_glass=="Inf", NA)) %>%
+  mutate(losses_glass=replace(losses_glass, losses_glass=="Inf", NA))
+  
+
 # reading in predictor variables for PLSR
 info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
