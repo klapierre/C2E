@@ -1,6 +1,9 @@
 #emily's working directory
 setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
+#kevin's working directory
+#setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
+
 library(tidyverse)
 library(ggplot2)
 library(ggthemes)
@@ -34,7 +37,7 @@ change_control <- change_metrics_perm %>%
          losses_ctrl = losses
   ) %>%
   group_by(site_project_comm, treatment, treatment_year2) %>%
-  summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), funs(mean, sd))
+  summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), funs(mean, sd), na.rm=T)
 
 change_glass_d <- change_metrics_perm %>%
   filter(plot_mani != 0) %>%
