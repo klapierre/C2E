@@ -77,7 +77,7 @@ info.trt=read.csv("ExperimentInformation_Nov2017.csv") %>%
 ### calculate mean change through time and combine with predictor variables
 change_glass_d_mean <- change_glass_d %>%
   group_by(site_project_comm, treatment.x, plot_mani) %>%
-  summarise_at(vars(abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass), funs(mean) ) %>%
+  summarise_at(vars(abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass), funs(mean), na.rm=T) %>%
   rename(treatment=treatment.x) %>%
   left_join(info.spc, by=c("site_project_comm")) %>%
   left_join(info.trt, by=c("site_project_comm","treatment"))
