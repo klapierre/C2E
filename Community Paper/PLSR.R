@@ -92,16 +92,16 @@ pred=as.matrix(change_glass_d_mean[, c("MAP", "MAT", "rrich", "anpp", "n", "p", 
 
 #attempting PLSR
 rich=plsr(abs_richness_glass~pred, data=change_glass_d_mean, validation="LOO")
-plot(RMSEP(rich)) #none of the components have any predictive value
-summary(rich)
+plot(RMSEP(rich))
+summary(rich) #first component explains <2% of variation in y
 
 even=plsr(abs_evenness_glass~pred, data=change_glass_d_mean, validation="LOO")
-plot(RMSEP(even)) #none of the components have any predictive value
-summary(even)
+plot(RMSEP(even))
+summary(even) #first component explains 10% of variation in y
 
 rank=plsr(rank_glass~pred, data=change_glass_d_mean, validation="LOO")
-plot(RMSEP(rank)) #none of the components have any predictive value
-summary(rank)
+plot(RMSEP(rank))
+summary(rank) #first component explains 8% of the variation in y
 
 gains=plsr(gains_glass~pred, data=change_glass_d_mean, validation="LOO")
 plot(RMSEP(gains))
@@ -110,13 +110,14 @@ plot(gains, "loadings", comps = 1:2, legendpos = "topright")
 
 losses=plsr(losses_glass~pred, data=change_glass_d_mean, validation="LOO")
 plot(RMSEP(losses))
-summary(losses) #first component explains 8% of variation in losses
+summary(losses) #first component explains 9% of variation in losses
 plot(losses, ncomp=2, asp=1, line=T) #terrible!
 plot(losses, "loadings", comps = 1:2, legendpos = "topright")
 
 #-----Multiple Regression
 #we have 125 datapoints and 10 predictors--why can't we just do multiple regression?
 library(car)
+library(rsq)
 
 cor(pred)
 
@@ -125,17 +126,19 @@ cor(pred)
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
 vif(rich)
 Anova(rich)
+rsq.partial(rich)
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
 Anova(even)
+rsq.partial(even)
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
 Anova(rank)
+rsq.partial(rank)
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(gains)
-gains.noMAP=lm(gains_glass~MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(gains.noMAP)
-(40.752-36.936)/40.752 #R2=0.09, which is higher than predictive power of first compnent in PLSR
+rsq.partial(gains)
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(losses)
-losses.noN=lm(losses_glass~MAP + MAT + rrich + anpp + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(losses.noN)
-(40.190-36.936)/40.190 #R2=0.08, which matches predictive power of first component in PLSR
+rsq.partial(losses)
+
