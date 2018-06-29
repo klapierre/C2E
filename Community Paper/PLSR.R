@@ -9,7 +9,7 @@ library(ggplot2)
 library(ggthemes)
 library(grid)
 library(vegan)
-library(plsr)
+library(pls)
 
 theme_set(theme_bw())
 theme_update(axis.title.x=element_text(size=20, vjust=-0.35), axis.text.x=element_text(size=16),
