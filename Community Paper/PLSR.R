@@ -118,27 +118,46 @@ plot(losses, "loadings", comps = 1:2, legendpos = "topright")
 #we have 125 datapoints and 10 predictors--why can't we just do multiple regression?
 library(car)
 library(rsq)
+library(lme4)
 
 cor(pred)
+pairs(pred)
+png(paste0("MR predictor variables pairs plot.png"), width=11, height=8, units="in", res=600)
+print(pairs(pred))
+dev.off()
 
 #partial R2=(SSE(all other terms in model) - SSE(all terms in model))/SSE(all other terms in model)
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
 vif(rich)
-Anova(rich)
 rsq.partial(rich)
+
+rich=lmer(abs_richness_glass ~ MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean)
+Anova(rich)
+summary(rich)
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
 Anova(even)
 rsq.partial(even)
 
+even=lmer(abs_evenness_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean)
+Anova(even)
+summary(even)
+
 rank=lm(rank_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
 Anova(rank)
 rsq.partial(rank)
 
+rank=lmer(rank_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean)
+Anova(rank)
+summary(rank)
+
 gains=lm(gains_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(gains)
 rsq.partial(gains)
+
+gains=lmer(gains_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean); Anova(gains); summary(gains)
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(losses)
 rsq.partial(losses)
 
+losses=lmer(losses_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean); Anova(losses); summary(losses)
