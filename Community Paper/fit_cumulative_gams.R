@@ -7,8 +7,10 @@
 ################################################################################
 
 #########
-### TODO: Make figures for each comparison and save in one big PDF
+### TODO: Figure out how to visualize or report
 ### TODO: Make sure model structure is correct (i.e., do your homework)
+### TODO: Switch from AIC to LLR to get a p-value
+### TODO: Add separate analysis where multivariate change is the response
 ########
 
 
