@@ -38,7 +38,10 @@ library(mgcv)
 work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
 data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
 results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-data_file <- "CORRE_RACS_Subset_Perm.csv" # change as needed
+# rac_file <- "CORRE_RACS_Subset_Perm.csv" # change as needed
+rac_file <- "CORRE_RAC_Metrics_July2018_trtyr.csv"
+multi_file <- "CORRE_Mult_Metrics_July2018.csv"
+trt_file <- "treatment interactions_July2018.csv"
 setwd(work_dir)
 
 
@@ -130,10 +133,13 @@ fill_empties <- function(...){
 ####
 ####  READ IN DATA AND CALCULATE CUMULATIVE CHANGE -----------------------------
 ####
-change_metrics <- read.csv(paste0(data_dir,data_file))
+change_metrics <- read_csv(paste0(data_dir, rac_file))
+multivariate_change <- read_csv(paste0(data_dir, multi_file))
+treatment_info <- read_csv(paste0(data_dir, trt_file))
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
+  left_join(treatment_info, by = "site_project_comm") %>%
   group_by(site_project_comm, treatment, plot_id) %>%
   mutate(richness_change_abs = abs(richness_change)) %>%
   mutate(evenness_change_abs = abs(evenness_change)) %>%
