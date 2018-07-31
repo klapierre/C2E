@@ -40,6 +40,7 @@ data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
 results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
 rac_file <- "CORRE_RAC_Metrics_July2018_trtyr.csv"
 multi_file <- "CORRE_Mult_Metrics_July2018.csv"
+exp_file <- "ExperimentInformation_Nov2017.csv"
 trt_file <- "treatment interactions_July2018.csv"
 setwd(work_dir)
 
@@ -132,13 +133,19 @@ fill_empties <- function(...){
 ####
 ####  READ IN DATA AND CALCULATE CUMULATIVE CHANGE -----------------------------
 ####
-change_metrics <- read_csv(paste0(data_dir, rac_file))
-multivariate_change <- read_csv(paste0(data_dir, multi_file))
-treatment_info <- read_csv(paste0(data_dir, trt_file))
+change_metrics <- as_tibble(read.csv(paste0(data_dir, rac_file)))
+multivariate_change <- as_tibble(read.csv(paste0(data_dir, multi_file)))
+experiment_info <- as_tibble(read.csv(paste0(data_dir, exp_file)))
+treatment_info <- as_tibble(read.csv(paste0(data_dir, trt_file)))
+
+## Merge in treatment and experiment information
+experiment_info <- experiment_info %>%
+  mutate(
+    site_project_comm = paste(site_code, project_name, community_type, sep = "_")
+  )
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
-  left_join(treatment_info, by = "site_project_comm") %>%
   group_by(site_project_comm, treatment, plot_id) %>%
   mutate(richness_change_abs = abs(richness_change)) %>%
   mutate(evenness_change_abs = abs(evenness_change)) %>%
@@ -275,6 +282,42 @@ write_csv(
   path = paste0(results_dir, "gam_comparison_table.csv")
 )
 
+
+
+####
+####  TALLY THE RESULTS --------------------------------------------------------
+####
+gam_results <- read_csv(paste0(results_dir, "gam_comparison_table.csv"))
+
+sig_tally <- gam_results %>%
+  group_by(response_var) %>%
+  summarise(
+    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+  ) %>%
+  gather(key = sig, value = value, -response_var) %>%
+  mutate(
+    response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
+    response_var = ifelse(response_var == "gains", "Species gains", response_var),
+    response_var = ifelse(response_var == "losses", "Species losses", response_var),
+    response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
+    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
+  )
+
+ggplot(sig_tally, aes(x = response_var, y = value, fill = sig)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  labs(x = "Change metric", y = "Number of communities") +
+  theme(legend.position = "top")
+
+ggsave(
+  filename = paste0(results_dir, "cumulative_change_summary.png"),
+  width = 6,
+  height = 4,
+  units = "in"
+)
 
 
 ####
