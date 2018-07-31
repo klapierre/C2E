@@ -38,7 +38,6 @@ library(mgcv)
 work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
 data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
 results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-# rac_file <- "CORRE_RACS_Subset_Perm.csv" # change as needed
 rac_file <- "CORRE_RAC_Metrics_July2018_trtyr.csv"
 multi_file <- "CORRE_Mult_Metrics_July2018.csv"
 trt_file <- "treatment interactions_July2018.csv"
