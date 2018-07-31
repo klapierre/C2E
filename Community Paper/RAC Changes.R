@@ -1,5 +1,11 @@
-library(devtools)
-install_github("mavolio/codyn", ref = "RACs_cleaner")
+################################################################################
+##  RAC Changes.R: This script creates the RAC change metrics for the codyn dataset and investigates a bit overall trends.
+##
+##  Author: Meghan Avolio (meghan.avolio@gmail.com)
+##  Date: March 19, 2018
+##  Update: July 29, 2018
+################################################################################
+
 library(tidyverse)
 library(gridExtra)
 library(grid)
@@ -9,42 +15,50 @@ library(vegan)
 
 
 #Files from home
-corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="GVN_FACE_0")
+corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
 
-corredat1<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+#gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
+corredat1<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0")
+  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0", project_name!="e001", project_name!="e002")
 
 ##several studies only have two measurments of a plot. I am dropping those plots
-azi<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+azi<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_code=="AZI")%>%
   filter(plot_id!=11&plot_id!=15&plot_id!=35&plot_id!=37)
 
-jrn<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+jrn<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="JRN_study278_0")%>%
   filter(plot_id!=211&plot_id!=210)
 
-knz<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+knz<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="KNZ_GFP_4F")%>%
   filter(plot_id!="7_1_1"&plot_id!="7_2_1")
 
-sak<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+sak<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
   filter(plot_id!=2)
 
-corredat<-rbind(corredat1, azi, jrn, knz, sak)
+###remove extra treatments from CDR e001 and e002
+cdr <- corredat%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(project_name=="e001"|project_name=="e002")%>%
+  filter(treatment==1|treatment==6|treatment==8|treatment==9|treatment=='1_f_u_n'|treatment=='6_f_u_n'|treatment=='8_f_u_n'|treatment=='9_f_u_n')
+
+
+###final dataset to use
+corredat<-rbind(corredat1, azi, jrn, knz, sak, cdr)
+
 
 
 ####files from work
@@ -83,8 +97,7 @@ sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
   filter(plot_id!=2)
 corredat<-rbind(corredat1, azi, jrn, knz, sak)
-#problems
-#gvn face - only 2 years of data so will only have one point for the dataset.
+
 
 
 plotinfo<-corredat%>%
@@ -92,10 +105,10 @@ plotinfo<-corredat%>%
   unique()
 
 
-#####CALCULATING DIVERSITY METRICs
+#####CALCULATING DIVERSITY METRICs. What is the richness and evenness (measured with Evar for each plot at each time point?)
 
 spc<-unique(corredat$site_project_comm)
-div_eq<-data.frame()
+div_evar<-data.frame()
 
 for (i in 1:length(spc)){
   subset<-corredat%>%
@@ -104,31 +117,9 @@ for (i in 1:length(spc)){
   out<-community_structure(subset, time.var = 'calendar_year', abundance.var = 'relcov', replicate.var = 'plot_id')
   out$site_project_comm<-spc[i]
   
-  div_eq<-rbind(div_eq, out)
-}
-
-div_evar<-data.frame()
-
-for (i in 1:length(spc)){
-  subset<-corredat%>%
-    filter(site_project_comm==spc[i])
-  
-  out<-community_structure(subset, time.var = 'calendar_year', abundance.var = 'relcov', replicate.var = 'plot_id', metric = "Evar")
-  out$site_project_comm<-spc[i]
-  
   div_evar<-rbind(div_evar, out)
 }
-div_simp<-data.frame()
 
-for (i in 1:length(spc)){
-  subset<-corredat%>%
-    filter(site_project_comm==spc[i])
-  
-  out<-community_structure(subset, time.var = 'calendar_year', abundance.var = 'relcov', replicate.var = 'plot_id', metric = "SimpsonEvenness")
-  out$site_project_comm<-spc[i]
-  
-  div_simp<-rbind(div_simp, out)
-}
 
 #####CALCULATING RAC changes
 spc<-unique(corredat$site_project_comm)
@@ -147,7 +138,7 @@ for (i in 1:length(spc)){
 write.csv(delta_rac, "C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\CORRE_RAC_Metrics_Feb2018_allReplicates.csv")
 
 
-write.csv(delta_rac, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018.csv")
+write.csv(delta_rac, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_July2018.csv")
 
 ####based on treatment_year
 spc<-unique(corredat$site_project_comm)
@@ -162,7 +153,7 @@ for (i in 1:length(spc)){
   
   delta_rac<-rbind(delta_rac, out)
 }
-write.csv(delta_rac, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018_trtyr.csv")
+write.csv(delta_rac, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_July2018_trtyr.csv")
 
 ###calculating multivariate changes
 spc<-unique(corredat$site_project_comm)
@@ -172,13 +163,23 @@ for (i in 1:length(spc)){
   subset<-corredat%>%
     filter(site_project_comm==spc[i])
   
-  out<-centroid_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment")
+  out<-multivariate_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment")
   out$site_project_comm<-spc[i]
   
   delta_mult<-rbind(delta_mult, out)
 }
 
-write.csv(delta_mult, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_March2018.csv")
+write.csv(delta_mult, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_July2018.csv")
+
+###figuring out treatments
+trts<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
+  select(site_code, trt_type)%>%
+  unique()%>%
+  group_by(trt_type)%>%
+  summarize(n = length(site_code))
+
+
+
 
 # ##getting the average for each treatment in a year
 # 
