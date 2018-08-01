@@ -80,6 +80,8 @@ dat1<-dat%>%
   left_join(trts_interactions)%>%
   left_join(dat_mult)
 
+write.csv(dat1, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/MetricsTrts_July2018.csv")
+
 pairs(dat1[4:8])
 
 ##overall what is the relationship
