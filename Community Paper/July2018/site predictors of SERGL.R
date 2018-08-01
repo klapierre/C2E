@@ -23,12 +23,12 @@ theme_update(axis.title.x=element_text(size=20, vjust=-0.35), axis.text.x=elemen
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
 
 ### Read in data 
-change_metrics_perm <- read.csv("MetricsTrts_July2018.csv") %>%
+change_metrics <- read.csv("MetricsTrts_July2018.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
 ### Control data
-change_control <- change_metrics_perm %>%
+change_control <- change_metrics %>%
   filter(plot_mani==0) %>%
   dplyr::select(treatment_year, treatment_year2, abs_richness_change, abs_evenness_change, 
                 rank_change, gains, losses, site_project_comm, treatment, plot_mani) %>%
@@ -41,7 +41,7 @@ change_control <- change_metrics_perm %>%
   group_by(site_project_comm, treatment, treatment_year2) %>%
   summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), funs(mean, sd), na.rm=T)
 
-change_glass_d <- change_metrics_perm %>%
+change_glass_d <- change_metrics %>%
   filter(plot_mani != 0) %>%
   group_by(site_project_comm, treatment, treatment_year2, plot_mani) %>%
   summarise(abs_richness_change = mean(abs_richness_change,na.rm=T),
@@ -63,6 +63,8 @@ change_glass_d <- change_metrics_perm %>%
 
 ## replace Inf with NAs in change_glass_d
 change_glass_d <- change_glass_d %>%
+  mutate(abs_richness_glass=replace(abs_richness_glass, abs_richness_glass=="Inf", NA)) %>%
+  mutate(rank_glass=replace(rank_glass, rank_glass=="Inf", NA)) %>%
   mutate(gains_glass=replace(gains_glass, gains_glass=="Inf", NA)) %>%
   mutate(losses_glass=replace(losses_glass, losses_glass=="Inf", NA))
   
@@ -70,12 +72,19 @@ change_glass_d <- change_glass_d %>%
 info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
 
+# read in treatment variables for subsetting later
+info.trt=read.csv("ExperimentInformation_Nov2017.csv") %>%
+  mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_")) %>%
+  group_by(site_project_comm, treatment) %>%
+  summarise_at(vars(n, p, k, CO2, precip, temp), funs(mean))
+
 ### calculate mean change through time and combine with predictor variables
 change_glass_d_mean <- change_glass_d %>%
   group_by(site_project_comm, treatment.x, plot_mani) %>%
   summarise_at(vars(abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass), funs(mean), na.rm=T) %>%
   rename(treatment=treatment.x) %>%
-  left_join(info.spc, by=c("site_project_comm")) 
+  left_join(info.spc, by=c("site_project_comm")) %>%
+  left_join(info.trt, by=c("site_project_comm","treatment"))
 
 #looking for correlations among predictor variables
 pred=as.matrix(change_glass_d_mean[, c("MAP", "MAT", "rrich", "anpp")])
@@ -85,51 +94,54 @@ png(paste0("MR predictor variables SITE LEVEL pairs plot.png"), width=11, height
 print(pairs(pred))
 dev.off()
 
-
-
-#note that some response var (evenness, losses, gains) have NA (for every year there was no variation among the controls; sd=0 and glass's delta was undefined for every year)
-
-
-
 #-------------Multiple regression with only site predictors
 
 #with only some of the treatments (so we don't have too many treatments/experiments at a single site)
+#meghan picked out which ones we want (resource manipulations only?)
 
+usethese=change_metrics[change_metrics$use==1, c("site_project_comm", "treatment", "use")]
+use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_project_comm", "treatment"))
+#write.csv(use_change_glass_d_mean, "use for site predictors of SERGL.csv")
 
+#note that some response var (evenness, losses, gains) have NA (for every year there was no variation among the controls; sd=0 and glass's delta was undefined for every year)
 
+#-----1) treating all experiments in this subset as independent data points:
 
-#partial R2=(SSE(all other terms in model) - SSE(all terms in model))/SSE(all other terms in model)
-
-rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
 vif(rich)
+summary(rich)
 rsq.partial(rich)
 
-rich=lmer(abs_richness_glass ~ MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean)
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+summary(even)
+rsq.partial(even)
+
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+summary(rank)
+rsq.partial(rank)
+
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+summary(gains)
+rsq.partial(gains)
+
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+summary(losses)
+rsq.partial(losses)
+
+#------2) including site as a random factor to group treatments occurring at the same site
+
+rich=lmer(abs_richness_glass ~ MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean)
 Anova(rich)
 summary(rich)
 
-even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
-Anova(even)
-rsq.partial(even)
-
-even=lmer(abs_evenness_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean)
+even=lmer(abs_evenness_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean)
 Anova(even)
 summary(even)
 
-rank=lm(rank_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean)
-Anova(rank)
-rsq.partial(rank)
-
-rank=lmer(rank_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean)
+rank=lmer(rank_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean)
 Anova(rank)
 summary(rank)
 
-gains=lm(gains_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(gains)
-rsq.partial(gains)
+gains=lmer(gains_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean); Anova(gains); summary(gains)
 
-gains=lmer(gains_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean); Anova(gains); summary(gains)
-
-losses=lm(losses_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp, data=change_glass_d_mean); Anova(losses)
-rsq.partial(losses)
-
-losses=lmer(losses_glass~MAP + MAT + rrich + anpp + n + p + k + CO2 + precip + temp + (1|site_code), data=change_glass_d_mean); Anova(losses); summary(losses)
+losses=lmer(losses_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean); Anova(losses); summary(losses)
