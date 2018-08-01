@@ -38,10 +38,7 @@ library(mgcv)
 work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
 data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
 results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-rac_file <- "CORRE_RAC_Metrics_July2018_trtyr.csv"
-multi_file <- "CORRE_Mult_Metrics_July2018.csv"
-exp_file <- "ExperimentInformation_Nov2017.csv"
-trt_file <- "treatment interactions_July2018.csv"
+data_file <- "MetricsTrts_July2018.csv"
 setwd(work_dir)
 
 
@@ -60,49 +57,68 @@ fit_compare_gamms <- function(df, response){
   # Returns:
   #  A tibble with LLR delta deviance, LLR p-value, and delta AIC
   
-  test_formula <- as.formula(
-    paste(response, 
-          "~ s(treatment_year, treatment, bs = 'fs', k = (num_years-1)) + 
-          s(plot_id, bs='re')"
+  # Check that there aren't too many NAs and skip modeling if fraction > 0.5
+  y <- df[ , response]
+  num_nas <- length(which(is.na(y)))
+  fraction_nas <- num_nas/nrow(y)
+  
+  if(fraction_nas >= 0.5){
+    return(
+      tibble(
+        response_var = response,
+        p_value = NA,
+        delta_deviance = NA,
+        delta_aic = NA
+      )
     )
-  )
+  }
   
-  null_formula <- as.formula(
-    paste(response, 
-          "~ s(treatment_year, bs = 'fs', k = (num_years-1)) + 
-          s(plot_id, bs='re')"
+  if(fraction_nas <= 0.5){
+    test_formula <- as.formula(
+      paste(response, 
+            "~ s(treatment_year, treatment, bs = 'fs', k = (num_years-1)) + 
+            s(plot_id, bs='re')"
+      )
+      )
+    
+    null_formula <- as.formula(
+      paste(response, 
+            "~ s(treatment_year, bs = 'fs', k = (num_years-1)) + 
+            s(plot_id, bs='re')"
+      )
+      )
+    
+    gam_test <- gam(
+      test_formula, 
+      data = df, 
+      method = "REML"
     )
-  )
-  
-  gam_test <- gam(
-    test_formula, 
-    data = df, 
-    method = "REML"
-  )
-  
-  gam_null <- gam(
-    null_formula,
-    data = df, 
-    method = "REML"
-  )
-  
-  # LLR tests
-  pvalue <- anova(gam_null, gam_test, test="Chisq")$`Pr(>Chi)`[2]
-  dev <- anova(gam_null, gam_test, test="Chisq")$`Resid. Dev`
-  delta_div <- diff(dev)  # full - null
-  
-  # AIC tests
-  aics <- AIC(gam_null, gam_test)$AIC
-  delta_aic <- diff(aics)  # full - null
-  
-  return(
-    tibble(
-      response_var = response,
-      p_value = pvalue,
-      delta_deviance = delta_div,
-      delta_aic = delta_aic
+    
+    gam_null <- gam(
+      null_formula,
+      data = df, 
+      method = "REML"
     )
-  )
+    
+    # LLR tests
+    pvalue <- anova(gam_null, gam_test, test="Chisq")$`Pr(>Chi)`[2]
+    dev <- anova(gam_null, gam_test, test="Chisq")$`Resid. Dev`
+    delta_div <- diff(dev)  # full - null
+    
+    # AIC tests
+    aics <- AIC(gam_null, gam_test)$AIC
+    delta_aic <- diff(aics)  # full - null
+    
+    return(
+      tibble(
+        response_var = response,
+        p_value = pvalue,
+        delta_deviance = delta_div,
+        delta_aic = delta_aic
+      )
+    )
+  }
+  
 }  # end of model fit and comparison function
 
 
@@ -133,16 +149,9 @@ fill_empties <- function(...){
 ####
 ####  READ IN DATA AND CALCULATE CUMULATIVE CHANGE -----------------------------
 ####
-change_metrics <- as_tibble(read.csv(paste0(data_dir, rac_file)))
-multivariate_change <- as_tibble(read.csv(paste0(data_dir, multi_file)))
-experiment_info <- as_tibble(read.csv(paste0(data_dir, exp_file)))
-treatment_info <- as_tibble(read.csv(paste0(data_dir, trt_file)))
-
-## Merge in treatment and experiment information
-experiment_info <- experiment_info %>%
-  mutate(
-    site_project_comm = paste(site_code, project_name, community_type, sep = "_")
-  )
+change_metrics <- as_tibble(read.csv(paste0(data_dir, data_file))) %>%
+  dplyr::select(-X)  # remove row number column
+  
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
@@ -155,9 +164,11 @@ change_cumsum <- change_metrics %>%
                  evenness_change_abs, 
                  rank_change, 
                  gains, 
-                 losses), 
+                 losses,
+                 composition_change), 
             funs(cumsum)) %>%
-  mutate(control = ifelse(plot_mani==0,"control","treatment"))
+  mutate(control = ifelse(plot_mani==0,"control","treatment")) %>%
+  arrange(site_project_comm, plot_id, treatment_year)
 
 
 
@@ -204,7 +215,7 @@ for(do_site in all_sites){
         response = "richness_change_abs"
       )
       
-      # Evennes
+      # Evenness
       even_test <- fit_compare_gamms(
         df = model_data,
         response = "evenness_change_abs"
@@ -226,6 +237,12 @@ for(do_site in all_sites){
       loss_test <- fit_compare_gamms(
         df = model_data,
         response = "losses"
+      )
+      
+      # Compositional change
+      comp_test <- fit_compare_gamms(
+        df = model_data,
+        response = "composition_change"
       )
       
       tmp_out <- bind_rows(
