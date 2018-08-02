@@ -105,7 +105,7 @@ use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_
 
 #note that some response var (evenness, losses, gains) have NA (for every year there was no variation among the controls; sd=0 and glass's delta was undefined for every year)
 
-#-----1) treating all experiments in this subset as independent data points:
+#-----1a) treating all experiments in this subset as independent data points:
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
 vif(rich)
@@ -127,6 +127,31 @@ rsq.partial(gains)
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
 summary(losses)
 rsq.partial(losses)
+
+#-------1b) Only N addition studies
+
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
+vif(rich)
+summary(rich)
+as.data.frame(rsq.partial(rich)[2:3])
+
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
+summary(even)
+as.data.frame(rsq.partial(even)[2:3])
+
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
+summary(rank)
+as.data.frame(rsq.partial(rank)[2:3])
+
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
+summary(gains)
+as.data.frame(rsq.partial(gains)[2:3])
+
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
+summary(losses)
+as.data.frame(rsq.partial(losses)[2:3])
+
+
 
 #------2) including site as a random factor to group treatments occurring at the same site
 
