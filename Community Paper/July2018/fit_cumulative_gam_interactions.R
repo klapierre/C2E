@@ -6,11 +6,6 @@
 ##  Date created: March 21, 2018
 ################################################################################
 
-#########
-### TODO: Make sure model structure is correct (i.e., do your homework)
-### TODO: Add separate analysis where multivariate change is the response
-########
-
 # NOTES:
 #  (1) for deviance and AIC, negative deltas indicate better models
 #  (2) the p-value then says whether the deviance difference is significant
