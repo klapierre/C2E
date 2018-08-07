@@ -13,6 +13,12 @@
 #      DEFINITELY NOT BETTER than the null model. So, think of NA as p>0.05.
 
 
+####
+## TODO:
+##  (1) Check on minimum know number for data with 3 pairs of years
+####
+
+
 ##  Clear the workspace
 rm(list = ls(all.names = TRUE))
 
@@ -185,8 +191,8 @@ for(do_site in all_sites){
     model_data <- rbind(site_controls, treatment_data)
     num_years <- length(unique(model_data$treatment_year))
     
-    # Skip data with less than four years
-    if(num_years < 4){
+    # Skip data with less than three pairs of years
+    if(num_years < 3){
       tmp_out <- fill_empties() %>%
         mutate(
           site_proj_comm = do_site,
@@ -202,8 +208,8 @@ for(do_site in all_sites){
         )
     }
     
-    # Compare models for data with more than four years
-    if(num_years > 3){
+    # Compare models for data with more than four pairs of years
+    if(num_years > 2){
       
       # Richness
       rich_test <- fit_compare_gamms(
