@@ -234,7 +234,7 @@ change_glass_d <- change_glass_d %>%
   mutate(losses_glass=replace(losses_glass, losses_glass=="Inf", NA))
 
 
-# reading in predictor variables for PLSR
+# reading in predictor variables
 info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
 

@@ -6,16 +6,17 @@
 ##  Date created: March 21, 2018
 ################################################################################
 
-#########
-### TODO: Make sure model structure is correct (i.e., do your homework)
-### TODO: Add separate analysis where multivariate change is the response
-########
-
 # NOTES:
 #  (1) for deviance and AIC, negative deltas indicate better models
 #  (2) the p-value then says whether the deviance difference is significant
 #  (3) some p-values will be NA -- this is OK and indicates the full the model is
 #      DEFINITELY NOT BETTER than the null model. So, think of NA as p>0.05.
+
+
+####
+## TODO:
+##  (1) Check on minimum know number for data with 3 pairs of years
+####
 
 
 ##  Clear the workspace
@@ -76,21 +77,21 @@ fit_compare_gamms <- function(df, response){
   if(fraction_nas <= 0.5){
     test_formula <- as.formula(
       paste(response, 
-            "~ s(treatment_year, treatment, bs = 'fs', k = (num_years-1)) + 
+            "~ treatment + s(treatment_year, by = treatment, k = (num_years-1)) + 
             s(plot_id, bs='re')"
       )
-      )
+    )
     
     null_formula <- as.formula(
       paste(response, 
-            "~ s(treatment_year, bs = 'fs', k = (num_years-1)) + 
+            "~ s(treatment_year, k = (num_years-1)) + 
             s(plot_id, bs='re')"
       )
-      )
+    )
     
     gam_test <- gam(
       test_formula, 
-      data = df, 
+      data = df,
       method = "REML"
     )
     
@@ -135,7 +136,8 @@ fill_empties <- function(...){
         "evenness_change_abs", 
         "rank_change", 
         "gains", 
-        "losses"
+        "losses",
+        "composition_change"
       ),
       p_value = NA,
       delta_deviance = NA,
@@ -189,8 +191,8 @@ for(do_site in all_sites){
     model_data <- rbind(site_controls, treatment_data)
     num_years <- length(unique(model_data$treatment_year))
     
-    # Skip data with less than four years
-    if(num_years < 4){
+    # Skip data with less than three pairs of years
+    if(num_years < 3){
       tmp_out <- fill_empties() %>%
         mutate(
           site_proj_comm = do_site,
@@ -206,8 +208,8 @@ for(do_site in all_sites){
         )
     }
     
-    # Compare models for data with more than four years
-    if(num_years > 3){
+    # Compare models for data with more than four pairs of years
+    if(num_years > 2){
       
       # Richness
       rich_test <- fit_compare_gamms(
@@ -319,7 +321,8 @@ sig_tally <- gam_results %>%
     response_var = ifelse(response_var == "gains", "Species gains", response_var),
     response_var = ifelse(response_var == "losses", "Species losses", response_var),
     response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
-    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
+    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var),
+    response_var = ifelse(response_var == "composition_change", "Composition change", response_var)
   )
 
 ggplot(sig_tally, aes(x = response_var, y = value, fill = sig)) +
@@ -337,28 +340,6 @@ ggsave(
   units = "in"
 )
 
-
-####
-####  VISUALIZE THE DLETA AIC TABLE --------------------------------------------
-####
-# delta_aics <- read.csv(paste0(data_dir,"gam_delta_aic_table.csv"), 
-#                        row.names = 1) %>%
-#   gather(key = metric, value = delta_aic, rich_delta_aic:loss_delta_aic) %>%
-#   mutate(site_treatment = paste(site_project_comm, treatment, sep = "::"),
-#          different = ifelse(delta_aic < -10, "yes", "no"))
-# 
-# ggplot(delta_aics, aes(y = site_treatment, x = metric))+
-#   geom_tile(aes(fill = different))+
-#   scale_fill_brewer(type = "qual", 
-#                     labels = c("C and T not different", "C and T different", "NA"), 
-#                     name = NULL)+
-#   scale_x_discrete(labels = c("Evenness","Gains","Losses","Rank Change", "Richness"))+
-#   xlab("Metric")+
-#   ylab("Site and Treatment")
-# ggsave(filename = paste0(data_dir,"figures/delta_aic_figure.pdf"),
-#        height = 14, 
-#        width = 7, 
-#        units = "in")
 
 
 ####

@@ -43,3 +43,11 @@ prop.test(x=as.matrix(gains[,c('num_sig', 'num_nonsig')]), alternative='two.side
 #losses
 losses <- SERGL%>%filter(response_var=='losses')
 prop.test(x=as.matrix(losses[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#rank_change
+rank_change <- SERGL%>%filter(response_var=='rank_change')
+prop.test(x=as.matrix(rank_change[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#richness_change_abs
+richness_change_abs <- SERGL%>%filter(response_var=='richness_change_abs')
+prop.test(x=as.matrix(richness_change_abs[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
