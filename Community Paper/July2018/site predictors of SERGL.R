@@ -1,6 +1,9 @@
 #emily's working directory
 setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
+#meghan's working directory
+setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+
 #kevin's working directory
 #setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
 
@@ -99,6 +102,7 @@ dev.off()
 #with only some of the treatments (so we don't have too many treatments/experiments at a single site)
 #meghan picked out which ones we want (resource manipulations only?)
 
+##for this first analysis I think we should use all the data - meghan, thus I am skipping this step and running on change_glass_d_mean
 usethese=change_metrics[change_metrics$use==1, c("site_project_comm", "treatment", "use")]
 use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_project_comm", "treatment"))
 #write.csv(use_change_glass_d_mean, "use for site predictors of SERGL.csv")
@@ -107,24 +111,24 @@ use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_
 
 #-----1a) treating all experiments in this subset as independent data points:
 
-rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 vif(rich)
 summary(rich)
 rsq.partial(rich)
 
-even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(even)
 rsq.partial(even)
 
-rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(rank)
 rsq.partial(rank)
 
-gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(gains)
 rsq.partial(gains)
 
-losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean)
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(losses)
 rsq.partial(losses)
 
