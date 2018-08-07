@@ -19,36 +19,42 @@ library(relaimpo)
 
 theme_set(theme_bw(12))
 
+setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+
 #read in the data
-dat<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_July2018_trtyr.csv")%>%
+dat<-read.csv("CORRE_RAC_Metrics_July2018_trtyr.csv")%>%
   select(-X)
 
-dat_mult<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_July2018.csv")%>%
+dat_mult<-read.csv("CORRE_Mult_Metrics_July2018.csv")%>%
 select(-X)
 
-trts_interactions<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
+trts_interactions<-read.csv("treatment interactions_July2018.csv")%>%
   select(-site_project_comm)
 
-sig_exp_bayes <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatments_sig mult diff.csv")%>%
+sig_exp_bayes <- read.csv("treatments_sig mult diff.csv")%>%
   select(site_project_comm, treatment)
 
 unique(sig_exp_bayes$site_project_comm)
 
-sig_exp_perm <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/permanova out.csv")%>%
+sig_exp_perm <- read.csv("permanova out.csv")%>%
   filter(tot_pval>2)%>%
   select(site_project_comm, treatment)
 
 unique(sig_exp_perm$site_project_comm)
 
 
-plotid<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+setwd("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm")
+setwd("~/Dropbox/converge_diverge/datasets/LongForm")
+
+plotid<-read.csv("SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotid2<-plotid%>%
   select(site_project_comm, plot_id, treatment)%>%
   unique()
 
-trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
+trt<-read.csv("ExperimentInformation_Nov2017.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -82,18 +88,39 @@ dat1<-dat%>%
 
 write.csv(dat1, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/MetricsTrts_July2018.csv")
 
-pairs(dat1[4:8])
+#demonstrate why we are dropping richness - actually when we use absolute richness change then there is not relationship.
+g<-ggplot(data = dat1, aes(x = abs(richness_change), y = gains))+
+  geom_point()+
+  xlab("Richness Change")+
+  ylab("Gains")
 
+l<-ggplot(data = dat1, aes(x = abs(richness_change), y = losses))+
+  geom_point()+
+  xlab("Richness Change")+
+  ylab("Losses")
+
+grid.arrange(g, l, ncol=2)
+       
 ##overall what is the relationship
-summary(mall<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=dat1))
+summary(mall<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=dat1))
 calc.relimp(mall, type="lmg", rela=F)
+
+ggplot(data= dat1, aes(x = rank_change, y = composition_change))+
+  geom_point()+
+  xlab("Rank Change")+
+  ylab("Composition Change")+
+  geom_smooth(method = "lm", color = "black")
+
+
+##not doing below becuase it is so similar to overall
+
 
 controls<-dat1%>%
   filter(plot_mani==0)%>%
   left_join(dat_mult)
 
 ##what is the relationship for the controls - rank change is the most important
-summary(mc<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=controls))
+summary(mc<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=controls))
 calc.relimp(mc, type="lmg", rela=F)
 
 trts<-dat1%>%
@@ -101,7 +128,7 @@ trts<-dat1%>%
   left_join(dat_mult)
 
 ##what is the relationship for the treatments - rank change is the most important
-summary(mt<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=trts))
+summary(mt<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=trts))
 calc.relimp(mt, type="lmg", rela=F)
 
 
