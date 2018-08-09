@@ -3,11 +3,12 @@ setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\
 
 #meghan's computer
 setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 dat <- read.csv("MetricsTrts_July2018.csv")%>%
   select(-X)
 
-sig_com<-read.csv('C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv')%>%
+sig_com<-read.csv('~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/gam_com_sig_change.csv')%>%
   mutate(site_project_comm = site_proj_comm)
 
 
@@ -91,6 +92,7 @@ allexp_plot <- ggplot(data = max_toplot, aes(x = max_metric, y = max_value))+
   #theme_few() +
   xlab("Change Metric") +
   ylab("Treatment Year") +
+  coord_flip() +
   theme(axis.text=element_text(size=12, color="black"), strip.text.x=element_text(size=12)) +
   scale_x_discrete(limits=c("Smax","Emax","Rmax","Gmax","Lmax"),labels=c("Rich","Even","Rank","Gain","Loss"))
 
