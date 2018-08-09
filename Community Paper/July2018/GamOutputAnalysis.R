@@ -9,10 +9,16 @@
 library(tidyverse)
 theme_set(theme_bw(20))
 
-
+#works
 gam<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_comparison_table.csv")
-
 trts_interactions<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\treatment interactions_July2018.csv")%>%
+  select(-site_project_comm)%>%
+  mutate(site_proj_comm = paste(site_code, project_name, community_type, sep = "_"))
+
+#mac
+gam<-read.csv("~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")
+
+trts_interactions<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
   select(-site_project_comm)%>%
   mutate(site_proj_comm = paste(site_code, project_name, community_type, sep = "_"))
 
@@ -36,6 +42,10 @@ gamtrts<-gam%>%
 write.csv(gamtrts, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\chisq_comp_change.csv")
 
 gamtrts_toplot<-gamtrts%>%
+  mutate(sum = num_sig+num_nonsig,
+         psig = num_sig/sum,
+         pnsig = num_nonsig/sum)%>%
+  select(-sum, -num_sig, -num_nonsig)%>%
   gather(key = sig, value = number, -trt_type)
 
 
@@ -44,7 +54,8 @@ gamtrts_toplot<-gamtrts%>%
   coord_flip() +
   theme_minimal() +
   scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  labs(x = "Global Change Treatment", y = "Number of communities") +
+  labs(x = "Global Change Treatment", y = "Proportion of communities") +
+  geom_hline(yintercept = 0.50)+
   theme(legend.position = "top")
 
 
@@ -66,6 +77,10 @@ sig_tally <- sig_only %>%
     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
   ) %>%
+  mutate(sum = num_sig+num_nonsig,
+         psig = num_sig/sum,
+         pnsig = num_nonsig/sum)%>%
+  select(-sum, -num_sig, -num_nonsig)%>%
   gather(key = sig, value = value, -response_var) %>%
   mutate(
     response_var2 = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
@@ -80,8 +95,9 @@ ggplot(sig_tally, aes(x = response_var2, y = value, fill = sig)) +
   coord_flip() +
   theme_minimal() +
   scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  labs(x = "Change metric", y = "Number of communities") +
-  theme(legend.position = "top")
+  labs(x = "Change metric", y = "Proportion of communities") +
+  theme(legend.position = "top")+
+  geom_hline(yintercept = 0.5)
 
 ##did aspect of community change depend on the treatment?
 gamtrts_metrics<-sig_only%>%
