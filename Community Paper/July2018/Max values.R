@@ -1,6 +1,16 @@
 library(tidyverse)
 setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
-dat <- read.csv("CORRE_RACS_Subset_Bayes.csv")
+
+#meghan's computer
+setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+
+dat <- read.csv("MetricsTrts_July2018.csv")%>%
+  select(-X)
+
+sig_com<-read.csv('~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/gam_com_sig_change.csv')%>%
+  mutate(site_project_comm = site_proj_comm)
+
 
 plotid<-read.csv("SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -17,8 +27,11 @@ trt<-read.csv("ExperimentInformation_Nov2017.csv")%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
+sigdat<-dat%>%
+  left_join(sig_com)%>%
+  filter(keep == "yes"|plot_mani ==0)
 
-max <- dat%>%
+max <- sigdat%>%
   group_by(site_project_comm, treatment, plot_id)%>%
 #  filter(exp_length>7)%>%
   mutate(S = max(richness_change),
@@ -76,9 +89,10 @@ allexp_plot <- ggplot(data = max_toplot, aes(x = max_metric, y = max_value))+
   geom_jitter()+
   geom_boxplot(alpha=0.1) +
   facet_wrap(~trt) +
-  theme_few() +
+  #theme_few() +
   xlab("Change Metric") +
   ylab("Treatment Year") +
+  coord_flip() +
   theme(axis.text=element_text(size=12, color="black"), strip.text.x=element_text(size=12)) +
   scale_x_discrete(limits=c("Smax","Emax","Rmax","Gmax","Lmax"),labels=c("Rich","Even","Rank","Gain","Loss"))
 

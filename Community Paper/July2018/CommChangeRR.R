@@ -1,88 +1,149 @@
+################################################################################
+##  CommChangesRR.R: This script does too much. I am focusing on the multiple regression models.
+##
+##  Author: Meghan Avolio (meghan.avolio@gmail.com)
+##  Date: March 19, 2018
+##  Update: July 30, 2018
+################################################################################
+
+
 library(tidyverse)
 library(gridExtra)
 library(grid)
 library(gtable)
 library(codyn)
 library(vegan)
+
 library(lme4)
 library(relaimpo)
 
 theme_set(theme_bw(12))
 
+setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+
 #read in the data
-dat<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Metrics_March2018_trtyr.csv")%>%
+dat<-read.csv("CORRE_RAC_Metrics_July2018_trtyr.csv")%>%
   select(-X)
 
-dat_mult<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_Mult_Metrics_March2018.csv")%>%
+dat_mult<-read.csv("CORRE_Mult_Metrics_July2018.csv")%>%
 select(-X)
 
-sig_exp_bayes <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatments_sig mult diff.csv")%>%
+trts_interactions<-read.csv("treatment interactions_July2018.csv")%>%
+  select(-site_project_comm)
+
+sig_exp_bayes <- read.csv("treatments_sig mult diff.csv")%>%
   select(site_project_comm, treatment)
 
 unique(sig_exp_bayes$site_project_comm)
 
-sig_exp_perm <- read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/permanova out.csv")%>%
+sig_exp_perm <- read.csv("permanova out.csv")%>%
   filter(tot_pval>2)%>%
   select(site_project_comm, treatment)
 
 unique(sig_exp_perm$site_project_comm)
 
 
-plotid<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")%>%
+setwd("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm")
+setwd("~/Dropbox/converge_diverge/datasets/LongForm")
+
+plotid<-read.csv("SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotid2<-plotid%>%
   select(site_project_comm, plot_id, treatment)%>%
   unique()
 
-trt<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
+trt<-read.csv("ExperimentInformation_Nov2017.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
-#filtering down to experiments and treatments that have sig change
-dat2<-dat%>%
-  left_join(plotid2)%>%
-  left_join(trt)%>%
-  right_join(sig_exp_bayes)
-
-sig_exp2<-sig_exp_bayes%>%
-  select(-treatment)%>%
-  unique()
-
-controls<-dat%>%
-  left_join(plotid2)%>%
-  left_join(trt)%>%
-  filter(plot_mani==0)%>%
-  right_join(sig_exp2)
-
-sig_exp_dat<-rbind(controls, dat2)
-
-write.csv(sig_exp_dat, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Perm.csv")
+# #filtering down to experiments and treatments that have sig change
+# dat2<-dat%>%
+#   left_join(plotid2)%>%
+#   left_join(trt)%>%
+#   right_join(sig_exp_bayes)
+# 
+# sig_exp2<-sig_exp_bayes%>%
+#   select(-treatment)%>%
+#   unique()
+# 
+# controls<-dat%>%
+#   left_join(plotid2)%>%
+#   left_join(trt)%>%
+#   filter(plot_mani==0)%>%
+#   right_join(sig_exp2)
+# 
+# sig_exp_dat<-rbind(controls, dat2)
+# 
+# write.csv(sig_exp_dat, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/CORRE_RACS_Subset_Perm.csv")
 
 
 dat1<-dat%>%
   left_join(plotid2)%>%
-  left_join(trt)
+  left_join(trt)%>%
+  left_join(trts_interactions)%>%
+  left_join(dat_mult)
 
-##overall what is the relationsip between the metrics
-#graphing this
-dat3<-sig_exp_dat%>%
-  left_join(dat_mult)%>%
-  na.omit
+write.csv(dat1, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/MetricsTrts_July2018.csv")
 
-panel.pearson <- function(x, y, ...) {
-  horizontal <- (par("usr")[1] + par("usr")[2]) / 2; 
-  vertical <- (par("usr")[3] + par("usr")[4]) / 2; 
-  text(horizontal, vertical, format(cor(x,y), digits=3, cex=10)) 
-}
+#demonstrate why we are dropping richness - actually when we use absolute richness change then there is not relationship.
+g<-ggplot(data = dat1, aes(x = abs(richness_change), y = gains))+
+  geom_point()+
+  xlab("Richness Change")+
+  ylab("Gains")
 
-pairs(dat3[,c(4:8,15)], upper.panel = panel.pearson)
+l<-ggplot(data = dat1, aes(x = abs(richness_change), y = losses))+
+  geom_point()+
+  xlab("Richness Change")+
+  ylab("Losses")
 
-###doing multiple regression
-stepAIC(lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=dat3))
-summary(m3<-lm(composition_change~richness_change+rank_change+gains, data=dat3))
-calc.relimp(m3, type="lmg", rela=F)
+grid.arrange(g, l, ncol=2)
+       
+##overall what is the relationship
+summary(mall<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=dat1))
+calc.relimp(mall, type="lmg", rela=F)
+
+ggplot(data= dat1, aes(x = rank_change, y = composition_change))+
+  geom_point()+
+  xlab("Rank Change")+
+  ylab("Composition Change")+
+  geom_smooth(method = "lm", color = "black")
+
+
+##not doing below becuase it is so similar to overall
+
+
+controls<-dat1%>%
+  filter(plot_mani==0)%>%
+  left_join(dat_mult)
+
+##what is the relationship for the controls - rank change is the most important
+summary(mc<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=controls))
+calc.relimp(mc, type="lmg", rela=F)
+
+trts<-dat1%>%
+  filter(plot_mani>0)%>%
+  left_join(dat_mult)
+
+##what is the relationship for the treatments - rank change is the most important
+summary(mt<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=trts))
+calc.relimp(mt, type="lmg", rela=F)
+
+
+##what is the relationship for the N trts - rank change is the most important
+summary(mN<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=subset(trts, trt_type == "N")))
+calc.relimp(mN, type="lmg", rela=F)
+
+##what is the relationship for the irg trts - rank change is the most important
+summary(mi<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=subset(trts, trt_type == "irr")))
+calc.relimp(mi, type="lmg", rela=F)
+
+##what is the relationship for the other trts - rank change is the most important
+summary(mo<-lm(composition_change~richness_change+evenness_change+rank_change+gains+losses, data=subset(trts, trt_type == "other")))
+calc.relimp(mo, type="lmg", rela=F)
+
 
 
 ####get average of all replicates in a treatment.
