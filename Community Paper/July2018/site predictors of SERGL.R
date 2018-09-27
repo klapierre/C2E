@@ -1,5 +1,5 @@
 #emily's working directory
-setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange")
 
 #meghan's working directory
 setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange/March2018 WG")
@@ -26,7 +26,7 @@ theme_update(axis.title.x=element_text(size=20, vjust=-0.35), axis.text.x=elemen
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
 
 ### Read in data 
-change_metrics <- read.csv("MetricsTrts_July2018.csv") %>%
+change_metrics <- read.csv("March2018 WG/MetricsTrts_July2018.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
@@ -72,11 +72,11 @@ change_glass_d <- change_glass_d %>%
   mutate(losses_glass=replace(losses_glass, losses_glass=="Inf", NA))
   
 # read in site level predictor variables
-info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
+info.spc=read.csv("March2018 WG/SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
 
 # read in treatment variables for subsetting later
-info.trt=read.csv("ExperimentInformation_Nov2017.csv") %>%
+info.trt=read.csv("March2018 WG/ExperimentInformation_Nov2017.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_")) %>%
   group_by(site_project_comm, treatment) %>%
   summarise_at(vars(n, p, k, CO2, precip, temp), funs(mean))
@@ -93,19 +93,13 @@ change_glass_d_mean <- change_glass_d %>%
 pred=as.matrix(change_glass_d_mean[, c("MAP", "MAT", "rrich", "anpp")])
 cor(pred)
 pairs(pred)
-png(paste0("MR predictor variables SITE LEVEL pairs plot.png"), width=11, height=8, units="in", res=600)
+png(paste0("Summer2018_Results/site predictors of SERGL/MR predictor variables SITE LEVEL pairs plot.png"), width=11, height=8, units="in", res=600)
 print(pairs(pred))
 dev.off()
 
 #-------------Multiple regression with only site predictors
 
-#with only some of the treatments (so we don't have too many treatments/experiments at a single site)
-#meghan picked out which ones we want (resource manipulations only?)
-
-##for this first analysis I think we should use all the data - meghan, thus I am skipping this step and running on change_glass_d_mean
-usethese=change_metrics[change_metrics$use==1, c("site_project_comm", "treatment", "use")]
-use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_project_comm", "treatment"))
-#write.csv(use_change_glass_d_mean, "use for site predictors of SERGL.csv")
+##for this first analysis I think we should use all the data 
 
 #note that some response var (evenness, losses, gains) have NA (for every year there was no variation among the controls; sd=0 and glass's delta was undefined for every year)
 
@@ -115,46 +109,151 @@ rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 vif(rich)
 summary(rich)
 rsq.partial(rich)
+#making object to contain results
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(even)
 rsq.partial(even)
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(rank)
 rsq.partial(rank)
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(gains)
 rsq.partial(gains)
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(losses)
 rsq.partial(losses)
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
 
-#-------1b) Only N addition studies
+fulldataset=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+write.csv(fulldataset, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, all studies.csv", row.names=F)
+
+
+#-------1b) Only a subset of studies
+
+usethese=change_metrics[change_metrics$use==1, c("site_project_comm", "treatment", "use")]
+use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_project_comm", "treatment"))
+#write.csv(use_change_glass_d_mean, "use for site predictors of SERGL.csv")
+
+summary(use_change_glass_d_mean) #so we can look at relationships separately for experiments manipulating each of these factors: N, P, K, CO2, precip, temp?
+length(use_change_glass_d_mean[use_change_glass_d_mean$n>0,]$site_project_comm) #131 studies
+length(use_change_glass_d_mean[use_change_glass_d_mean$p>0,]$site_project_comm) #73 studies
+length(use_change_glass_d_mean[use_change_glass_d_mean$k>0,]$site_project_comm) #only 21 studies
+length(use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,]$site_project_comm) #only 10 studies
+length(use_change_glass_d_mean[use_change_glass_d_mean$precip>0,]$site_project_comm) #38 studies
+length(use_change_glass_d_mean[use_change_glass_d_mean$temp>0,]$site_project_comm) #only 2 studies
+
+#----------N addition studies:
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
 vif(rich)
-summary(rich)
-as.data.frame(rsq.partial(rich)[2:3])
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-summary(even)
-as.data.frame(rsq.partial(even)[2:3])
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-summary(rank)
-as.data.frame(rsq.partial(rank)[2:3])
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-summary(gains)
-as.data.frame(rsq.partial(gains)[2:3])
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-summary(losses)
-as.data.frame(rsq.partial(losses)[2:3])
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
 
+onlyNadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+write.csv(onlyNadditions, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only N additions.csv", row.names=F)
+
+#----------P addition studies:
+
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
+vif(rich)
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+
+onlyPadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+write.csv(onlyPadditions, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only P additions.csv", row.names=F)
+
+#----------K addition studies:
+
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
+vif(rich)
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+
+onlyKadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+write.csv(onlyKadditions, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only K additions.csv", row.names=F)
+
+#----------CO2 manipulation studies:
+
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
+vif(rich)
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+
+onlyCO2manipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+write.csv(onlyCO2manipulations, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only CO2 manip.csv", row.names=F)
+
+#----------precip studies:
+
+rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
+vif(rich)
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+
+even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+
+rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+
+gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+
+losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+
+onlyprecipmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+write.csv(onlyprecipmanipulations, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only precip manip.csv", row.names=F)
 
 
 #------2) including site as a random factor to group treatments occurring at the same site
@@ -174,3 +273,4 @@ summary(rank)
 gains=lmer(gains_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean); Anova(gains); summary(gains)
 
 losses=lmer(losses_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean); Anova(losses); summary(losses)
+
