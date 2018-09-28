@@ -2,10 +2,10 @@
 setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange")
 
 #meghan's working directory
-setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange")
 
 #kevin's working directory
-#setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
+#setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\")
 
 library(tidyverse)
 library(ggplot2)
@@ -110,27 +110,27 @@ vif(rich)
 summary(rich)
 rsq.partial(rich)
 #making object to contain results
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(even)
 rsq.partial(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(rank)
 rsq.partial(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(gains)
 rsq.partial(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(losses)
 rsq.partial(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
 fulldataset=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 write.csv(fulldataset, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, all studies.csv", row.names=F)
@@ -154,19 +154,19 @@ length(use_change_glass_d_mean[use_change_glass_d_mean$temp>0,]$site_project_com
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
 vif(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$n>0,])
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
 onlyNadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 write.csv(onlyNadditions, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only N additions.csv", row.names=F)
@@ -175,19 +175,19 @@ write.csv(onlyNadditions, "Summer2018_Results/site predictors of SERGL/site pred
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
 vif(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$p>0,])
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
 onlyPadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 write.csv(onlyPadditions, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only P additions.csv", row.names=F)
@@ -196,19 +196,19 @@ write.csv(onlyPadditions, "Summer2018_Results/site predictors of SERGL/site pred
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
 vif(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$k>0,])
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
 onlyKadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 write.csv(onlyKadditions, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only K additions.csv", row.names=F)
@@ -217,19 +217,19 @@ write.csv(onlyKadditions, "Summer2018_Results/site predictors of SERGL/site pred
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
 vif(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$CO2>0,])
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
 onlyCO2manipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 write.csv(onlyCO2manipulations, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only CO2 manip.csv", row.names=F)
@@ -238,22 +238,38 @@ write.csv(onlyCO2manipulations, "Summer2018_Results/site predictors of SERGL/sit
 
 rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
 vif(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c("NA", rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c("NA", rsq.partial(even)$partial.rsq))
+evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c("NA", rsq.partial(rank)$partial.rsq))
+rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c("NA", rsq.partial(gains)$partial.rsq))
+gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~MAP + MAT + rrich + anpp, data=use_change_glass_d_mean[use_change_glass_d_mean$precip>0,])
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c("NA", rsq.partial(losses)$partial.rsq))
+lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
 onlyprecipmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 write.csv(onlyprecipmanipulations, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, only precip manip.csv", row.names=F)
+
+#-------make a figure
+
+fulldataset$studies="All"
+onlyNadditions$studies="N addition"
+onlyPadditions$studies="P addition"
+onlyKadditions$studies="K addition"
+onlyCO2manipulations$studies="CO2 manipulations"
+onlyprecipmanipulations$studies="Precipitation manipulations"
+forbigfig=rbind(fulldataset, onlyNadditions, onlyPadditions, onlyKadditions, onlyCO2manipulations, onlyprecipmanipulations)
+levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
+levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "RSR")
+
+
+ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + facet_grid(studies~response) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + guides(colour = guide_colorbar(title = "Number of Stations Reporting"))
+ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=8, height=8)
 
 
 #------2) including site as a random factor to group treatments occurring at the same site
