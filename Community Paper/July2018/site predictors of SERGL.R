@@ -268,8 +268,8 @@ levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change"
 levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "RSR")
 
 
-ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + facet_grid(studies~response) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
-ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=8, height=9)
+ggplot(aes(response, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + facet_grid(studies~predictor) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
+ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=8, height=9.5)
 
 
 #------2) including site as a random factor to group treatments occurring at the same site
