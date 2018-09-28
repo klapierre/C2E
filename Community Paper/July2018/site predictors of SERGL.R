@@ -17,11 +17,11 @@ library(rsq)
 library(lme4)
 
 theme_set(theme_bw())
-theme_update(axis.title.x=element_text(size=20, vjust=-0.35), axis.text.x=element_text(size=16),
-             axis.title.y=element_text(size=20, angle=90, vjust=0.5), axis.text.y=element_text(size=16),
+theme_update(axis.title.x=element_text(size=12, vjust=-0.35), axis.text.x=element_text(size=12),
+             axis.title.y=element_text(size=12, angle=90, vjust=0.5), axis.text.y=element_text(size=12),
              plot.title = element_text(size=24, vjust=2),
              panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
-             legend.title=element_blank(), legend.text=element_text(size=20))
+             legend.title=element_text(size=12), legend.text=element_text(size=12))
 
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
 
@@ -257,19 +257,19 @@ write.csv(onlyprecipmanipulations, "Summer2018_Results/site predictors of SERGL/
 
 #-------make a figure
 
-fulldataset$studies="All"
+fulldataset$studies="All manipulations"
 onlyNadditions$studies="N addition"
 onlyPadditions$studies="P addition"
 onlyKadditions$studies="K addition"
 onlyCO2manipulations$studies="CO2 manipulations"
-onlyprecipmanipulations$studies="Precipitation manipulations"
+onlyprecipmanipulations$studies="Water manipulations"
 forbigfig=rbind(fulldataset, onlyNadditions, onlyPadditions, onlyKadditions, onlyCO2manipulations, onlyprecipmanipulations)
 levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
 levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "RSR")
 
 
-ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + facet_grid(studies~response) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + guides(colour = guide_colorbar(title = "Number of Stations Reporting"))
-ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=8, height=8)
+ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + facet_grid(studies~response) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
+ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=8, height=9)
 
 
 #------2) including site as a random factor to group treatments occurring at the same site
