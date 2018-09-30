@@ -100,6 +100,7 @@ dev.off()
 #-------------Standardized multiple regression with only site predictors
 
 ##for this first analysis I think we should use all the data 
+length(use_change_glass_d_mean$site_project_comm) #202 studies
 
 #note that some response var (evenness, losses, gains) have NA (for every year there was no variation among the controls; sd=0 and glass's delta was undefined for every year)
 
@@ -265,11 +266,13 @@ onlyCO2manipulations$studies="CO2 manipulation"
 onlyprecipmanipulations$studies="Water manipulation"
 forbigfig=rbind(fulldataset, onlyNadditions, onlyPadditions, onlyKadditions, onlyCO2manipulations, onlyprecipmanipulations)
 levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
-levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "RSR")
+levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "Regional SR")
 forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
+forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
 
-ggplot(aes(response, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + facet_grid(studies~predictor) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from standardized multiple regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
-ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=8, height=9.5)
+ggplot(aes(response, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + geom_point(aes(response, star.location, shape=significant)) + facet_grid(studies~predictor) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4, hjust=1)) + xlab("Aspect of community change") + ylab("Effect on aspect of community change\n(slope from standardized multiple regression)") + guides(fill = guide_colorbar(title = "Partial R2")) + scale_shape_manual(values=c(NA, 8), guide=FALSE)
+ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=7, height=9.5)
+ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.png", width=7, height=9.5)
 
 ggplot(aes(response, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)" & !forbigfig$pval>0.05,]) + geom_col() + facet_grid(studies~predictor) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from standardized multiple regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
 ggsave("Summer2018_Results/site predictors of SERGL/significant site predictors of SERGL.pdf", width=8, height=9.5)
