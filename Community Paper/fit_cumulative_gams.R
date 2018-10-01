@@ -6,11 +6,6 @@
 ##  Date created: March 21, 2018
 ################################################################################
 
-#########
-### TODO: Make sure model structure is correct (i.e., do your homework)
-### TODO: Add separate analysis where multivariate change is the response
-########
-
 # NOTES:
 #  (1) for deviance and AIC, negative deltas indicate better models
 #  (2) the p-value then says whether the deviance difference is significant
@@ -79,14 +74,14 @@ fit_compare_gamms <- function(df, response){
             "~ s(treatment_year, treatment, bs = 'fs', k = (num_years-1)) + 
             s(plot_id, bs='re')"
       )
-      )
+    )
     
     null_formula <- as.formula(
       paste(response, 
             "~ s(treatment_year, bs = 'fs', k = (num_years-1)) + 
             s(plot_id, bs='re')"
       )
-      )
+    )
     
     gam_test <- gam(
       test_formula, 
@@ -319,19 +314,62 @@ sig_tally <- gam_results %>%
     response_var = ifelse(response_var == "gains", "Species gains", response_var),
     response_var = ifelse(response_var == "losses", "Species losses", response_var),
     response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
-    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
+    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var),
+    response_var = ifelse(response_var == "composition_change", "Composition", response_var)
   )
 
-ggplot(sig_tally, aes(x = response_var, y = value, fill = sig)) +
+# Of them all, how many had treatment-time interactions for composition change?
+percent_with_compositional_change <- sig_tally %>%
+  filter(response_var == "Composition") %>%
+  spread(sig, value) %>%
+  mutate(
+    percent_sig = num_sig/(num_nonsig + num_sig)
+  )
+
+# Of the significant treatment-time interactions, tally other aspects
+sites_with_trt_time_itxn <- gam_results %>%
+  filter(response_var == "composition_change") %>%
+  filter(sig_diff_cntrl_trt == "yes") %>%
+  dplyr::select(site_proj_comm, treatment)
+  
+aspects_of_sigones <- gam_results %>%
+  right_join(sites_with_trt_time_itxn, by = c("site_proj_comm", "treatment")) %>%
+  filter(response_var != "composition_change")
+
+sig_tally_changers <- aspects_of_sigones %>%
+  group_by(response_var) %>%
+  summarise(
+    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+  ) %>%
+  gather(key = sig, value = value, -response_var) %>%
+  mutate(
+    response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
+    response_var = ifelse(response_var == "gains", "Species gains", response_var),
+    response_var = ifelse(response_var == "losses", "Species losses", response_var),
+    response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
+    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
+  ) %>%
+  spread(sig, value) %>%
+  mutate(
+    proportion_nonsig = num_nonsig / (num_nonsig + num_sig),
+    proportion_sig = num_sig / (num_nonsig + num_sig)
+  ) %>%
+  dplyr::select(-num_nonsig, -num_sig) %>%
+  gather(key = sig, value = value, -response_var)
+
+ggplot(sig_tally_changers, aes(x = response_var, y = value, fill = sig)) +
   geom_col(width = 0.7) +
+  geom_hline(aes(yintercept = 0.5)) +
   coord_flip() +
   theme_minimal() +
-  scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  labs(x = "Change metric", y = "Number of communities") +
+  scale_fill_manual(values = c("grey25", "grey75"), name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  # scale_fill_brewer(type = "bw", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  labs(x = "Aspect of community change", y = "Proportion of communities") +
   theme(legend.position = "top")
 
 ggsave(
-  filename = paste0(results_dir, "cumulative_change_summary.png"),
+  filename = paste0(results_dir, "cumulative_changers_summary.png"),
   width = 6,
   height = 4,
   units = "in"
