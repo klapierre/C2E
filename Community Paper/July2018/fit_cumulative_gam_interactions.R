@@ -432,25 +432,25 @@ ggsave(
 
 
 ##making pplots examples for the talk
-theme_set(theme_bw(12))
-pplots<-change_cumsum%>%
-  filter(site_project_comm=="KNZ_pplots_0")%>%
-  filter(treatment == "N2P0"|treatment=="N2P3"|treatment=="N1P0")
-
-ggplot(data = subset(pplots, treatment!="N2P0"),
-       aes(x = treatment_year, y = richness_change_abs, color = treatment))+
-  geom_point()+
-  geom_smooth(method = "lm", aes(color = treatment), se = F)+
-  scale_color_brewer(type = "qual", name = "Treatment", labels= c("Control", "N+P"))+
-  xlab("Treatment year")+
-  ylab("Richness change")
-
-ggplot(data = subset(pplots, treatment!="N2P3"),
-       aes(x = treatment_year, y = richness_change_abs, color = treatment))+
-  geom_point()+
-  geom_smooth(method = "lm", aes(color = treatment), se = F)+
-  scale_color_brewer(type = "qual", name = "Treatment", labels= c("Control", "N"))+
-  xlab("Treatment year")+
-  ylab("Richness change")
+# theme_set(theme_bw(12))
+# pplots<-change_cumsum%>%
+#   filter(site_project_comm=="KNZ_pplots_0")%>%
+#   filter(treatment == "N2P0"|treatment=="N2P3"|treatment=="N1P0")
+# 
+# ggplot(data = subset(pplots, treatment!="N2P0"),
+#        aes(x = treatment_year, y = richness_change_abs, color = treatment))+
+#   geom_point()+
+#   geom_smooth(method = "lm", aes(color = treatment), se = F)+
+#   scale_color_brewer(type = "qual", name = "Treatment", labels= c("Control", "N+P"))+
+#   xlab("Treatment year")+
+#   ylab("Richness change")
+# 
+# ggplot(data = subset(pplots, treatment!="N2P3"),
+#        aes(x = treatment_year, y = richness_change_abs, color = treatment))+
+#   geom_point()+
+#   geom_smooth(method = "lm", aes(color = treatment), se = F)+
+#   scale_color_brewer(type = "qual", name = "Treatment", labels= c("Control", "N"))+
+#   xlab("Treatment year")+
+#   ylab("Richness change")
 
  
