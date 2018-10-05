@@ -13,12 +13,6 @@
 #      DEFINITELY NOT BETTER than the null model. So, think of NA as p>0.05.
 
 
-####
-## TODO:
-##  (1) Check on minimum know number for data with 3 pairs of years
-####
-
-
 ##  Clear the workspace
 rm(list = ls(all.names = TRUE))
 
@@ -49,8 +43,8 @@ setwd(work_dir)
 ####  DEFINE MODEL FITTING FUNCTION --------------------------------------------
 ####
 
-fit_compare_gamms <- function(df, response){
-  # Fits two GAMMs and compares them with AIC and LLR
+fit_compare_gams <- function(df, response){
+  # Fits two GAMs and compares them with AIC and LLR
   #
   # Args:
   #  data: a dataframe with necessary columns for fitting the GAMMs
@@ -193,7 +187,7 @@ for(do_site in all_sites){
     num_years <- length(unique(model_data$treatment_year))
     
     # Skip data with less than three pairs of years
-    if(num_years < 3){
+    if(num_years < 4){
       tmp_out <- fill_empties() %>%
         mutate(
           site_proj_comm = do_site,
@@ -210,40 +204,40 @@ for(do_site in all_sites){
     }
     
     # Compare models for data with more than four pairs of years
-    if(num_years > 2){
+    if(num_years > 3){
       
       # Richness
-      rich_test <- fit_compare_gamms(
+      rich_test <- fit_compare_gams(
         df = model_data,
         response = "richness_change_abs"
       )
       
       # Evenness
-      even_test <- fit_compare_gamms(
+      even_test <- fit_compare_gams(
         df = model_data,
         response = "evenness_change_abs"
       )
       
       # Rank change
-      rank_test <- fit_compare_gamms(
+      rank_test <- fit_compare_gams(
         df = model_data,
         response = "rank_change"
       )
       
       # Gains
-      gain_test <- fit_compare_gamms(
+      gain_test <- fit_compare_gams(
         df = model_data,
         response = "gains"
       )
       
       # Losses
-      loss_test <- fit_compare_gamms(
+      loss_test <- fit_compare_gams(
         df = model_data,
         response = "losses"
       )
       
       # Compositional change
-      comp_test <- fit_compare_gamms(
+      comp_test <- fit_compare_gams(
         df = model_data,
         response = "composition_change"
       )
@@ -323,19 +317,61 @@ sig_tally <- gam_results %>%
     response_var = ifelse(response_var == "losses", "Species losses", response_var),
     response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
     response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var),
-    response_var = ifelse(response_var == "composition_change", "Composition change", response_var)
+    response_var = ifelse(response_var == "composition_change", "Composition", response_var)
   )
 
-ggplot(sig_tally, aes(x = response_var, y = value, fill = sig)) +
+# Of them all, how many had treatment-time interactions for composition change?
+percent_with_compositional_change <- sig_tally %>%
+  filter(response_var == "Composition") %>%
+  spread(sig, value) %>%
+  mutate(
+    percent_sig = num_sig/(num_nonsig + num_sig)
+  )
+
+# Of the significant treatment-time interactions, tally other aspects
+sites_with_trt_time_itxn <- gam_results %>%
+  filter(response_var == "composition_change") %>%
+  filter(sig_diff_cntrl_trt == "yes") %>%
+  dplyr::select(site_proj_comm, treatment)
+
+aspects_of_sigones <- gam_results %>%
+  right_join(sites_with_trt_time_itxn, by = c("site_proj_comm", "treatment")) %>%
+  filter(response_var != "composition_change")
+
+sig_tally_changers <- aspects_of_sigones %>%
+  group_by(response_var) %>%
+  summarise(
+    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+  ) %>%
+  gather(key = sig, value = value, -response_var) %>%
+  mutate(
+    response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
+    response_var = ifelse(response_var == "gains", "Species gains", response_var),
+    response_var = ifelse(response_var == "losses", "Species losses", response_var),
+    response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
+    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
+  ) %>%
+  spread(sig, value) %>%
+  mutate(
+    proportion_nonsig = num_nonsig / (num_nonsig + num_sig),
+    proportion_sig = num_sig / (num_nonsig + num_sig)
+  ) %>%
+  dplyr::select(-num_nonsig, -num_sig) %>%
+  gather(key = sig, value = value, -response_var)
+
+ggplot(sig_tally_changers, aes(x = response_var, y = value, fill = sig)) +
   geom_col(width = 0.7) +
+  geom_hline(aes(yintercept = 0.5)) +
   coord_flip() +
   theme_minimal() +
-  scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  labs(x = "Change metric", y = "Number of communities") +
+  scale_fill_manual(values = c("grey25", "grey75"), name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  # scale_fill_brewer(type = "bw", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  labs(x = "Aspect of community change", y = "Proportion of communities") +
   theme(legend.position = "top")
 
 ggsave(
-  filename = paste0(results_dir, "cumulative_change_summary.png"),
+  filename = paste0(results_dir, "cumulative_changers_summary.png"),
   width = 6,
   height = 4,
   units = "in"
