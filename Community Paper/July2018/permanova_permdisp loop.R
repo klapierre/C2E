@@ -1,4 +1,4 @@
-### calculating permanova for each experiment and year
+### calculating permanova and permdisp for each experiment and year
 ###
 ### Authors: Kevin Wilcox (wilcoxkr@gmail.com) Andrew Tredennick (atredenn@gmail.com) and Meghan Avolio (meghan.avolio@jhu.edu)
 ### Last updated: Oct 29 2018
@@ -6,9 +6,12 @@
 
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Dropbox\\")
+setwd("C:\\Users\\megha\\Dropbox\\")
+
 library(tidyverse)
 library(vegan)
 library(ggthemes)
+
 corredat1<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\SpeciesRelativeAbundance_Oct2017.csv")%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -90,12 +93,18 @@ for(i in 1:length(site_project_comm_vec)) {
         dplyr::select(site_code:plot_mani)
       
       permanova_temp <- adonis(cover_temp ~ plot_mani, data=env_temp, permutations=99)
+      
+      
+      permdisp_temp <- betadisper(vegdist(cover_temp), env_temp$plot_mani, type = "centroid")
+      sig_disp <- permutest(permdisp_temp)
 
       perm_out_temp <- data.frame(
         site_project_comm = site_project_comm_vec[i],
         treatment = treatment_vec[trt],
         calendar_year = year_vec[yr],
-        Pvalue =  permanova_temp$aov.tab$'Pr(>F)'[1]
+        perm_Pvalue =  permanova_temp$aov.tab$'Pr(>F)'[1],
+        disp_Pvalue = sig_disp$tab$'Pr(>F)'[1]
+        
       )
       
       permanova_out_master <- rbind(permanova_out_master, perm_out_temp)
@@ -114,6 +123,8 @@ permanova_out_mod <- permanova_out_master %>%
 #write.csv(permanova_out_mod, file= "C2E\\Products\\CommunityChange\\March2018 WG\\permanova out.csv",row.names=F)
 
 filter(permanova_out_master, site_project_comm =="ASGA_clonal_0")
+
+write.csv(permanova_out_master, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output.csv", row.names=F)
 
 
 
