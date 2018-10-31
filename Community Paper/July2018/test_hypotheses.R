@@ -160,7 +160,8 @@ mult_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_
 
 CT_ttests<- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\RAC_diff_CT_ttests.csv")
 
-#merge perm_output and mult_diff to set up the six scenarios. 
+
+#merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
 #1 = no change comp, no change disp
 #2 = no change comp, increase disp (T > C)
 #3 = no change comp, decrease disp (C > T)
@@ -177,6 +178,35 @@ scenarios<-perm_output%>%
                                               ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "T",5,
                                                      ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))
 
-num_scen<- scenarios%>%
+
+
+##combining to see proportion is different for each RAC metric
+RAC_diff_outcomes <- scenarios%>%
+  right_join(CT_ttests)%>%
+  mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
+         even=ifelse(even_pval<0.0601, 1, 0),
+         rank=ifelse(rank_pval<0.0501, 1, 0),
+         spdiff=ifelse(spdiff_pval<0.501, 1, 0))%>%
+  na.omit()
+
+num_scen<- RAC_diff_outcomes%>%
   group_by(scenario)%>%
   summarize(n=length(scenario))
+
+prop_diff<-RAC_diff_outcomes%>%
+  group_by(scenario)%>%
+  summarize_at(vars(rich, even, rank, spdiff), funs(sum))%>%
+  gather(metric, num, rich:spdiff)%>%
+  mutate(prop = ifelse(scenario==1, num/1735, ifelse(scenario==2, num/103, ifelse(scenario==3, num/127, ifelse(scenario==4, num/572, ifelse(scenario==5, num/130, ifelse(scenario==6, num/165, 999)))))))%>%
+  mutate(notsig=1-prop)%>%
+  select(-num)%>%
+  gather(sig, proportion, notsig:prop)
+
+theme_set(theme_bw(12))
+ggplot(data=prop_diff, aes(x = metric, y = proportion, fill=sig))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"))+
+  ylab("Proportion")+
+  xlab("RAC Difference Metric")+
+  facet_wrap(~scenario, ncol=3)
