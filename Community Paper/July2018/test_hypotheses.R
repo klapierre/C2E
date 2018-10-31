@@ -210,3 +210,11 @@ ggplot(data=prop_diff, aes(x = metric, y = proportion, fill=sig))+
   ylab("Proportion")+
   xlab("RAC Difference Metric")+
   facet_wrap(~scenario, ncol=3)
+
+ggplot(data=prop_diff, aes(x = scenario, y = proportion, fill=sig))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+  ylab("Proportion")+
+  xlab("Community Difference Scenario")+
+  scale_x_continuous(breaks = c(1:6))+
+  facet_wrap(~metric, ncol=2)
