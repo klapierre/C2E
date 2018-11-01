@@ -11,6 +11,8 @@ library(codyn)
 library(vegan)
 #home
 setwd("~/Dropbox/")
+#Meghan Work
+setwd("C:\\Users\\megha\\Dropbox")
 
 #Files from home
 corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
@@ -104,7 +106,7 @@ corredat_sub<-corredat%>%
 
 
 ### to get all data time lags
-spct<-unique(corredat$site_project_comm_trt)
+spct<-unique(corredat_sub$site_project_comm_trt)
 
 rate_change_interval<-data.frame()
 
@@ -114,35 +116,30 @@ for (i in 1:length(spct)){
     filter(site_project_comm_trt==spct[i])
   
   out<-rate_change_interval(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
-  out$site_project_comm<-spct[i]
+  out$site_project_comm_trt<-spct[i]
   
   rate_change_interval<-rbind(rate_change_interval, out)
 }
-###only need this if we rerun with corredat_sub
-rate_change_interval_4yrs<-rate_change_interval%>%
-  mutate(spct=site_project_comm)%>%
-  separate (spct, into=c("site_project_comm", "treatment"), sep="::")%>%
-  right_join(numyears)%>%
-  mutate(site_project_comm_trt=paste(site_project_comm, treatment, sep="::"))
+
 
 ##to get slopes and p-values for each treatment through time (i.e., putting in all plot to plot combinations into a single linear regression across replicates)
 ##get slopes for each treatment including controls
-spct<-unique(rate_change_interval_4yrs$site_project_comm_trt)
+spct<-unique(rate_change_interval$site_project_comm_trt)
 
 lm.slopes<-data.frame()
 for (i in 1:length(spct)){
-  subset<-rate_change_interval_4yrs%>%
+  subset<-rate_change_interval%>%
     filter(site_project_comm_trt==spct[i])
   test.lm<-lm(distance~interval, data=subset)
-  output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm), 
-                        treatment=unique(subset$treatment), 
+  output.lm<-data.frame(site_project_comm_trt=unique(subset$site_project_comm), 
                         est=summary(test.lm)$coef["interval", c("Estimate")], 
-                        st.er=summary(test.lm)$coef["interval", c("Std. Error")], 
+                        st.er=summary(test.lm)$coef["interval", c("Std. Error")],
                         p.val=summary(test.lm)$coef["interval","Pr(>|t|)"])
   lm.slopes<-rbind(lm.slopes, output.lm)
 }
 
 lm.slopes2<-lm.slopes%>%
+  separate(site_project_comm_trt, into=c("site_project_comm","treatment"), sep = "::")
   mutate(sig=ifelse(p.val<0.0501, 1, 0))%>%
   left_join(treatment_info)
 
