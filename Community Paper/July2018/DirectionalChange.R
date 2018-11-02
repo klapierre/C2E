@@ -105,25 +105,29 @@ corredat_sub<-corredat%>%
 # write.csv(rate_change_4yrs, "C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval_4orMoreYrs.csv", row.names=F)
 
 
-### to get all data time lags
-spct<-unique(corredat_sub$site_project_comm_trt)
+# ### to get all data time lags
+# spct<-unique(corredat_sub$site_project_comm_trt)
+# 
+# rate_change_interval<-data.frame()
+# 
+# for (i in 1:length(spct)){
+#   
+#   subset<-corredat%>%
+#     filter(site_project_comm_trt==spct[i])
+#   
+#   out<-rate_change_interval(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
+#   out$site_project_comm_trt<-spct[i]
+#   
+#   rate_change_interval<-rbind(rate_change_interval, out)
+# }
+# 
+# write.csv(rate_change_interval, "C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval.csv", row.names=F)
 
-rate_change_interval<-data.frame()
-
-for (i in 1:length(spct)){
-  
-  subset<-corredat%>%
-    filter(site_project_comm_trt==spct[i])
-  
-  out<-rate_change_interval(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
-  out$site_project_comm_trt<-spct[i]
-  
-  rate_change_interval<-rbind(rate_change_interval, out)
-}
-
+rate_change_interval <- read.csv("C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval.csv")
 
 ##to get slopes and p-values for each treatment through time (i.e., putting in all plot to plot combinations into a single linear regression across replicates)
 ##get slopes for each treatment including controls
+
 spct<-unique(rate_change_interval$site_project_comm_trt)
 
 lm.slopes<-data.frame()
@@ -139,42 +143,52 @@ for (i in 1:length(spct)){
 }
 
 lm.slopes2<-lm.slopes%>%
-  separate(site_project_comm_trt, into=c("site_project_comm","treatment"), sep = "::")
+  separate(site_project_comm_trt, into=c("site_project_comm","treatment"), sep = "::")%>%
   mutate(sig=ifelse(p.val<0.0501, 1, 0))%>%
-  left_join(treatment_info)
+  left_join(treatment_info)%>%
+  mutate(trt=ifelse(plot_mani==0, "C", "T"))
 
-
+prop_sig<-lm.slopes2%>%
+  group_by(trt)%>%
+  summarise(sum=sum(sig), n=length(sig))%>%
+  mutate(prop_sig=sum/n)
 
 ##test for sig diff between trt-control slopes
 ##there are so few differences that not going to pay attention to this.
+rci2<-rate_change_interval%>%
+  separate(site_project_comm_trt, into=c("site_project_comm","treatment"), sep = "::")%>%
+  left_join(treatment_info)%>%
+  mutate(trt=ifelse(plot_mani==0, "C", "T"))
 
-# spc2<-unique(anpp_precip$site_project_comm)
-# test.lm<-data.frame()
-# for (i in 1:length(spc2)){
-#   subset<-anpp_precip%>%
-#     filter(site_project_comm==spc2[i])
-#   control<-subset%>%
-#     filter(plot_mani==0)
-#   treat<-subset%>%
-#   filter(plot_mani!=0)
-# trt_list<-unique(treat$treatment)
-# for (i in 1:length(trt_list)){
-#   subset2<-treat%>%
-#     filter(treatment==trt_list[i])
-#   trt<-trt_list[i]
-#   ct<-rbind(subset2, control)
-#   ct.lm<-lm(anpp~precip_mm*trt, data=ct)
-#   output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm), 
-#                         treatment=trt, 
-#                         est=summary(ct.lm)$coef["precip_mm:trtT", c("Estimate")],
-#                         val=summary(ct.lm)$coef["precip_mm:trtT","Pr(>|t|)"])
-#   test.lm<-rbind(test.lm, output.lm)
-# }
-# }
-#write.csv(rate_change_interval, "converge_diverge/datasets/rate_change_interval.csv", 
-         #row.names=F)
+spc<-unique(rci2$site_project_comm)
+test.lm<-data.frame()
+for (i in 1:length(spc)){
+  subset<-rci2%>%
+    filter(site_project_comm==spc[i])
+  control<-subset%>%
+    filter(plot_mani==0)
+  treat<-subset%>%
+  filter(plot_mani!=0)
+trt_list<-unique(treat$treatment)
+for (i in 1:length(trt_list)){
+  subset2<-treat%>%
+    filter(treatment==trt_list[i])
+  trt<-trt_list[i]
+  ct<-rbind(subset2, control)
+  ct.lm<-lm(distance~interval*trt, data=ct)
+  output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm),
+                        treatment=trt,
+                        est=summary(ct.lm)$coef["interval:trtT", c("Estimate")],
+                        pval=summary(ct.lm)$coef["interval:trtT","Pr(>|t|)"])
+  test.lm<-rbind(test.lm, output.lm)
+}
+}
+
+test.lm2<-test.lm%>%
+  mutate(sig=ifelse(pval<0.0501, 1, 0))
+
 
 #Merge with exeriment info
 #Using rate_change_interval - recalculate slopes and get slope and p-value (0.5)
-#How often are we seeing directional change? Does it differe treatment vs control? (plotmani=0)
+#How often are we seeing directional change? OFTEN Does it differe treatment vs control? (plotmani=0) NO
 #Does it different by trt type
