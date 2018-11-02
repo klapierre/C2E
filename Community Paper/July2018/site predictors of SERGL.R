@@ -3,6 +3,7 @@ setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 #meghan's working directory
 setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 #kevin's working directory
 #setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\")
@@ -115,6 +116,9 @@ rich=lm(abs_richness_glass ~ MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 vif(rich)
 summary(rich)
 rsq.partial(rich)
+ggplot(data=change_glass_d_mean, aes(x = MAP, y = losses_glass))+
+  geom_point()+
+  geom_smooth(method = 'lm')
 
 even=lm(abs_evenness_glass~MAP + MAT + rrich + anpp, data=change_glass_d_mean)
 summary(even)
