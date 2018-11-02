@@ -35,6 +35,13 @@ pairwise.table(FUN,
 ###SERGL change data
 SERGL <- read.csv('chisq_metrics_change.csv')
 
+#across GCD treatments
+SERGLall <- SERGL%>%
+  select(-X)%>%
+  group_by(response_var)%>%
+  summarise(num_sig2=sum(num_sig), num_nonsig2=sum(num_nonsig))
+prop.test(x=as.matrix(SERGLall[c('num_sig2', 'num_nonsig2')]), alternative='two.sided')
+
 #evenness
 evenness <- SERGL%>%filter(response_var=='evenness_change_abs')
 prop.test(x=as.matrix(evenness[c('num_sig', 'num_nonsig')]), alternative='two.sided')
@@ -56,7 +63,7 @@ richness_change_abs <- SERGL%>%filter(response_var=='richness_change_abs')
 prop.test(x=as.matrix(richness_change_abs[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
 
-###doing looking at difference by GCD
+###looking at difference by GCD
 #CO2
 CO2 <- SERGL%>%filter(trt_type=='CO2')
 prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
