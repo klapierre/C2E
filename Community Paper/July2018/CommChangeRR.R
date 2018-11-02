@@ -14,8 +14,9 @@ library(gtable)
 library(codyn)
 library(vegan)
 
-library(lme4)
-library(relaimpo)
+library(rsq)
+#library(lme4)
+#library(relaimpo)
 
 theme_set(theme_bw(12))
 
@@ -102,8 +103,13 @@ l<-ggplot(data = dat1, aes(x = abs(richness_change), y = losses))+
 grid.arrange(g, l, ncol=2)
        
 ##overall what is the relationship
-summary(mall<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=dat1))
-calc.relimp(mall, type="lmg", rela=F)
+dat2<-dat1%>%
+  mutate(abs_rich=abs(richness_change))
+
+summary(mall<-lm(composition_change~abs_rich+evenness_change+rank_change+gains+losses, data=dat2))
+rsq.partial(mall)
+calc.relimp(mall)
+
 
 ggplot(data= dat1, aes(x = rank_change, y = composition_change))+
   geom_point()+
@@ -121,7 +127,7 @@ controls<-dat1%>%
 
 ##what is the relationship for the controls - rank change is the most important
 summary(mc<-lm(composition_change~abs(richness_change)+evenness_change+rank_change+gains+losses, data=controls))
-calc.relimp(mc, type="lmg", rela=F)
+
 
 trts<-dat1%>%
   filter(plot_mani>0)%>%

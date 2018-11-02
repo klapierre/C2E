@@ -36,7 +36,7 @@ pairwise.table(FUN,
 SERGL <- read.csv('chisq_metrics_change.csv')
 
 #evenness
-evenness <- SERGL%>%filter(response_var=='evenness')
+evenness <- SERGL%>%filter(response_var=='evenness_change_abs')
 prop.test(x=as.matrix(evenness[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
 #gains
