@@ -152,6 +152,8 @@ prop_sig<-lm.slopes2%>%
   group_by(trt)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
   mutate(prop_sig=sum/n)
+# 74% of the time the controls are experiencing directional change and 73% of the time the treatments are experience directional change.
+
 
 ##test for sig diff between trt-control slopes
 ##there are so few differences that not going to pay attention to this.
@@ -187,8 +189,39 @@ for (i in 1:length(trt_list)){
 test.lm2<-test.lm%>%
   mutate(sig=ifelse(pval<0.0501, 1, 0))
 
+#29% of the time the contorls and treatments have different slopes.
+prop_diff<-sum(test.lm2$sig)/289
+
+
+##import treatments
+trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
+  select(-site_project_comm)%>%
+  mutate(site_project_comm = paste(site_code, project_name, community_type, sep = "_"))
+
+##of the trt-control differences, what treatments?
+test_trt<-test.lm2%>%
+  left_join(trts_interactions)%>%
+  filter(use==1)
+
+prop_sig_trt<-test_trt%>%
+  group_by(trt_type)%>%
+  summarise(sum=sum(sig), n=length(sig))%>%
+  mutate(prop_sig=sum/n)
+
+#test differences chi-sq.
+chisq<-test_trt%>%
+  mutate(sign=ifelse(sig==0, "num_nonsig", "num_sig"))%>%
+  group_by(trt_type, sign)%>%
+  summarise(sum=length(sig))%>%
+  spread(sign, sum, fill=0)%>%
+  filter(trt_type!="drought"&trt_type!="N+irr")#dropping drought bc only too few replicates.
+
+#chi-sq
+prop.test(x=as.matrix(chisq[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
+#p = 0.070 there is no difference between treatmetns in whether directional change occurs.
+
 
 #Merge with exeriment info
 #Using rate_change_interval - recalculate slopes and get slope and p-value (0.5)
 #How often are we seeing directional change? OFTEN Does it differe treatment vs control? (plotmani=0) NO
-#Does it different by trt type
+#Does it different by trt type YES. Higher for N + P or N+PK over N, CO2 and P.
