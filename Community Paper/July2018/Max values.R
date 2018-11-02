@@ -8,7 +8,7 @@ setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 dat <- read.csv("MetricsTrts_July2018.csv")%>%
   select(-X)
 
-sig_com<-read.csv('~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/gam_com_sig_change.csv')%>%
+sig_com<-read.csv('../Summer2018_Results/gam_com_sig_change.csv')%>%
   mutate(site_project_comm = site_proj_comm)
 
 
@@ -71,17 +71,18 @@ max_toplot<-max%>%
   group_by(site_project_comm, treatment, max_metric, trt, exp_length) %>%
   summarise_at(vars(max_value), funs(mean))
 
+
 longterm_plot <- ggplot(data = subset(max_toplot,exp_length>7), aes(x = max_metric, y = max_value))+
   geom_jitter()+
   geom_boxplot(alpha=.1) +
   facet_wrap(~trt) +
-  theme_few() +
+  theme_bw() +
   xlab("Change Metric") +
   ylab("Treatment Year") +
   theme(axis.text=element_text(size=12, color="black"), strip.text.x=element_text(size=12)) +
   scale_x_discrete(limits=c("Smax","Emax","Rmax","Gmax","Lmax"),labels=c("Rich","Even","Rank","Gain","Loss"))
 
-pdf("figures\\maxvalue change boxplots_exp gt 7_23March2018.pdf", height=4, width=7, useDingbats=F)
+pdf(paste0("..\\Summer2018_Results\\Figures\\maxvalue change boxplots_exp gt 7_", Sys.Date(), ".pdf"), height=4, width=7, useDingbats=F)
 print(longterm_plot)
 dev.off()
 
@@ -93,10 +94,15 @@ allexp_plot <- ggplot(data = max_toplot, aes(x = max_metric, y = max_value))+
   xlab("Change Metric") +
   ylab("Treatment Year") +
   coord_flip() +
+  theme_bw() +
   theme(axis.text=element_text(size=12, color="black"), strip.text.x=element_text(size=12)) +
   scale_x_discrete(limits=c("Smax","Emax","Rmax","Gmax","Lmax"),labels=c("Rich","Even","Rank","Gain","Loss"))
 
-pdf("figures\\maxvalue change boxplots_all exp_23March2018.pdf", height=4, width=7, useDingbats=F)
+pdf(paste0("..\\Summer2018_Results\\Figures\\maxvalue change boxplots_all exp_", Sys.Date(), ".pdf"), height=4, width=7, useDingbats=F)
 print(allexp_plot)
 dev.off()
+
+write.csv(max_toplot, 
+          paste0("../Summer2018_Results/year of max SERGL change_only significant comm change included_",Sys.Date(),".csv"),
+                 row.names=F)
 
