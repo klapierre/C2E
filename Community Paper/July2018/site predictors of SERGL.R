@@ -1,16 +1,13 @@
 #emily's working directory
-setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange")
+setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 #meghan's working directory
-<<<<<<< HEAD
-setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange/March2018 WG")
+setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
 setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
-=======
-setwd("/Users/megha/Dropbox/C2E/Products/CommunityChange")
->>>>>>> f20b65aee3dd8dde13f8af297938d7c44d6d55ac
+
 
 #kevin's working directory
-#setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\")
+#setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March 2018 WG")
 
 library(tidyverse)
 library(ggplot2)
@@ -31,7 +28,7 @@ theme_update(axis.title.x=element_text(size=12, vjust=-0.35), axis.text.x=elemen
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
 
 ### Read in data 
-change_metrics <- read.csv("March2018 WG/MetricsTrts_July2018.csv") %>%
+change_metrics <- read.csv("MetricsTrts_July2018.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
@@ -77,11 +74,11 @@ change_glass_d <- change_glass_d %>%
   mutate(losses_glass=replace(losses_glass, losses_glass=="Inf", NA))
   
 # read in site level predictor variables
-info.spc=read.csv("March2018 WG/SiteExperimentDetails_Dec2016.csv") %>%
+info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
 
 # read in treatment variables for subsetting later
-info.trt=read.csv("March2018 WG/ExperimentInformation_Nov2017.csv") %>%
+info.trt=read.csv("ExperimentInformation_Nov2017.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_")) %>%
   group_by(site_project_comm, treatment) %>%
   summarise_at(vars(n, p, k, CO2, precip, temp), funs(mean))
@@ -115,14 +112,11 @@ rich=lm(abs_richness_glass ~ scale(MAP) + scale(MAT) + scale(rrich) + scale(anpp
 vif(rich)
 summary(rich)
 rsq.partial(rich)
-<<<<<<< HEAD
-ggplot(data=change_glass_d_mean, aes(x = MAP, y = losses_glass))+
-  geom_point()+
-  geom_smooth(method = 'lm')
-=======
+
+
 #making object to contain results
 richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
->>>>>>> f20b65aee3dd8dde13f8af297938d7c44d6d55ac
+
 
 even=lm(abs_evenness_glass~scale(MAP) + scale(MAT) + scale(rrich) + scale(anpp), data=change_glass_d_mean)
 summary(even)
