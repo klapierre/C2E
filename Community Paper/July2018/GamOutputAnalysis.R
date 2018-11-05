@@ -3,24 +3,24 @@
 ##
 ##  Author: Meghan Avolio (meghan.avolio@gmail.com)
 ##  Date: August 6, 2018
+##  Updated: Nov 4, 2018
 ################################################################################
 
 
 library(tidyverse)
 theme_set(theme_bw(20))
 
+#work
+setwd("C:\\Users\\megha\\Dropbox\\")
+#home
+setwd("~/Dropbox/")
+
 #works
-gam<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_comparison_table.csv")
-trts_interactions<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\treatment interactions_July2018.csv")%>%
+gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")
+trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
   select(-site_project_comm)%>%
   mutate(site_proj_comm = paste(site_code, project_name, community_type, sep = "_"))
 
-#mac
-gam<-read.csv("~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")
-
-trts_interactions<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
-  select(-site_project_comm)%>%
-  mutate(site_proj_comm = paste(site_code, project_name, community_type, sep = "_"))
 
 #first, how many communities saw sig differences in change between controls and treatments?
 compchange<-gam%>%
@@ -32,14 +32,14 @@ compchange<-gam%>%
 gamtrts<-gam%>%
   left_join(trts_interactions)%>%
   filter(response_var == "composition_change", use == 1)%>%
-  group_by(trt_type) %>%
+  group_by(trt_type2) %>%
   summarise(
     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
   )%>%
-  filter(trt_type!="N+irr"&trt_type!="drought")
+  filter(trt_type2!="N+irr"&trt_type2!="drought")
 
-write.csv(gamtrts, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\chisq_comp_change.csv")
+write.csv(gamtrts, "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/chisq_comp_change_newtrts.csv")
 
 gamtrts_toplot<-gamtrts%>%
   mutate(sum = num_sig+num_nonsig,
