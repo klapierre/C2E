@@ -8,6 +8,7 @@
 
 
 library(tidyverse)
+library(gridExtra)
 theme_set(theme_bw(20))
 
 #work
@@ -39,24 +40,29 @@ gamtrts<-gam%>%
   )%>%
   filter(trt_type2!="N+irr"&trt_type2!="drought")
 
-write.csv(gamtrts, "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/chisq_comp_change_newtrts.csv")
+write.csv(gamtrts, "C2E/Products/CommunityChange/Summer2018_Results/chisq_comp_change_newtrts.csv")
 
 gamtrts_toplot<-gamtrts%>%
   mutate(sum = num_sig+num_nonsig,
          psig = num_sig/sum,
          pnsig = num_nonsig/sum)%>%
   select(-sum, -num_sig, -num_nonsig)%>%
-  gather(key = sig, value = number, -trt_type)
+  gather(key = sig, value = number, -trt_type2)
 
 
-  ggplot(gamtrts_toplot, aes(x = trt_type, y = number, fill = sig)) +
+ggplot(gamtrts_toplot, aes(x = trt_type2, y = number, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
   theme_minimal() +
-  scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
   labs(x = "Global Change Treatment", y = "Proportion of communities") +
   geom_hline(yintercept = 0.50)+
-  theme(legend.position = "top")
+  theme(legend.position = "top")+
+  annotate(geom="text", x = 1, y = 0.05, label="n = 7", size=3)+
+  annotate(geom="text", x = 2, y = 0.05, label="n = 12", size=3)+
+  annotate(geom="text", x = 3, y = 0.05, label="n = 51", size=3)+
+  annotate(geom="text", x = 4, y = 0.05, label="n = 34", size=3)+
+  annotate(geom="text", x = 5, y = 0.05, label="n = 11", size=3)
 
 
 #second, of those that saw change, what aspect of the community changes
@@ -64,8 +70,21 @@ comchange_sig<-gam%>%
   filter(response_var == "composition_change" & sig_diff_cntrl_trt == "yes")%>%
   select(site_proj_comm, treatment)%>%
   mutate(keep = "yes")
+# 
+# write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
 
-write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
+
+#second, of those that saw change, what aspect of the community changes
+comchange_sig_metrics<-gam%>%
+  filter(response_var != "composition_change" & sig_diff_cntrl_trt == "yes")%>%
+  select(site_proj_comm, treatment, response_var)%>%
+  mutate(keep = "yes")
+
+overlap<-comchange_sig_metrics%>%
+  select(-keep)%>%
+  left_join(comchange_sig)
+
+write.csv(comchange_sig_metrics, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change.csv', row.names = F )
 
 sig_only<-gam%>%
   right_join(comchange_sig)%>%
@@ -89,12 +108,17 @@ sig_tally <- sig_only %>%
     response_var2 = ifelse(response_var == "rank_change", "Rank change", response_var2),
     response_var2 = ifelse(response_var == "richness_change_abs", "Richness change", response_var2))
 
+allSERGL<-sig_tally%>%
+  select(-response_var2)%>%
+  spread(sig, value)
 
-ggplot(sig_tally, aes(x = response_var2, y = value, fill = sig)) +
+write.csv(allSERGL, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change_all.csv', row.names = F )
+
+sergl<-ggplot(sig_tally, aes(x = response_var2, y = value, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
   theme_minimal() +
-  scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
   labs(x = "Change metric", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept = 0.5)
@@ -104,12 +128,12 @@ gamtrts_metrics<-sig_only%>%
   left_join(trts_interactions)%>%
   ungroup()%>%
   filter(response_var != "composition_change", use == 1)%>%
-  group_by(response_var, trt_type) %>%
+  group_by(response_var, trt_type2) %>%
   summarise(
     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
   )%>%
-  filter(trt_type!="N+irr"&trt_type!="drought"&trt_type!="N+P+K")
+  filter(trt_type2!="N+irr"&trt_type2!="drought")
 
 write.csv(gamtrts_metrics, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\chisq_metrics_change.csv")
 
@@ -118,17 +142,18 @@ tograph_metrics_trt<-gamtrts_metrics%>%
          psig = num_sig/sum,
          pnonsig = num_nonsig/sum)%>%
   select(-num_sig, -num_nonsig, -sum)%>%
-  gather(key = sig, value = value, -trt_type, -response_var) %>%
+  gather(key = sig, value = value, -trt_type2, -response_var) %>%
   mutate(
     response_var2 = ifelse(response_var == "evenness_change_abs", "Evenness", ifelse(response_var == "gains", "Species gains", ifelse(response_var == "losses", "Species losses", ifelse(response_var == "rank_change", "Rank change", "Richness change")))))
 
 
-ggplot(subset(tograph_metrics_trt, trt_type!="P"), aes(x = response_var2, y = value, fill = sig)) +
+trt_sergl<-ggplot(subset(tograph_metrics_trt, trt_type2!="P"), aes(x = response_var2, y = value, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
   theme_minimal() +
-  scale_fill_brewer(type = "qual", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
   labs(x = "Change metric", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept=0.50)+
-  facet_wrap(~trt_type, ncol = 2)
+  facet_wrap(~trt_type2, ncol = 2)
+
