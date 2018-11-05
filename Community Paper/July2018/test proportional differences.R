@@ -14,9 +14,10 @@ setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\converge diverge
 
 #meghan
 setwd('C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results')
+setwd('~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results')
 
 #comp change data
-compChange <- read.csv('chisq_comp_change.csv')
+compChange <- read.csv('chisq_comp_change_newtrts.csv')
 
 ###treatment type - compositional responses
 prop.test(x=as.matrix(compChange[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
