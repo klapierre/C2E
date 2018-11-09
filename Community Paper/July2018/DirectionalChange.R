@@ -73,7 +73,7 @@ numyears<- corredat%>%
   unique()%>%
   group_by(site_project_comm)%>%
   summarize(num=length(calendar_year))%>%
-  filter(num>3)
+  filter(num>4)
 
 corredat_sub<-corredat%>%
   right_join(numyears)
