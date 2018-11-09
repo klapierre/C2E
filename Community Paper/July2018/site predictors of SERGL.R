@@ -101,6 +101,10 @@ dev.off()
 
 #-------------Standardized multiple regression with only site predictors
 
+usethese=change_metrics[change_metrics$use==1, c("site_project_comm", "treatment", "use")]
+use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_project_comm", "treatment"))
+#write.csv(use_change_glass_d_mean, "use for site predictors of SERGL.csv")
+
 ##for this first analysis I think we should use all the data 
 length(use_change_glass_d_mean$site_project_comm) #202 studies
 
@@ -144,9 +148,7 @@ write.csv(fulldataset, "Summer2018_Results/site predictors of SERGL/site predict
 
 #-------1b) Only a subset of studies
 
-usethese=change_metrics[change_metrics$use==1, c("site_project_comm", "treatment", "use")]
-use_change_glass_d_mean=merge(change_glass_d_mean, unique(usethese), by=c("site_project_comm", "treatment"))
-#write.csv(use_change_glass_d_mean, "use for site predictors of SERGL.csv")
+
 
 summary(use_change_glass_d_mean) #so we can look at relationships separately for experiments manipulating each of these factors: N, P, K, CO2, precip, temp?
 length(use_change_glass_d_mean[use_change_glass_d_mean$n>0,]$site_project_comm) #131 studies
