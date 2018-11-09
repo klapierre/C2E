@@ -18,10 +18,19 @@ setwd("~/Dropbox/")
 
 #works
 gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")
+gam_exp<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")%>%
+  select(site_proj_comm)%>%
+  unique()
+
+gam_trt<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")%>%
+  select(site_proj_comm, treatment)%>%
+  unique()
+
 trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
   select(-site_project_comm)%>%
-  mutate(site_proj_comm = paste(site_code, project_name, community_type, sep = "_"))
-
+  mutate(site_proj_comm = paste(site_code, project_name, community_type, sep = "_"))%>%
+  right_join(gam_exp)%>%
+  filter(use==1)
 
 #first, how many communities saw sig differences in change between controls and treatments?
 compchange<-gam%>%
@@ -157,3 +166,77 @@ trt_sergl<-ggplot(subset(tograph_metrics_trt, trt_type2!="P"), aes(x = response_
   geom_hline(yintercept=0.50)+
   facet_wrap(~trt_type2, ncol = 2)
 
+
+#Regradless of whether the community changed, how much to the metrics change?
+metrics_sig<-gam%>%
+  filter(response_var != "composition_change")
+
+metrics_sig_tally <- metrics_sig %>%
+  group_by(response_var) %>%
+  summarise(
+    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+  ) %>%
+  mutate(sum = num_sig+num_nonsig,
+         psig = num_sig/sum,
+         pnsig = num_nonsig/sum)%>%
+  select(-sum, -num_sig, -num_nonsig)%>%
+  gather(key = sig, value = value, -response_var) %>%
+  mutate(
+    response_var2 = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
+    response_var2 = ifelse(response_var == "gains", "Species gains", response_var2),
+    response_var2 = ifelse(response_var == "losses", "Species losses", response_var2),
+    response_var2 = ifelse(response_var == "rank_change", "Rank change", response_var2),
+    response_var2 = ifelse(response_var == "richness_change_abs", "Richness change", response_var2))
+
+allSERGL<-metrics_sig_tally%>%
+  select(-response_var2)%>%
+  spread(sig, value)
+
+#overall diff in metrics of change - NO
+prop.test(x=as.matrix(allSERGL[c('pnsig', 'psig')]), alternative='two.sided')
+
+
+sergl<-ggplot(metrics_sig_tally, aes(x = response_var2, y = value, fill = sig)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  scale_x_discrete(limits=c("Richness change","Evenness","Rank change","Species gains","Species losses"), labels = c("Richness change","Evenness Change","Rank Change","Species Gains","Species Losses"))+
+  labs(x = "Change metric", y = "Proportion of communities") +
+  theme(legend.position = "top")+
+  geom_hline(yintercept = 0.5)
+
+###how does this differ by GCD?
+
+gamtrts_metrics<-metrics_sig%>%
+  left_join(trts_interactions)%>%
+  ungroup()%>%
+  filter(response_var != "composition_change", use == 1)%>%
+  group_by(response_var, trt_type2) %>%
+  summarise(
+    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+  )%>%
+  filter(trt_type2!="N+irr"&trt_type2!="drought")
+
+
+tograph_metrics_trt<-gamtrts_metrics%>%
+  mutate(sum = num_sig + num_nonsig,
+         psig = num_sig/sum,
+         pnonsig = num_nonsig/sum)%>%
+  select(-num_sig, -num_nonsig, -sum)%>%
+  gather(key = sig, value = value, -trt_type2, -response_var) %>%
+  mutate(
+    response_var2 = ifelse(response_var == "evenness_change_abs", "Evenness", ifelse(response_var == "gains", "Species gains", ifelse(response_var == "losses", "Species losses", ifelse(response_var == "rank_change", "Rank change", "Richness change")))))
+
+
+trt_sergl<-ggplot(subset(tograph_metrics_trt, trt_type2!="P"), aes(x = response_var2, y = value, fill = sig)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  labs(x = "Change metric", y = "Proportion of communities") +
+  theme(legend.position = "top")+
+  geom_hline(yintercept=0.50)+
+  facet_wrap(~trt_type2, ncol = 2)
