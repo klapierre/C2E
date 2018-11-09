@@ -10,13 +10,11 @@ setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 #setwd("C:\\Users\\wilco\\Dropbox\\C2E\\Products\\CommunityChange\\March 2018 WG")
 
 library(tidyverse)
-library(ggplot2)
 library(ggthemes)
 library(grid)
 library(vegan)
-library(car)
 library(rsq)
-library(lme4)
+
 
 theme_set(theme_bw())
 theme_update(axis.title.x=element_text(size=12, vjust=-0.35), axis.text.x=element_text(size=12),
@@ -283,22 +281,4 @@ ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.png
 
 ggplot(aes(response, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)" & !forbigfig$pval>0.05,]) + geom_col() + facet_grid(studies~predictor) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from standardized multiple regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
 ggsave("Summer2018_Results/site predictors of SERGL/significant site predictors of SERGL.pdf", width=8, height=9.5)
-
-#------2) including site as a random factor to group treatments occurring at the same site
-
-rich=lmer(abs_richness_glass ~ MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean)
-Anova(rich)
-summary(rich)
-
-even=lmer(abs_evenness_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean)
-Anova(even)
-summary(even)
-
-rank=lmer(rank_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean)
-Anova(rank)
-summary(rank)
-
-gains=lmer(gains_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean); Anova(gains); summary(gains)
-
-losses=lmer(losses_glass~MAP + MAT + rrich + anpp + (1|site_code), data=use_change_glass_d_mean); Anova(losses); summary(losses)
 
