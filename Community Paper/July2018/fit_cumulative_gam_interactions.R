@@ -62,7 +62,7 @@ fit_compare_gams <- function(df, response){
     return(
       tibble(
         response_var = response,
-        p_value = NA,
+        p_value = -9999,
         delta_deviance = NA,
         delta_aic = NA
       )
@@ -293,7 +293,7 @@ save_comparisons <- all_comparisons %>%
   )
 
 write_csv(
-  x = save_comparisons, 
+  x = save_comparisons,
   path = paste0(results_dir, "gam_comparison_table.csv")
 )
 
