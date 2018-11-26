@@ -78,52 +78,53 @@ max <- change_glass_d%>%
   select(site_project_comm, treatment, max_metric, max_value)%>%
   filter(max_value!=0)
 
-##ranking everything and then seeing when changed
-rank<-max%>%
-  group_by(site_project_comm, treatment)%>%
-  filter(max_metric!="Smax")%>%
-  mutate(rank=rank(max_value, ties.method="average"))%>%
-  mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
-  right_join(metrics_sig)
-  
-rank_mean<-rank%>%
-  group_by(response_var)%>%
-  summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
-  mutate(se = sdrank/sqrt(n))
-
-summary(aov(rank~response_var, data=rank))
-  
-
-###dropping what didn't change and then ranking everything - I don't think this is the way to do it.
-# rank_sig<-max%>%
-#   mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
-#   right_join(metrics_sig)%>%
+# ##ranking everything and then seeing when changed - not doing it this way
+# rank<-max%>%
 #   group_by(site_project_comm, treatment)%>%
 #   filter(max_metric!="Smax")%>%
-#   mutate(rank=rank(max_value, ties.method="average"))
-#  
-# rank_sig_mean<-rank_sig%>%
+#   mutate(rank=rank(max_value, ties.method="average"))%>%
+#   mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
+#   right_join(metrics_sig)
+#   
+# rank_mean<-rank%>%
 #   group_by(response_var)%>%
 #   summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
 #   mutate(se = sdrank/sqrt(n))
 
+
+  
+
+##dropping what didn't change and then ranking everything - I don't think this is the way to do it.
+rank_sig<-max%>%
+  mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
+  right_join(metrics_sig)%>%
+  group_by(site_project_comm, treatment)%>%
+  filter(max_metric!="Smax")%>%
+  mutate(rank=rank(max_value, ties.method="average"))
+
+rank_sig_mean<-rank_sig%>%
+  group_by(response_var)%>%
+  summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
+  mutate(se = sdrank/sqrt(n))
+
+summary(aov(rank~response_var, data=rank_sig))
+
 theme_set(theme_bw(12))
-ggplot(data=rank_mean, aes(x=response_var, y = mrank))+
+# ggplot(data=rank_mean, aes(x=response_var, y = mrank))+
+#   geom_bar(stat="identity", position=position_dodge(0.9))+
+#   geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
+#   scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
+#   ylab("Average Rank")+
+#   xlab("Communtiy Change Metric")
+
+ggplot(data=rank_sig_mean, aes(x=response_var, y = mrank))+
   geom_bar(stat="identity", position=position_dodge(0.9))+
   geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
   scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
   ylab("Average Rank")+
   xlab("Communtiy Change Metric")
 
-# sig_mrank<-ggplot(data=rank_sig_mean, aes(x=response_var, y = mrank))+
-#   geom_bar(stat="identity", position=position_dodge(0.9))+
-#   geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
-#   scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
-#   ggtitle("Average of Sig")+
-#   ylab("Average Rank")+
-#   xlab("Communtiy Change Metrics")
 
-grid.arrange(mrank, sig_mrank, ncol=2)
 
 
 ##THS IS MAKING THE OLD PLOT WITH GLASS'S D
