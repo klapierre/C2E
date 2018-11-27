@@ -9,6 +9,8 @@ change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\Metric
          evenness_change_abs = abs(evenness_change))%>%
   select(-X, -richness_change, -evenness_change, -composition_change, -site_code, -project_name, -community_type, -trt_type, -use, -composition_change, -dispersion_change)
 
+subset_studies<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset.csv")
+
 #not doing this.
 # sig_com<-read.csv('C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv')%>%
 #   mutate(site_project_comm = site_proj_comm)
@@ -16,7 +18,8 @@ change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\Metric
 metrics_sig<-read.csv("C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change.csv")%>%
   mutate(site_project_comm=site_proj_comm)%>%
   select(-site_proj_comm)%>%
-  filter(response_var!="richness_change_abs")
+  filter(response_var!="richness_change_abs")%>%
+  right_join(subset_studies)
 
 ### Control data
 change_control <- change_metrics %>%
@@ -94,7 +97,7 @@ max <- change_glass_d%>%
 
   
 
-##dropping what didn't change and then ranking everything - I don't think this is the way to do it.
+##dropping what didn't change and then ranking everything - I think this is the way to do it.
 rank_sig<-max%>%
   mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
   right_join(metrics_sig)%>%
