@@ -31,9 +31,12 @@ trt_touse<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interac
 gam_touse<-gam%>%
  right_join(trt_touse)
 
-gam_trt<-gam%>%
+gam_trt<-gam_touse%>%
   select(site_proj_comm, treatment)%>%
-  unique()
+  unique()%>%
+  mutate(site_project_comm=site_proj_comm)
+
+write.csv(gam_trt, "C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset.csv", row.names=F)
 
 trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
   right_join(gam_trt)%>%
