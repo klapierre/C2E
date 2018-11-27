@@ -14,6 +14,9 @@ setwd("~/Dropbox/")
 #Meghan Work
 setwd("C:\\Users\\megha\\Dropbox")
 
+#to subset only the treatments I want
+subset_studies<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset.csv")
+
 #Files from home
 corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
 
@@ -187,16 +190,15 @@ for (i in 1:length(trt_list)){
 }
 
 test.lm2<-test.lm%>%
-  mutate(sig=ifelse(pval<0.0501, 1, 0))
+  mutate(sig=ifelse(pval<0.0501, 1, 0))%>%
+  right_join(subset_studies)
 
-#29% of the time the contorls and treatments have different slopes.
-prop_diff<-sum(test.lm2$sig)/289
+#32% of the time the contorls and treatments have different slopes.
+prop_diff<-sum(test.lm2$sig)/219
 
 
 ##import treatments
-trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
-  select(-site_project_comm)%>%
-  mutate(site_project_comm = paste(site_code, project_name, community_type, sep = "_"))
+trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")
 
 ##of the trt-control differences, what treatments?
 test_trt<-test.lm2%>%
@@ -204,21 +206,34 @@ test_trt<-test.lm2%>%
   filter(use==1)
 
 prop_sig_trt<-test_trt%>%
-  group_by(trt_type)%>%
+  group_by(trt_type2)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
-  mutate(prop_sig=sum/n)
+  mutate(prop_sig=sum/n)%>%
+    filter(trt_type2!="Irr+Temp")%>%
+  mutate(pnotsig=1-prop_sig)%>%
+  select(-n, -sum)%>%
+  gather(value, sig, prop_sig:pnotsig)
 
 #test differences chi-sq.
 chisq<-test_trt%>%
   mutate(sign=ifelse(sig==0, "num_nonsig", "num_sig"))%>%
-  group_by(trt_type, sign)%>%
+  group_by(trt_type2, sign)%>%
   summarise(sum=length(sig))%>%
   spread(sign, sum, fill=0)%>%
-  filter(trt_type!="drought"&trt_type!="N+irr")#dropping drought bc only too few replicates.
+  filter(trt_type2!="Irr+Temp")
 
 #chi-sq
 prop.test(x=as.matrix(chisq[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
 #p = 0.070 there is no difference between treatmetns in whether directional change occurs.
+
+ggplot(prop_sig_trt, aes(x = trt_type2, y = sig, fill = value)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  scale_fill_brewer(name = "", labels = c("Not significant", "Significant")) +
+  labs(x = "Treatment", y = "Proportion of communities") +
+  theme(legend.position = "top")+
+  geom_hline(yintercept = 0.5)
 
 
 #Merge with exeriment info
