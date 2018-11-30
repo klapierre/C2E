@@ -103,23 +103,44 @@ rank_sig<-max%>%
   right_join(metrics_sig)%>%
   group_by(site_project_comm, treatment)%>%
   filter(max_metric!="Smax")%>%
-  mutate(rank=rank(max_value, ties.method="average"))
+  mutate(rank=rank(max_value, ties.method="random"))
+
+rank_table<-rank_sig%>%
+  group_by(site_project_comm, treatment)%>%
+  arrange(rank, .by_group=T)%>%
+  mutate(metric=ifelse(max_metric=="Emax","E", ifelse(max_metric=="Gmax","G", ifelse(max_metric=="Rmax","R", ifelse(max_metric=="Lmax","L","X")))),
+         rank1=ifelse(rank==1, "a", ifelse(rank==2, "b", ifelse(rank==3, "c","d"))))%>%
+  select(site_project_comm, rank1, metric, treatment)%>%
+  spread(rank1, metric, fill="")%>%
+  mutate(order=paste(a, b, c, d, sep=""))%>%
+  ungroup()%>%
+  group_by(order)%>%
+  summarize(num=length(order))%>%
+  mutate(first=substring(order,1,1))%>%
+  arrange(first, -num)%>%
+  mutate(ordered=seq(1:53))
 
 rank_sig_mean<-rank_sig%>%
   group_by(response_var)%>%
   summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
   mutate(se = sdrank/sqrt(n))
 
-summary(aov(rank~response_var, data=rank_sig))
-
 theme_set(theme_bw(12))
+ggplot(data=rank_table, aes(x=reorder(order, ordered), y = num))+
+  geom_bar(stat="identity", position = position_dodge(0.9))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  xlab("Order of Community Changes")+
+  ylab("Number of Experiments")
+
+
 # ggplot(data=rank_mean, aes(x=response_var, y = mrank))+
 #   geom_bar(stat="identity", position=position_dodge(0.9))+
 #   geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
 #   scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
 #   ylab("Average Rank")+
 #   xlab("Communtiy Change Metric")
-
+summary(aov(rank~response_var, data=rank_sig))
 ggplot(data=rank_sig_mean, aes(x=response_var, y = mrank))+
   geom_bar(stat="identity", position=position_dodge(0.9))+
   geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
