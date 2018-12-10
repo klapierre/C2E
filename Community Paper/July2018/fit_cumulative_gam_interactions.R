@@ -391,6 +391,11 @@ write_csv(
 )
 
 
+# ggplot(save_comparisons, aes(x = final_diff, fill = sig_diff_cntrl_trt)) +
+#   geom_histogram() +
+#   geom_vline(aes(xintercept = 0)) +
+#   facet_wrap(~response_var, scales = "free")
+
 
 ####
 ####  TALLY THE RESULTS --------------------------------------------------------
