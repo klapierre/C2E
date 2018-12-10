@@ -120,7 +120,11 @@ summary(rich)
 rsq.partial(rich)
 
 #making object to contain results
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+richresults=data.frame(response="rich", 
+                       predictor=names(rich$coefficients), 
+                       slope=as.numeric(rich$coefficients), 
+                       pval=as.numeric(summary(rich)$coef[,4]), 
+                       rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 
 even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean)
@@ -147,153 +151,156 @@ fulldataset=rbind(richresults, evenresults, rankresults, gainsresults, lossesres
 #write.csv(fulldataset, "Summer2018_Results/site predictors of SERGL/site predictors of SERGL, all studies.csv", row.names=F)
 
 
+# doing for each GCD separately -------------------------------------------
+
+
 #-------1b) Only a subset of studies
 
-#----------N addition studies:
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
-vif(rich)
-summary(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
-
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
-summary(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
-
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
-summary(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
-
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
-summary(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
-
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
-summary(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
-
-onlyNadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
-
-
-#----------P addition studies:
-
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
-summary(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
-
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
-summary(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
-
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
-summary(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
-
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
-summary(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
-
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
-summary(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
-
-onlyPadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
-
-
-#----------CO2 addition studies:
-
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
-summary(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
-
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
-summary(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
-
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
-summary(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
-
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
-summary(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
-
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
-summary(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
-
-onlyCO2additions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
-
-#----------Irr manipulation studies:
-
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
-summary(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
-
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
-summary(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
-
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
-summary(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
-
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
-summary(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
-
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
-summary(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
-
-onlyIrrmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
-
-#----------mult nuts studies:
-
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
-summary(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
-
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
-summary(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
-
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
-summary(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
-
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
-summary(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
-
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
-summary(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
-
-onlyMultNutsmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
-
-#----------temp studies:
-
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
-summary(rich)
-richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
-
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
-summary(even)
-evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
-
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
-summary(rank)
-rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
-
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
-summary(gains)
-gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
-
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
-summary(losses)
-lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
-
-onlyTempmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+# #----------N addition studies:
+# rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
+# vif(rich)
+# summary(rich)
+# richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+# 
+# even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
+# summary(even)
+# evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
+# 
+# rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
+# summary(rank)
+# rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
+# 
+# gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
+# summary(gains)
+# gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
+# 
+# losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="N",])
+# summary(losses)
+# lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
+# 
+# onlyNadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+# 
+# 
+# #----------P addition studies:
+# 
+# rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
+# summary(rich)
+# richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+# 
+# even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
+# summary(even)
+# evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
+# 
+# rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
+# summary(rank)
+# rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
+# 
+# gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
+# summary(gains)
+# gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
+# 
+# losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="P",])
+# summary(losses)
+# lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
+# 
+# onlyPadditions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+# 
+# 
+# #----------CO2 addition studies:
+# 
+# rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
+# summary(rich)
+# richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+# 
+# even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
+# summary(even)
+# evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
+# 
+# rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
+# summary(rank)
+# rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
+# 
+# gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
+# summary(gains)
+# gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
+# 
+# losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="CO2",])
+# summary(losses)
+# lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
+# 
+# onlyCO2additions=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+# 
+# #----------Irr manipulation studies:
+# 
+# rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
+# summary(rich)
+# richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+# 
+# even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
+# summary(even)
+# evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
+# 
+# rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
+# summary(rank)
+# rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
+# 
+# gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
+# summary(gains)
+# gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
+# 
+# losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp,data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Irrigation",])
+# summary(losses)
+# lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
+# 
+# onlyIrrmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+# 
+# #----------mult nuts studies:
+# 
+# rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
+# summary(rich)
+# richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+# 
+# even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
+# summary(even)
+# evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
+# 
+# rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
+# summary(rank)
+# rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
+# 
+# gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
+# summary(gains)
+# gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
+# 
+# losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Mult. Nuts.",])
+# summary(losses)
+# lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
+# 
+# onlyMultNutsmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
+# 
+# #----------temp studies:
+# 
+# rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
+# summary(rich)
+# richresults=data.frame(response="rich", predictor=names(rich$coefficients), slope=as.numeric(rich$coefficients), pval=as.numeric(summary(rich)$coef[,4]), rsq=c(NA, rsq.partial(rich)$partial.rsq))
+# 
+# even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
+# summary(even)
+# evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
+# 
+# rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
+# summary(rank)
+# rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
+# 
+# gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
+# summary(gains)
+# gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
+# 
+# losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean[change_glass_d_mean$trt_type2=="Temperature",])
+# summary(losses)
+# lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
+# 
+# onlyTempmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 
 #----------temp + IRR studies: there are too few observations to run this one
 
@@ -319,60 +326,75 @@ onlyTempmanipulations=rbind(richresults, evenresults, rankresults, gainsresults,
 # 
 # onlyTempIrrmanipulations=rbind(richresults, evenresults, rankresults, gainsresults, lossesresults)
 
+# Making figure -----------------------------------------------------------
+
 #-------make a figure
 
 fulldataset$studies="All manipulations"
-onlyNadditions$studies="N"
-onlyPadditions$studies="P"
-onlyIrrmanipulations$studies="Water"
-onlyCO2additions$studies="CO2"
-#onlyTempIrrmanipulations$studies = "Water + Warming"
-onlyTempmanipulations$studies = "Warming"
-onlyMultNutsmanipulations$studies = "Mult. Nuts."
+# onlyNadditions$studies="N"
+# onlyPadditions$studies="P"
+# onlyIrrmanipulations$studies="Water"
+# onlyCO2additions$studies="CO2"
+# #onlyTempIrrmanipulations$studies = "Water + Warming"
+# onlyTempmanipulations$studies = "Warming"
+# onlyMultNutsmanipulations$studies = "Mult. Nuts."
 
-forbigfig=rbind(fulldataset, onlyNadditions, onlyPadditions, onlyCO2additions, onlyIrrmanipulations, onlyTempmanipulations, onlyIrrmanipulations, onlyMultNutsmanipulations)
+# forbigfig=rbind(fulldataset, onlyNadditions, onlyPadditions, onlyCO2additions, onlyIrrmanipulations, onlyTempmanipulations, onlyIrrmanipulations, onlyMultNutsmanipulations)
+# levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
+# levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "Regional SR")
+# forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
+# forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
+
+rsqvalues<-data.frame(metric=c("Richness change", "Evenness change","Rank change", "Gains", "Losses"), rsq = c("0.03 n.s.","0.06*","0.03 n.s.","0.11**", "0.06*"))
+
+forbigfig=fulldataset
 levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
 levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "Regional SR")
 forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
 forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
-
-ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + geom_col() + 
+ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + 
+  geom_col() + 
   geom_point(aes(predictor, star.location, shape=significant)) + 
-  facet_grid(studies~response) + 
+  facet_wrap(~response, ncol = 5) + 
   theme(axis.text.x=element_text(angle = 90, vjust = 0.4, hjust=1)) + 
   xlab("Ecosystem Property") + 
-  ylab("Effect on aspect of community change\n(slope from standardized multiple regression)") +
+  ylab("Slope from standardized\nmultiple regression") +
   guides(fill = guide_colorbar(title = "Partial R2")) + 
-  scale_shape_manual(values=c(NA, 8), guide=FALSE)
+  scale_shape_manual(values=c(NA, 8), guide=FALSE)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  geom_text(data=rsqvalues, mapping=aes(x=-Inf, y = -Inf, label = rsq), hjust=1.05, vjust=1.5)
+
+
 #ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=7, height=9.5)
 #ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.png", width=7, height=9.5)
 
 ggplot(aes(response, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)" & !forbigfig$pval>0.05,]) + geom_col() + facet_grid(studies~predictor) + theme(axis.text.x=element_text(angle = 90, vjust = 0.4)) + xlab("") + ylab("Effect on aspect of community change\n(slope from standardized multiple regression)") + guides(fill = guide_colorbar(title = "Partial R2"))
 ggsave("Summer2018_Results/site predictors of SERGL/significant site predictors of SERGL.pdf", width=8, height=9.5)
 
-#-----------------taking a stepwise regression approach.
-library(MASS)
-#rich
-stepAIC(lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
-summary(lm(abs_richness_glass ~ sMAT + srrich, data=change_glass_d_mean))
-rsq.partial(lm(abs_richness_glass ~ sMAT + srrich, data=change_glass_d_mean))
-#not sig
-#even
-stepAIC(lm(abs_evenness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
-summary(lm(abs_evenness_glass ~  sMAP + srrich + sanpp, data=change_glass_d_mean))
-rsq.partial(lm(abs_evenness_glass ~  sMAP + srrich + sanpp, data=change_glass_d_mean))
 
-stepAIC(lm(rank_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
-summary(lm(rank_glass ~ sMAP, data=change_glass_d_mean))
-rsq.partial(lm(rank_glass ~ sMAP, data=change_glass_d_mean))
 
-stepAIC(lm(gains_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
-summary(lm(gains_glass ~ sMAP + srrich, data=change_glass_d_mean))
-rsq.partial(lm(gains_glass ~ sMAP + srrich, data=change_glass_d_mean))
 
-stepAIC(lm(losses_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
-summary(lm(losses_glass ~ sanpp, data=change_glass_d_mean))
-rsq.partial(lm(losses_glass ~ sanpp, data=change_glass_d_mean))
+# #-----------------taking a stepwise regression approach.
+# #rich
+# summary(lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
+# rsq.partial(lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
+# #not sig
+# #even
+# stepAIC(lm(abs_evenness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
+# summary(lm(abs_evenness_glass ~  sMAP + srrich + sanpp, data=change_glass_d_mean))
+# rsq.partial(lm(abs_evenness_glass ~  sMAP + srrich + sanpp, data=change_glass_d_mean))
+# 
+# stepAIC(lm(rank_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
+# summary(lm(rank_glass ~ sMAP, data=change_glass_d_mean))
+# rsq.partial(lm(rank_glass ~ sMAP, data=change_glass_d_mean))
+# 
+# stepAIC(lm(gains_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
+# summary(lm(gains_glass ~ sMAP + srrich, data=change_glass_d_mean))
+# rsq.partial(lm(gains_glass ~ sMAP + srrich, data=change_glass_d_mean))
+# 
+# stepAIC(lm(losses_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean))
+# summary(lm(losses_glass ~ sanpp, data=change_glass_d_mean))
+# rsq.partial(lm(losses_glass ~ sanpp, data=change_glass_d_mean))
 
 #Making a correlation figure
 
