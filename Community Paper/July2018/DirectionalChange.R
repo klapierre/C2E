@@ -165,6 +165,11 @@ rci2<-rate_change_interval%>%
   left_join(treatment_info)%>%
   mutate(trt=ifelse(plot_mani==0, "C", "T"))
 
+#plot this
+ggplot(data=subset(rci2, site_project_comm=='KNZ_pplots_0'&treatment=="N2P3"|treatment=="N1P0"), aes(x = interval, y = distance, color=trt))+
+  geom_point()+
+  geom_smooth(method = "lm")
+
 spc<-unique(rci2$site_project_comm)
 test.lm<-data.frame()
 for (i in 1:length(spc)){
@@ -209,7 +214,7 @@ prop_sig_trt<-test_trt%>%
   group_by(trt_type2)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
   mutate(prop_sig=sum/n)%>%
-    filter(trt_type2!="Irr+Temp")%>%
+    filter(trt_type2!="Irr + Temp")%>%
   mutate(pnotsig=1-prop_sig)%>%
   select(-n, -sum)%>%
   gather(value, sig, prop_sig:pnotsig)
@@ -220,7 +225,7 @@ chisq<-test_trt%>%
   group_by(trt_type2, sign)%>%
   summarise(sum=length(sig))%>%
   spread(sign, sum, fill=0)%>%
-  filter(trt_type2!="Irr+Temp")
+  filter(trt_type2!="Irr + Temp")
 
 #chi-sq
 prop.test(x=as.matrix(chisq[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
