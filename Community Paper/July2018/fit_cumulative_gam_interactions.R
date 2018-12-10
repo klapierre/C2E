@@ -105,6 +105,59 @@ fit_compare_gams <- function(df, response){
     aics <- AIC(gam_null, gam_test)$AIC
     delta_aic <- diff(aics)  # full - null
     
+    # Simulate predictions from the interaction model
+    # min_year <- min(df$treatment_year)
+    # max_year <- max(df$treatment_year)
+    # pdat <- expand.grid(
+    #   treatment_year = seq(min_year, max_year, length = 400),
+    #   treatment = unique(df$treatment)
+    # )
+    # pdat$plot_id <- unique(df$plot_id)[1]
+    # xp <- predict(gam_test, newdata = pdat, exclude = "s(plot_id)", 
+    #               type = 'lpmatrix')
+    # 
+    # ## which cols of xp relate to splines of interest?
+    # control_name <- unique(df$treatment)[1]
+    # treatment_name <- unique(df$treatment)[2]
+    # c1 <- grepl(control_name, colnames(xp))
+    # c2 <- grepl(treatment_name, colnames(xp))
+    # ## which rows of xp relate to sites of interest?
+    # r1 <- with(pdat, treatment == control_name)
+    # r2 <- with(pdat, treatment == treatment_name)
+    # 
+    # ## difference rows of xp for data from comparison
+    # X <- xp[r1, ] - xp[r2, ]
+    # ## zero out cols of X related to splines for other lochs
+    # X[, ! (c1 | c2)] <- 0
+    # ## zero out the parametric cols
+    # X[, !grepl('^s\\(', colnames(xp))] <- 0
+    # 
+    # 
+    # 
+    # dif <- X %*% coef(gam_test)
+    # 
+    # se <- sqrt(rowSums((X %*% vcov(gam_test, unconditional = TRUE)) * X))
+    # 
+    # crit <- qt(.975, df.residual(gam_test))
+    # upr <- dif + (crit * se)
+    # lwr <- dif - (crit * se)
+    # 
+    # test <- data.frame(
+    #            diff = dif,
+    #            se = se,
+    #            upper = upr,
+    #            lower = lwr) %>%
+    #   mutate(treatment_year = unique(pdat$treatment_year))
+    
+    ggplot(test, aes(x=  treatment_year, y= diff))+
+      geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.4)+
+      geom_point(data = tail(test, 1), color = "red")+
+      geom_errorbar(data = tail(test, 1), aes(ymin = lower, ymax = upper),
+                    color = "red", width = 0.3)+
+      geom_line()+
+      ylab("Control-Treatment")+
+      ggtitle("Konza pplots", subtitle = "Difference between fitted smooths")
+    
     return(
       tibble(
         response_var = response,
