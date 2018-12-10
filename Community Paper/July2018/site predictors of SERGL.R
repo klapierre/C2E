@@ -345,13 +345,16 @@ fulldataset$studies="All manipulations"
 # forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
 # forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
 
-rsqvalues<-data.frame(metric=c("Richness change", "Evenness change","Rank change", "Gains", "Losses"), rsq = c("0.03 n.s.","0.06*","0.03 n.s.","0.11**", "0.06*"))
+rsqvalues<-data.frame(response=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses"), 
+                      rsq = c(0.03,0.06,0.03,0.11,0.06),
+                      pval = c("n.s.", "*", "n.s.", "**","*"),
+                      combinded=c("0.03 n.s.","0.06*","0.03 n.s.","0.11**","0.06*"))
 
 forbigfig=fulldataset
 levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
 levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "Regional SR")
 forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
-forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
+forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.02, forbigfig$slope-0.02)
 ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + 
   geom_col() + 
   geom_point(aes(predictor, star.location, shape=significant)) + 
@@ -362,7 +365,7 @@ ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(I
   guides(fill = guide_colorbar(title = "Partial R2")) + 
   scale_shape_manual(values=c(NA, 8), guide=FALSE)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  geom_text(data=rsqvalues, mapping=aes(x=-Inf, y = -Inf, label = rsq), hjust=1.05, vjust=1.5)
+  geom_text(data=rsqvalues, aes(x=4.1, y = 0.25, label = combinded), hjust=1.05, vjust=1.5)
 
 
 #ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=7, height=9.5)
