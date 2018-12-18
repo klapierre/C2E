@@ -43,12 +43,17 @@ setwd(work_dir)
 ####  DEFINE MODEL FITTING FUNCTION --------------------------------------------
 ####
 
-fit_compare_gams <- function(df, response){
+fit_compare_gams <- function(df, response, diff_type = "last_year"){
   # Fits two GAMs and compares them with AIC and LLR
   #
   # Args:
   #  data: a dataframe with necessary columns for fitting the GAMMs
   #  response: name of the response variable, must be a column in the dataframe
+  #  diff_type: type of treatment-control different to return. options are one
+  #   of "all_years" (mean of all diffs), "year_five" (diff at year 5), and
+  #   "last_year" (diff at final year of data). Note that the option "year_five"
+  #   requires the dataset to have at least five years of data. "last_year" is
+  #   default.
   #
   # Returns:
   #  A tibble with LLR delta deviance, LLR p-value, and delta AIC
@@ -64,7 +69,12 @@ fit_compare_gams <- function(df, response){
         response_var = response,
         p_value = -9999,
         delta_deviance = NA,
-        delta_aic = NA
+        delta_aic = NA,
+        final_diff = NA,
+        diff_se = NA,
+        diff_lower = NA,
+        diff_upper = NA,
+        final_treatment_year = NA
       )
     )
   }
@@ -122,7 +132,20 @@ fit_compare_gams <- function(df, response){
                              var = "treatment", alpha = 0.05, 
                              unconditional = FALSE)
     
-    last_diff <- tail(tmp_diffs, 1)
+    if(diff_type == "all_years"){
+      diff <- mean(tmp_diffs)
+    }
+    if(diff_type == "year_five"){
+      if(length(tmp_diffs) < 5){
+        diff <- NA
+      }
+      if(length(tmp_diffs) >= 5){
+        diff <- tmp_diffs[5] 
+      }
+    }
+    if(diff_type == "last_year"){
+      diff <- tail(tmp_diffs, 1)
+    }
     
     return(
       tibble(
@@ -236,7 +259,7 @@ fill_empties <- function(...){
 ####
 change_metrics <- as_tibble(read.csv(paste0(data_dir, data_file))) %>%
   dplyr::select(-X)  # remove row number column
-  
+
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
