@@ -119,7 +119,7 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
     min_year <- min(df$treatment_year)
     max_year <- max(df$treatment_year)
     pdat <- expand.grid(
-      treatment_year = seq(min_year, max_year, length = 400),
+      treatment_year = seq(min_year, max_year, by = 1),
       treatment = unique(df$treatment)
     )
     pdat$plot_id <- unique(df$plot_id)[1]
@@ -127,22 +127,21 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
     control_name <- filter(df, plot_mani == 0) %>% pull(treatment) %>% unique()
     treat_name <- filter(df, plot_mani != 0) %>% pull(treatment) %>% unique()
     tmp_diffs <- smooth_diff(model = gam_test, newdata = pdat, 
-                             f1 = control_name, 
-                             f2 = treat_name, 
+                             f1 = treat_name, 
+                             f2 = control_name, 
                              var = "treatment", alpha = 0.05, 
                              unconditional = FALSE)
     
     if(diff_type == "all_years"){
-      diff <- mean(tmp_diffs)
+      diff <- colMeans(tmp_diffs[c("diff","se","upper","lower")])
     }
-    if(diff_type == "year_five"){
-      if(length(tmp_diffs) < 5){
-        diff <- NA
-      }
-      if(length(tmp_diffs) >= 5){
-        diff <- tmp_diffs[5] 
-      }
+    
+    if(diff_type == "mid_year"){
+      # find median index, rounds up
+      mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))  
+      diff <- tmp_diffs[mid_year,] 
     }
+    
     if(diff_type == "last_year"){
       diff <- tail(tmp_diffs, 1)
     }
