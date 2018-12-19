@@ -37,3 +37,8 @@ source("./July2018/fit_cumulative_gam_interactions.R")
 diff_type <- "mid_year"
 source("./July2018/fit_cumulative_gam_interactions.R")
 
+# Run GAM analysis for mid-year diffs -------------------------------------
+
+diff_type <- "all_years"
+source("./July2018/fit_cumulative_gam_interactions.R")
+

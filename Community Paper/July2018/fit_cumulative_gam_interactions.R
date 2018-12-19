@@ -133,12 +133,14 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
                              unconditional = FALSE)
     
     if(diff_type == "all_years"){
-      outdiff <- colMeans(tmp_diffs[c("diff","se","upper","lower")])
+      outdiff <- as.data.frame(t(colMeans(tmp_diffs[c("diff","se","upper","lower")])))
+      outdiff$treatment_year <- NA
     }
     
     if(diff_type == "mid_year"){
       # find median index, rounds up
-      mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))  
+      # mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))
+      mid_year <- 5
       outdiff <- tmp_diffs[mid_year,] 
     }
     
