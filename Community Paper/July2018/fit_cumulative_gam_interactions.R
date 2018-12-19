@@ -14,27 +14,27 @@
 
 
 ##  Clear the workspace
-rm(list = ls(all.names = TRUE))
+# rm(list = ls(all.names = TRUE))
 
 
 
 ####
 ####  LOAD LIBRARIES -----------------------------------------------------------
 ####
-library(tidyverse)
-library(ggthemes)
-library(mgcv)
+# library(tidyverse)
+# library(ggthemes)
+# library(mgcv)
 
 
 
 ####
 ####  SET WORKING DIRECTORIES AND FILENAMES ------------------------------------
 ####
-work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
-data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
-results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-data_file <- "MetricsTrts_July2018.csv"
-setwd(work_dir)
+# work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
+# data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
+# results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
+# data_file <- "MetricsTrts_July2018.csv"
+# setwd(work_dir)
 
 ##meghan's computer
 
@@ -70,11 +70,11 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
         p_value = -9999,
         delta_deviance = NA,
         delta_aic = NA,
-        final_diff = NA,
+        diff = NA,
         diff_se = NA,
         diff_lower = NA,
         diff_upper = NA,
-        final_treatment_year = NA
+        diff_treatment_year = NA
       )
     )
   }
@@ -133,17 +133,17 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
                              unconditional = FALSE)
     
     if(diff_type == "all_years"){
-      diff <- colMeans(tmp_diffs[c("diff","se","upper","lower")])
+      outdiff <- colMeans(tmp_diffs[c("diff","se","upper","lower")])
     }
     
     if(diff_type == "mid_year"){
       # find median index, rounds up
       mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))  
-      diff <- tmp_diffs[mid_year,] 
+      outdiff <- tmp_diffs[mid_year,] 
     }
     
     if(diff_type == "last_year"){
-      diff <- tail(tmp_diffs, 1)
+      outdiff <- tail(tmp_diffs, 1)
     }
     
     return(
@@ -152,11 +152,11 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
         p_value = pvalue,
         delta_deviance = delta_div,
         delta_aic = delta_aic,
-        final_diff = last_diff$diff,
-        diff_se = last_diff$se,
-        diff_lower = last_diff$lower,
-        diff_upper = last_diff$upper,
-        final_treatment_year = last_diff$treatment_year
+        diff = outdiff$diff,
+        diff_se = outdiff$se,
+        diff_lower = outdiff$lower,
+        diff_upper = outdiff$upper,
+        diff_treatment_year = outdiff$treatment_year
       )
     )
   }
@@ -242,11 +242,11 @@ fill_empties <- function(...){
       p_value = NA,
       delta_deviance = NA,
       delta_aic = NA,
-      final_diff = NA,
+      diff = NA,
       diff_se = NA,
       diff_lower = NA,
       diff_upper = NA,
-      final_treatment_year = NA
+      diff_treatment_year = NA
     )
   )
 }
@@ -319,37 +319,43 @@ for(do_site in all_sites){
       # Richness
       rich_test <- fit_compare_gams(
         df = model_data,
-        response = "richness_change_abs"
+        response = "richness_change_abs",
+        diff_type
       )
       
       # Evenness
       even_test <- fit_compare_gams(
         df = model_data,
-        response = "evenness_change_abs"
+        response = "evenness_change_abs",
+        diff_type
       )
       
       # Rank change
       rank_test <- fit_compare_gams(
         df = model_data,
-        response = "rank_change"
+        response = "rank_change",
+        diff_type
       )
       
       # Gains
       gain_test <- fit_compare_gams(
         df = model_data,
-        response = "gains"
+        response = "gains",
+        diff_type
       )
       
       # Losses
       loss_test <- fit_compare_gams(
         df = model_data,
-        response = "losses"
+        response = "losses",
+        diff_type
       )
       
       # Compositional change
       comp_test <- fit_compare_gams(
         df = model_data,
-        response = "composition_change"
+        response = "composition_change",
+        diff_type
       )
       
       tmp_out <- bind_rows(
@@ -371,11 +377,11 @@ for(do_site in all_sites){
           p_value,
           delta_deviance,
           delta_aic,
-          final_diff,
+          diff,
           diff_se,
           diff_lower,
           diff_upper,
-          final_treatment_year
+          diff_treatment_year
         )
       
     } # end if for num_years
@@ -407,9 +413,10 @@ save_comparisons <- all_comparisons %>%
     sig_diff_cntrl_trt = ifelse(is.na(sig_diff_cntrl_trt) == TRUE, "no", sig_diff_cntrl_trt)
   )
 
+outfile <- paste0("gam_comparison_table_", diff_type, ".csv")
 write_csv(
   x = save_comparisons,
-  path = paste0(results_dir, "gam_comparison_table.csv")
+  path = paste0(results_dir, outfile)
 )
 
 
