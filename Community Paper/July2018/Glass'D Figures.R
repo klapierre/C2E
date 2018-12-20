@@ -92,13 +92,28 @@ allyears_sigonly <- GlassD %>%
 ###graphing this ALL YEARS A - all data, B - sig only
 
 ##A
+sig_alla_overall<-allyears_all%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_alla_trts<-allyears_all%>%
+  filter(use==1, trt_type2!="Irr + Temp")%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_alla<-sig_alla_overall%>%
+  bind_rows(sig_alla_trts)
+
 glassD_trta<-allyears_all%>%
   group_by(response_var, trt_type2)%>%
   summarize(mean=mean(mglassd),
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature"|trt_type2=="Irr + Temp")
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
 
 glassD_alla<-allyears_all%>%
   ungroup()%>%
@@ -107,32 +122,52 @@ glassD_alla<-allyears_all%>%
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All Trts")
+  mutate(trt_type2="All GCDs")
 
 glassD_alldata<-glassD_alla%>%
-  bind_rows(glassD_trta)
+  bind_rows(glassD_trta)%>%
+  left_join(sig_alla)%>%
+  mutate(location=ifelse(sig==1, mean+0.3,NA))
 
 a<-ggplot(data=glassD_alldata, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All Trts","CO2","Irrigation","Temperature","Irr + Temp","N","P","Mult. Nuts."), labels=c("All Trts", "CO2","Irrigation", "Temp","Irr + Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'purple','blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
   geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var, ncol=1)+
+  facet_wrap(~response_var, ncol=1, scales="free_y")+
   ggtitle("All Data")
 
 ##B
+
+sig_allb_sig<-allyears_sigonly%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_allb_sig_trts<-allyears_sigonly%>%
+  filter(use==1, trt_type2!="Irr + Temp")%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_allb<-sig_allb_sig%>%
+  bind_rows(sig_allb_sig_trts)
+
+
 glassD_trtb<-allyears_sigonly%>%
   group_by(response_var, trt_type2)%>%
   summarize(mean=mean(mglassd),
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature"|trt_type2=="Irr + Temp")
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
 
 glassD_allb<-allyears_sigonly%>%
   ungroup()%>%
@@ -141,22 +176,25 @@ glassD_allb<-allyears_sigonly%>%
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All Trts")
+  mutate(trt_type2="All GCDs")
 
 glassD_alldatb<-glassD_allb%>%
-  bind_rows(glassD_trtb)
+  bind_rows(glassD_trtb)%>%
+  left_join(sig_allb)%>%
+  mutate(location=ifelse(sig==1, mean+0.3,NA))
 
 b<-ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All Trts","CO2","Irrigation","Temperature","Irr + Temp","N","P","Mult. Nuts."), labels=c("All Trts", "CO2","Irrigation", "Temp","Irr + Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'purple','blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var, ncol=1)+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
+  facet_wrap(~response_var, ncol=1, scales="free_y")+
   ggtitle("Sig Only")
 
 grid.arrange(a, b, ncol=2)
@@ -177,223 +215,236 @@ five_sigonly <- GlassD %>%
 ###graphing this 5th year only A - all data, B - sig only
 
 ##A
+sig_fivea_overall<-five_all%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_fivea_trts<-five_all%>%
+  filter(use==1, trt_type2!="Irr + Temp")%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_fivea<-sig_fivea_overall%>%
+  bind_rows(sig_fivea_trts)
+
 glassD_trta<-five_all%>%
   group_by(response_var, trt_type2)%>%
   summarize(mean=mean(mglassd),
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature"|trt_type2=="Irr + Temp")
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
 
-glassD_alla<-five_all%>%
+glassD_fivea<-five_all%>%
   ungroup()%>%
   group_by(response_var)%>%
   summarize(mean=mean(mglassd),
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All Trts")
+  mutate(trt_type2="All GCDs")
 
-glassD_alldata<-glassD_alla%>%
-  bind_rows(glassD_trta)
+glassD_fivedata<-glassD_fivea%>%
+  bind_rows(glassD_trta)%>%
+  left_join(sig_fivea)%>%
+  mutate(location=ifelse(sig==1, mean+0.3,NA))
 
-a<-ggplot(data=glassD_alldata, aes(x=trt_type2, y=mean, fill=trt_type2))+
+a<-ggplot(data=glassD_fivedata, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All Trts","CO2","Irrigation","Temperature","Irr + Temp","N","P","Mult. Nuts."), labels=c("All Trts", "CO2","Irrigation", "Temp","Irr + Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'purple','blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
   geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var, ncol=1)+
-  ggtitle("All Data")
+  facet_wrap(~response_var, ncol=1, scales="free_y")+
+  ggtitle("All Data - 5")
 
 ##B
+
+sig_fiveb_overall<-five_sigonly%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_fiveb_trts<-five_sigonly%>%
+  filter(use==1, trt_type2!="Irr + Temp")%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_fiveb<-sig_fiveb_overall%>%
+  bind_rows(sig_fiveb_trts)
+
+
 glassD_trtb<-five_sigonly%>%
   group_by(response_var, trt_type2)%>%
   summarize(mean=mean(mglassd),
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature"|trt_type2=="Irr + Temp")
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
 
-glassD_allb<-five_sigonly%>%
+glassD_fiveb<-five_sigonly%>%
   ungroup()%>%
   group_by(response_var)%>%
   summarize(mean=mean(mglassd),
             sd=sd(mglassd),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All Trts")
+  mutate(trt_type2="All GCDs")
 
-glassD_alldatb<-glassD_allb%>%
-  bind_rows(glassD_trtb)
+glassD_fivedatb<-glassD_fiveb%>%
+  bind_rows(glassD_trtb)%>%
+  left_join(sig_fiveb)%>%
+  mutate(location=ifelse(sig==1, mean+0.3,NA))
 
 b<-ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All Trts","CO2","Irrigation","Temperature","Irr + Temp","N","P","Mult. Nuts."), labels=c("All Trts", "CO2","Irrigation", "Temp","Irr + Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'purple','blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var, ncol=1)+
-  ggtitle("Sig Only")
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
+  facet_wrap(~response_var, ncol=1, scales="free_y")+
+  ggtitle("Sig Only - 5")
 
 grid.arrange(a, b, ncol=2)
+
 
 ###doing with last year only
 last_all <- GlassD %>%
   group_by(site_project_comm, treatment)%>%
-  mutate(maxyear=max(treatment_year2))%>%
-  filter(treatment_year2==maxyear)%>%
+  mutate(lstyr=max(treatment_year2))%>%
+  filter(treatment_year2==lstyr)%>%
   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
 
 last_sigonly <- GlassD %>%
   filter(sig_diff_cntrl_trt=="yes")%>%
   group_by(site_project_comm, treatment)%>%
-  mutate(maxyear=max(treatment_year2))%>%
-  filter(treatment_year2==maxyear)%>%
+  mutate(lstyr=max(treatment_year2))%>%
+  filter(treatment_year2==lstyr)%>%
   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
 
 ###graphing this last year only A - all data, B - sig only
 
 ##A
+sig_lasta_overall<-last_all%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_lasta_trts<-last_all%>%
+  filter(use==1, trt_type2!="Irr + Temp")%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_lasta<-sig_lasta_overall%>%
+  bind_rows(sig_lasta_trts)
+
 glassD_trta<-last_all%>%
   group_by(response_var, trt_type2)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
+  summarize(mean=mean(mglassd, na.rm=T),
+            sd=sd(mglassd, na.rm=T),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature"|trt_type2=="Irr + Temp")
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
 
-glassD_alla<-last_all%>%
+glassD_lasta<-last_all%>%
   ungroup()%>%
   group_by(response_var)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
+  summarize(mean=mean(mglassd, na.rm=T),
+            sd=sd(mglassd, na.rm=T),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All Trts")
+  mutate(trt_type2="All GCDs")
 
-glassD_alldata<-glassD_alla%>%
-  bind_rows(glassD_trta)
+glassD_lastdata<-glassD_lasta%>%
+  bind_rows(glassD_trta)%>%
+  left_join(sig_lasta)%>%
+  mutate(location=ifelse(sig==1, mean+0.3,NA))
 
-a<-ggplot(data=glassD_alldata, aes(x=trt_type2, y=mean, fill=trt_type2))+
+a<-ggplot(data=glassD_lastdata, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All Trts","CO2","Irrigation","Temperature","Irr + Temp","N","P","Mult. Nuts."), labels=c("All Trts", "CO2","Irrigation", "Temp","Irr + Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'purple','blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
   geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var, ncol=1)+
-  ggtitle("All Data")
+  facet_wrap(~response_var, ncol=1, scales="free_y")+
+  ggtitle("All Data - Last")
 
 ##B
+
+sig_lastb_sig<-last_sigonly%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_lastb_sig_trts<-last_sigonly%>%
+  filter(use==1, trt_type2!="Irr + Temp")%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_lastb<-sig_lastb_sig%>%
+  bind_rows(sig_lastb_sig_trts)
+
+
 glassD_trtb<-last_sigonly%>%
   group_by(response_var, trt_type2)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
+  summarize(mean=mean(mglassd, na.rm=T),
+            sd=sd(mglassd, na.rm=T),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature"|trt_type2=="Irr + Temp")
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
 
-glassD_allb<-last_sigonly%>%
+glassD_lastb<-last_sigonly%>%
   ungroup()%>%
   group_by(response_var)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
+  summarize(mean=mean(mglassd, na.rm=T),
+            sd=sd(mglassd, na.rm=T),
             num=length(mglassd))%>%
   mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All Trts")
+  mutate(trt_type2="All GCDs")
 
-glassD_alldatb<-glassD_allb%>%
-  bind_rows(glassD_trtb)
+glassD_lastdatb<-glassD_lastb%>%
+  bind_rows(glassD_trtb)%>%
+  left_join(sig_lastb)%>%
+  mutate(location=ifelse(sig==1, mean+0.3,NA))
 
-b<-ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
+b<-ggplot(data=glassD_lastdatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All Trts","CO2","Irrigation","Temperature","Irr + Temp","N","P","Mult. Nuts."), labels=c("All Trts", "CO2","Irrigation", "Temp","Irr + Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'purple','blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var, ncol=1)+
-  ggtitle("Sig Only")
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
+  facet_wrap(~response_var, ncol=1, scales="free_y")+
+  ggtitle("Sig Only - 5")
 
 grid.arrange(a, b, ncol=2)
-
-
-##All stats. I will do this once we decide which we like best
-t.test(change_glass_d_mean$abs_richness_glass, mu=0)#over all sig.
-t.test(change_glass_d_mean$abs_evenness_glass, mu=0)#overall sig.
-t.test(change_glass_d_mean$rank_glass, mu=0)#not sig
-t.test(change_glass_d_mean$gains_glass, mu=0)#not sig
-t.test(change_glass_d_mean$losses_glass, mu=0)#sig.
-
-#water
-irr<-subset(change_glass_d_mean, trt_type2=="Irrigation")
-t.test(irr$abs_richness_glass, mu=0)#not sig
-t.test(irr$abs_evenness_glass, mu=0)#not sig
-t.test(irr$rank_glass, mu=0)#not sig
-t.test(irr$gains_glass, mu=0)#not sig
-t.test(irr$losses_glass, mu=0)#not sig
-
-#N
-N<-subset(change_glass_d_mean, trt_type2=="N")
-t.test(N$abs_richness_glass, mu=0)#sig
-t.test(N$abs_evenness_glass, mu=0)#sig
-t.test(N$rank_glass, mu=0)# sig
-t.test(N$gains_glass, mu=0)# sig
-t.test(N$losses_glass, mu=0)# sig
-
-#P
-P<-subset(change_glass_d_mean, trt_type2=="P")
-t.test(P$abs_richness_glass, mu=0)#not sig
-t.test(P$abs_evenness_glass, mu=0)#not sig
-t.test(P$rank_glass, mu=0)# not sig
-t.test(P$gains_glass, mu=0)# not sig
-t.test(P$losses_glass, mu=0)#not sig
-
-#CO2
-CO2<-subset(change_glass_d_mean, trt_type2=="CO2")
-t.test(CO2$abs_richness_glass, mu=0)#not sig
-t.test(CO2$abs_evenness_glass, mu=0)#not sig
-t.test(CO2$rank_glass, mu=0)# not sig
-t.test(CO2$gains_glass, mu=0)# not sig
-t.test(CO2$losses_glass, mu=0)#not sig
-
-#mult nuts
-multnuts<-subset(change_glass_d_mean, trt_type2=="Mult. Nuts.")
-t.test(multnuts$abs_richness_glass, mu=0)# sig
-t.test(multnuts$abs_evenness_glass, mu=0)# sig
-t.test(multnuts$rank_glass, mu=0)# not sig
-t.test(multnuts$gains_glass, mu=0)# not sig
-t.test(multnuts$losses_glass, mu=0)# sig
-
-#temperature
-temp<-subset(change_glass_d_mean, trt_type2=="Temperature")
-t.test(temp$abs_richness_glass, mu=0)# not sig
-t.test(temp$abs_evenness_glass, mu=0)# not sig
-t.test(temp$rank_glass, mu=0)# not sig
-t.test(temp$gains_glass, mu=0)# not sig
-t.test(temp$losses_glass, mu=0)# not sig
-
-#water and temperature
-irrtemp<-subset(change_glass_d_mean, trt_type2=="Irr + Temp")
-t.test(irrtemp$abs_richness_glass, mu=0)# not sig
-t.test(irrtemp$abs_evenness_glass, mu=0)# not sig
-t.test(irrtemp$rank_glass, mu=0)# not sig
-t.test(irrtemp$gains_glass, mu=0)# not sig
-t.test(irrtemp$losses_glass, mu=0)# not sig
