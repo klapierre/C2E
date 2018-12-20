@@ -252,6 +252,16 @@ gamtrts_metrics<-metrics_sig%>%
   )
 
 
+#for emily's bionomial analsis
+gamtrts_metrics_em<-metrics_sig%>%
+  left_join(trts_interactions)%>%
+  ungroup()%>%
+  filter(response_var != "composition_change",trt_type2!="Irr + Temp", use == 1)%>%
+  mutate(sigdiff=ifelse(sig_diff_cntrl_trt=="no", 0, 1))%>%
+  select(site_project_comm, treatment, response_var, site_code, project_name, community_type, trt_type2, sigdiff)
+
+#write.csv(gamtrts_metrics_em, "C2E/Products/CommunityChange/Summer2018_Results/sig_diff_by_trts.csv", row.names = F)
+
 #wihtin a GCD is there a differnce?
 CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
 prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
