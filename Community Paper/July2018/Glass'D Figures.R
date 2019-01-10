@@ -204,7 +204,6 @@ ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
 
-grid.arrange(a, b, ncol=2)
 
 # WE DECIDED TO USE ALL THE DATA SINCE THERE WERE NO BIG DIFFERENCES AMONG THE DIFFERNT YEAR SUBSETS. 
 # ###doing with 5th year only
