@@ -210,13 +210,15 @@ test_trt<-test.lm2%>%
   left_join(trts_interactions)%>%
   filter(use==1)
 
+alldir<-data.frame(trt_type2=c('All Trts.', 'All Trts.'), n=c(219,219), value=c('prop_sig', 'pnotsig'), sig=c(0.328, 0.671) )
+
 prop_sig_trt<-test_trt%>%
   group_by(trt_type2)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
   mutate(prop_sig=sum/n)%>%
     filter(trt_type2!="Irr + Temp")%>%
   mutate(pnotsig=1-prop_sig)%>%
-  select(-n, -sum)%>%
+  select(-sum)%>%
   gather(value, sig, prop_sig:pnotsig)
 
 #test differences chi-sq.
@@ -229,17 +231,28 @@ chisq<-test_trt%>%
 
 #chi-sq
 prop.test(x=as.matrix(chisq[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
-#p = 0.070 there is no difference between treatmetns in whether directional change occurs.
+#p = 0.0002
 
-ggplot(prop_sig_trt, aes(x = trt_type2, y = sig, fill = value)) +
+tograph<-prop_sig_trt%>%
+  bind_rows(alldir)
+
+ggplot(tograph, aes(x = trt_type2, y = sig, fill = value)) +
   geom_col(width = 0.7) +
   coord_flip() +
-  theme_minimal() +
+  theme_minimal()+
   scale_fill_brewer(name = "", labels = c("Not significant", "Significant")) +
+  scale_x_discrete(limits=c("Temperature",'P', 'N','Mult. Nuts.', 'Irrigation','CO2',  'All Trts.'))+
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
-  geom_hline(yintercept = 0.5)
-
+  geom_hline(yintercept = 0.5)+
+  geom_vline(xintercept = 6.5, linetype="dashed")+
+  geom_text(x=1, y = 0.05, label="n = 7", size=4)+
+  geom_text(x=2, y = 0.06, label="n = 14", size=4)+
+  geom_text(x=3, y = 0.06, label="n = 52", size=4)+
+  geom_text(x=4, y = 0.06, label="n = 34", size=4)+
+  geom_text(x=5, y = 0.05, label="n = 9", size=4)+
+  geom_text(x=6, y = 0.05, label="n = 7", size=4)+
+  geom_text(x=7, y = 0.07, label="n = 218", size=4)
 
 #Merge with exeriment info
 #Using rate_change_interval - recalculate slopes and get slope and p-value (0.5)
