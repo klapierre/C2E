@@ -203,7 +203,41 @@ ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_vline(xintercept = 1.5, size = 1)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+sig_allb_sig<-allyears_sigonly%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
 
+###doing as a boxplot
+
+glassD_trtb_box<-allyears_sigonly%>%
+   filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")%>%
+  ungroup()%>%
+  mutate(trt_type2=as.factor(trt_type2))
+
+glassD_allb_box<-allyears_sigonly%>%
+  ungroup()%>%
+    mutate(trt_type2="All GCDs")
+
+glassD_alldatb_box<-glassD_allb_box%>%
+  bind_rows(glassD_trtb_box)%>%
+  left_join(sig_allb)%>%
+  mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, NA)))))%>%
+  mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
+
+ggplot(data=glassD_alldatb_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
+  geom_boxplot()+
+  ylab("Glass's D")+
+  xlab("")+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  geom_vline(xintercept = 1.5, size = 1)+
+  geom_hline(yintercept = 0)+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
+  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
 
 # WE DECIDED TO USE ALL THE DATA SINCE THERE WERE NO BIG DIFFERENCES AMONG THE DIFFERNT YEAR SUBSETS. 
 # ###doing with 5th year only
