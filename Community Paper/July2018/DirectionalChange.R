@@ -165,10 +165,12 @@ rci2<-rate_change_interval%>%
   left_join(treatment_info)%>%
   mutate(trt=ifelse(plot_mani==0, "C", "T"))
 
-#plot this
-ggplot(data=subset(rci2, site_project_comm=='KNZ_pplots_0'&treatment=="N2P3"|treatment=="N1P0"), aes(x = interval, y = distance, color=trt))+
-  geom_point()+
-  geom_smooth(method = "lm")
+
+#plot this - need to sqrt the x-axis.
+ggplot(data=subset(rci2, site_project_comm=='SERC_CXN_0'&treatment=="t1"|treatment=="t4"), aes(x = sqrt(interval), y = distance, color=trt))+
+  #geom_point()+
+  geom_smooth(method = "loess")+
+  geom_jitter()
 
 spc<-unique(rci2$site_project_comm)
 test.lm<-data.frame()
@@ -180,19 +182,46 @@ for (i in 1:length(spc)){
   treat<-subset%>%
   filter(plot_mani!=0)
 trt_list<-unique(treat$treatment)
-for (i in 1:length(trt_list)){
+for (j in 1:length(trt_list)){
   subset2<-treat%>%
-    filter(treatment==trt_list[i])
-  trt<-trt_list[i]
+    filter(treatment==trt_list[j])
+  trt<-trt_list[j]
   ct<-rbind(subset2, control)
-  ct.lm<-lm(distance~interval*trt, data=ct)
+  ct.lm<-lm(distance~sqrt(interval)*trt, data=ct)
   output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm),
                         treatment=trt,
-                        est=summary(ct.lm)$coef["interval:trtT", c("Estimate")],
-                        pval=summary(ct.lm)$coef["interval:trtT","Pr(>|t|)"])
+                        est=summary(ct.lm)$coef["sqrt(interval):trtT", c("Estimate")],
+                        pval=summary(ct.lm)$coef["sqrt(interval):trtT","Pr(>|t|)"])
   test.lm<-rbind(test.lm, output.lm)
 }
 }
+
+
+###loop making pictures
+spc<-unique(rci2$site_project_comm)
+test.lm<-data.frame()
+for (i in 1:length(spc)){
+  subset<-rci2%>%
+    filter(site_project_comm==spc[i])
+  control<-subset%>%
+    filter(plot_mani==0)
+  treat<-subset%>%
+    filter(plot_mani!=0)
+  trt_list<-unique(treat$treatment)
+  for (j in 1:length(trt_list)){
+    subset2<-treat%>%
+      filter(treatment==trt_list[j])
+    trt<-trt_list[j]
+    ct<-rbind(subset2, control)
+
+    print(ggplot(data=ct, aes(x = sqrt(interval), y = distance, color=trt))+
+      geom_point()+
+      geom_smooth(method = "loess", se=F)+
+      geom_smooth(method = "lm", se=F, linetype=2)+
+      ggtitle(spc[i]))
+  }}
+    
+    
 
 test.lm2<-test.lm%>%
   mutate(sig=ifelse(pval<0.0501, 1, 0))%>%
