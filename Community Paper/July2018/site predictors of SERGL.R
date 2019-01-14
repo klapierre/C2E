@@ -36,6 +36,8 @@ change_metrics <- read.csv("MetricsTrts_July2018.csv") %>%
 
 subset<-read.csv("experiment_trt_subset.csv")
 
+dir<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
+
 ### Control data
 change_control <- change_metrics %>%
   filter(plot_mani==0) %>%
