@@ -15,7 +15,7 @@ setwd("~/Dropbox/")
 setwd("C:\\Users\\megha\\Dropbox")
 
 #to subset only the treatments I want
-subset_studies<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset.csv")
+subset_studies<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset.csv")
 
 #Files from home
 corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
@@ -151,6 +151,20 @@ lm.slopes2<-lm.slopes%>%
   left_join(treatment_info)%>%
   mutate(trt=ifelse(plot_mani==0, "C", "T"))
 
+cslopes<-lm.slopes2%>%
+  filter(trt=="C")%>%
+  rename(c_est=est, 
+         c_pval=p.val,
+         c_sig=sig)%>%
+  select(site_project_comm, c_est, c_pval, c_sig)
+
+diffslopes<-lm.slopes2%>%
+  filter(trt=="T")%>%
+  left_join(cslopes)%>%
+  mutate(diff=est-c_est)
+
+write.csv(diffslopes, "C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv", row.names=F)
+
 prop_sig<-lm.slopes2%>%
   group_by(trt)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
@@ -190,46 +204,51 @@ for (j in 1:length(trt_list)){
   ct.lm<-lm(distance~sqrt(interval)*trt, data=ct)
   output.lm<-data.frame(site_project_comm=unique(subset$site_project_comm),
                         treatment=trt,
-                        est=summary(ct.lm)$coef["sqrt(interval):trtT", c("Estimate")],
-                        pval=summary(ct.lm)$coef["sqrt(interval):trtT","Pr(>|t|)"])
+                        dest=summary(ct.lm)$coef["sqrt(interval):trtT", c("Estimate")],
+                        dpval=summary(ct.lm)$coef["sqrt(interval):trtT","Pr(>|t|)"])
   test.lm<-rbind(test.lm, output.lm)
 }
 }
 
 
-###loop making pictures
-spc<-unique(rci2$site_project_comm)
-test.lm<-data.frame()
-for (i in 1:length(spc)){
-  subset<-rci2%>%
-    filter(site_project_comm==spc[i])
-  control<-subset%>%
-    filter(plot_mani==0)
-  treat<-subset%>%
-    filter(plot_mani!=0)
-  trt_list<-unique(treat$treatment)
-  for (j in 1:length(trt_list)){
-    subset2<-treat%>%
-      filter(treatment==trt_list[j])
-    trt<-trt_list[j]
-    ct<-rbind(subset2, control)
-
-    print(ggplot(data=ct, aes(x = sqrt(interval), y = distance, color=trt))+
-      geom_point()+
-      geom_smooth(method = "loess", se=F)+
-      geom_smooth(method = "lm", se=F, linetype=2)+
-      ggtitle(spc[i]))
-  }}
+# ###loop making pictures
+# spc<-unique(rci2$site_project_comm)
+# test.lm<-data.frame()
+# for (i in 1:length(spc)){
+#   subset<-rci2%>%
+#     filter(site_project_comm==spc[i])
+#   control<-subset%>%
+#     filter(plot_mani==0)
+#   treat<-subset%>%
+#     filter(plot_mani!=0)
+#   trt_list<-unique(treat$treatment)
+#   for (j in 1:length(trt_list)){
+#     subset2<-treat%>%
+#       filter(treatment==trt_list[j])
+#     trt<-trt_list[j]
+#     ct<-rbind(subset2, control)
+# 
+#     print(ggplot(data=ct, aes(x = sqrt(interval), y = distance, color=trt))+
+#       geom_point()+
+#       geom_smooth(method = "loess", se=F)+
+#       geom_smooth(method = "lm", se=F, linetype=2)+
+#       ggtitle(spc[i]))
+#   }}
     
     
 
 test.lm2<-test.lm%>%
-  mutate(sig=ifelse(pval<0.0501, 1, 0))%>%
+  mutate(dsig=ifelse(dpval<0.0501, 1, 0))%>%
   right_join(subset_studies)
 
 #32% of the time the contorls and treatments have different slopes.
 prop_diff<-sum(test.lm2$sig)/219
 
+
+diffslopes2<-test.lm2%>%
+  left_join(diffslopes)%>%
+  select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff)%>%
+  filter(dsig==1)
 
 ##import treatments
 trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")
