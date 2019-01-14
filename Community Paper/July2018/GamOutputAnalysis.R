@@ -22,6 +22,9 @@ gam_exp<-gam%>%
   select(site_proj_comm)%>%
   unique()
 
+#read in directional change results
+dir<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
+
 #filter the press treatments for the experiments with enough data
 trt_touse<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
   select(site_proj_comm, treatment)%>%
