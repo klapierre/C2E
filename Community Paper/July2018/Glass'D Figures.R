@@ -89,6 +89,11 @@ allyears_sigonly <- GlassD %>%
   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
 
+allyears_sigonly_direction<-allyears_sigonly%>%
+  mutate(sign = ifelse(mglassd>0, 1, 0))%>%
+  group_by(response_var, sign)%>%
+  summarise(n=length(sign))
+
 ###graphing this ALL YEARS A - all data, B - sig only
 
 ##A
@@ -227,6 +232,35 @@ glassD_alldatb_box<-glassD_allb_box%>%
   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
 
 ggplot(data=glassD_alldatb_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
+  geom_boxplot()+
+  ylab("Glass's D")+
+  xlab("")+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  geom_vline(xintercept = 1.5, size = 1)+
+  geom_hline(yintercept = 0)+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
+  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+
+###using all the data
+glassD_trta_box<-allyears_all%>%
+  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")%>%
+  ungroup()%>%
+  mutate(trt_type2=as.factor(trt_type2))
+
+glassD_alla_box<-allyears_all%>%
+  ungroup()%>%
+  mutate(trt_type2="All GCDs")
+
+glassD_alldata_box<-glassD_alla_box%>%
+  bind_rows(glassD_trta_box)%>%
+  left_join(sig_alla)%>%
+  mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, NA)))))%>%
+  mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
+
+ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_boxplot()+
   ylab("Glass's D")+
   xlab("")+
