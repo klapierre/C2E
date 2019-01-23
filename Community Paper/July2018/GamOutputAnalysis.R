@@ -355,7 +355,7 @@ ggplot(tograph_metrics_trt, aes(x = trt_type2, y = value, fill = sig)) +
   coord_flip() +
   theme_minimal() +
   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  labs(x = "Change metric", y = "Proportion of communities") +
+  labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept=0.50)+
   facet_wrap(~group, labeller=labeller(group = responses), ncol = 2)
