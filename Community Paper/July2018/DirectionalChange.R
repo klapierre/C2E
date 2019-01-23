@@ -242,27 +242,36 @@ test.lm2<-test.lm%>%
   right_join(subset_studies)
 
 #32% of the time the contorls and treatments have different slopes.
-prop_diff<-sum(test.lm2$sig)/219
+prop_diff<-sum(test.lm2$dsig)/219
 
+
+
+##import treatments
+trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")
 
 diffslopes2<-test.lm2%>%
   left_join(diffslopes)%>%
   select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff)%>%
   filter(dsig==1)
 
-##import treatments
-trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")
+diffslope_trt<-diffslopes2%>%
+  rename(site_proj_comm=site_project_comm)%>%
+ left_join(trts_interactions)%>%
+  select(site_proj_comm, treatment, dsig, est, sig, c_est, c_sig, diff, trt_type2)
 
 ##of the trt-control differences, what treatments?
 test_trt<-test.lm2%>%
   left_join(trts_interactions)%>%
   filter(use==1)
 
+
+
+
 alldir<-data.frame(trt_type2=c('All Trts.', 'All Trts.'), n=c(219,219), value=c('prop_sig', 'pnotsig'), sig=c(0.328, 0.671) )
 
 prop_sig_trt<-test_trt%>%
   group_by(trt_type2)%>%
-  summarise(sum=sum(sig), n=length(sig))%>%
+  summarise(sum=sum(dsig), n=length(dsig))%>%
   mutate(prop_sig=sum/n)%>%
     filter(trt_type2!="Irr + Temp")%>%
   mutate(pnotsig=1-prop_sig)%>%
@@ -271,9 +280,9 @@ prop_sig_trt<-test_trt%>%
 
 #test differences chi-sq.
 chisq<-test_trt%>%
-  mutate(sign=ifelse(sig==0, "num_nonsig", "num_sig"))%>%
+  mutate(sign=ifelse(dsig==0, "num_nonsig", "num_sig"))%>%
   group_by(trt_type2, sign)%>%
-  summarise(sum=length(sig))%>%
+  summarise(sum=length(dsig))%>%
   spread(sign, sum, fill=0)%>%
   filter(trt_type2!="Irr + Temp")
 
@@ -293,14 +302,15 @@ ggplot(tograph, aes(x = trt_type2, y = sig, fill = value)) +
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept = 0.5)+
-  geom_vline(xintercept = 6.5, linetype="dashed")+
-  geom_text(x=1, y = 0.05, label="n = 7", size=4)+
-  geom_text(x=2, y = 0.06, label="n = 14", size=4)+
-  geom_text(x=3, y = 0.06, label="n = 52", size=4)+
-  geom_text(x=4, y = 0.06, label="n = 34", size=4)+
-  geom_text(x=5, y = 0.05, label="n = 9", size=4)+
-  geom_text(x=6, y = 0.05, label="n = 7", size=4)+
-  geom_text(x=7, y = 0.07, label="n = 218", size=4)
+  geom_vline(xintercept = 6.5, linetype="dashed")#+
+  # geom_text(x=1, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
+  # geom_text(x=2, y = 0.06, label="n = 14", size=4,check_overlap = TRUE)+
+  # geom_text(x=3, y = 0.06, label="n = 52", size=4,check_overlap = TRUE)+
+  # geom_text(x=4, y = 0.06, label="n = 34", size=4,check_overlap = TRUE)+
+  # geom_text(x=5, y = 0.05, label="n = 9", size=4,check_overlap = TRUE)+
+  # geom_text(x=6, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
+  # geom_text(x=7, y = 0.07, label="n = 218", size=4,check_overlap = TRUE)
+
 
 #Merge with exeriment info
 #Using rate_change_interval - recalculate slopes and get slope and p-value (0.5)
