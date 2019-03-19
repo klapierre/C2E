@@ -13,9 +13,12 @@ library(gtable)
 library(codyn)
 library(vegan)
 
+#home
+setwd("~/Dropbox/converge_diverge/datasets/LongForm/")
+#work
+setwd("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\")
 
-#Files from home
-corredat<-read.csv("~/Dropbox/converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
+corredat<-read.csv("SpeciesRelativeAbundance_March2019.csv")
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
@@ -58,46 +61,6 @@ cdr <- corredat%>%
 
 ###final dataset to use
 corredat<-rbind(corredat1, azi, jrn, knz, sak, cdr)
-
-
-
-####files from work
-corredat<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="GVN_FACE_0")
-
-corredat1<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0")
-
-##several studies only have two measurments of a plot. I am dropping those plots
-azi<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_code=="AZI")%>%
-  filter(plot_id!=11&plot_id!=15&plot_id!=35&plot_id!=37)
-
-jrn<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm=="JRN_study278_0")%>%
-  filter(plot_id!=211&plot_id!=210)
-
-knz<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm=="KNZ_GFP_4F")%>%
-  filter(plot_id!="7_1_1"&plot_id!="7_2_1")
-
-sak<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\SpeciesRelativeAbundance_Oct2017.csv")%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm=="Saskatchewan_CCD_0")%>%
-  filter(plot_id!=2)
-corredat<-rbind(corredat1, azi, jrn, knz, sak)
-
 
 
 plotinfo<-corredat%>%
