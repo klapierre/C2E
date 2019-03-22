@@ -30,13 +30,13 @@
 ####
 ####  SET WORKING DIRECTORIES AND FILENAMES ------------------------------------
 ####
-# work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
-# data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
-# results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-# data_file <- "MetricsTrts_July2018.csv"
-# setwd(work_dir)
-
-##meghan's computer
+# # work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
+# # data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
+# # results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
+# # data_file <- "MetricsTrts_March2019.csv"
+# # setwd(work_dir)
+# 
+# ##meghan's computer
 
 
 ####
