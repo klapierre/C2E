@@ -22,19 +22,16 @@ corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
-  select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0", project_name!="e001", project_name!="e002")
 
 ##several studies only have two measurments of a plot. I am dropping those plots
 azi<-corredat%>%
-  select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_code=="AZI")%>%
   filter(plot_id!=11&plot_id!=15&plot_id!=35&plot_id!=37)
 
 jrn<-corredat%>%
-  select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="JRN_study278_0")%>%
   filter(plot_id!=211&plot_id!=210)
@@ -46,21 +43,26 @@ knz<-corredat%>%
   filter(plot_id!="7_1_1"&plot_id!="7_2_1")
 
 sak<-corredat%>%
-  select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
   filter(plot_id!=2)
 
 ###remove extra treatments from CDR e001 and e002
 cdr <- corredat%>%
-  select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(project_name=="e001"|project_name=="e002")%>%
   filter(treatment==1|treatment==6|treatment==8|treatment==9|treatment=='1_f_u_n'|treatment=='6_f_u_n'|treatment=='8_f_u_n'|treatment=='9_f_u_n')
 
+##remove one of 2 pre-treatment years in edge for CHY, SGS, and HAYS
+edge<-corredat%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_code=="CHY"|site_code=="SGS"|site_code=="HYS"&project_name=="EDGE")%>%
+  filter(calendar_year!=2012)
+  
+
 
 ###final dataset to use
-corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr)
+corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr, edge)
 
 treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
   dplyr::select(site_code, project_name, community_type, treatment,plot_mani)%>%
@@ -72,11 +74,14 @@ corredat <- corredat_raw %>%
               mutate(site_project_comm_trt=paste(site_project_comm, treatment, sep="::"))
 
 numyears<- corredat%>%
-  select(site_project_comm, calendar_year)%>%
+  select(site_project_comm, treatment_year)%>%
   unique()%>%
+  filter(treatment_year!=0)%>%
   group_by(site_project_comm)%>%
-  summarize(num=length(calendar_year))%>%
-  filter(num>4)
+  summarize(num=length(treatment_year))%>%
+  filter(num>4)%>%
+  mutate(use=1)
+
 
 corredat_sub<-corredat%>%
   right_join(numyears)
