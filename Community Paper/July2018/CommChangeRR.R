@@ -24,14 +24,14 @@ setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
 setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 #read in the data
-dat<-read.csv("CORRE_RAC_Metrics_July2018_trtyr.csv")%>%
+dat<-read.csv("CORRE_RAC_Metrics_March2019_trtyr.csv")%>%
   select(-X)
 
-dat_mult<-read.csv("CORRE_Mult_Metrics_July2018.csv")%>%
+dat_mult<-read.csv("CORRE_Mult_Metrics_March2019.csv")%>%
 select(-X)
 
-trts_interactions<-read.csv("treatment interactions_July2018.csv")%>%
-  select(-site_project_comm)
+trts_interactions<-read.csv("treatment interactions_March2019.csv")%>%
+  select(-site_proj_comm)
 
 sig_exp_bayes <- read.csv("treatments_sig mult diff.csv")%>%
   select(site_project_comm, treatment)
@@ -48,14 +48,14 @@ unique(sig_exp_perm$site_project_comm)
 setwd("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm")
 setwd("~/Dropbox/converge_diverge/datasets/LongForm")
 
-plotid<-read.csv("SpeciesRelativeAbundance_Oct2017.csv")%>%
+plotid<-read.csv("SpeciesRelativeAbundance_March2019.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 plotid2<-plotid%>%
   select(site_project_comm, plot_id, treatment)%>%
   unique()
 
-trt<-read.csv("ExperimentInformation_Nov2017.csv")%>%
+trt<-read.csv("ExperimentInformation_March2019.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -87,7 +87,7 @@ dat1<-dat%>%
   left_join(trts_interactions)%>%
   left_join(dat_mult)
 
-write.csv(dat1, "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/MetricsTrts_July2018.csv")
+write.csv(dat1, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WGMetricsTrts_March2019.csv")
 
 #demonstrate why we are dropping richness - actually when we use absolute richness change then there is not relationship.
 g<-ggplot(data = dat1, aes(x = abs(richness_change), y = gains))+
