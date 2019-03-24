@@ -14,28 +14,28 @@
 
 
 ##  Clear the workspace
-# rm(list = ls(all.names = TRUE))
+rm(list = ls(all.names = TRUE))
 
 
 
 ####
 ####  LOAD LIBRARIES -----------------------------------------------------------
 ####
-# library(tidyverse)
-# library(ggthemes)
-# library(mgcv)
+library(tidyverse)
+library(ggthemes)
+library(mgcv)
 
 
 
 ####
 ####  SET WORKING DIRECTORIES AND FILENAMES ------------------------------------
 ####
-# # work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
-# # data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
-# # results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-# # data_file <- "MetricsTrts_March2019.csv"
-# # setwd(work_dir)
-# 
+work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
+data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
+results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
+data_file <- "MetricsTrts_March2019.csv"
+setwd(work_dir)
+
 # ##meghan's computer
 
 
@@ -286,6 +286,7 @@ change_cumsum <- change_metrics %>%
 ####
 all_sites <- unique(change_cumsum$site_project_comm)
 all_comparisons <- {} # empty object for storage
+diff_type <- "last_year"
 
 for(do_site in all_sites){
   site_data <- filter(change_cumsum, site_project_comm == do_site)
