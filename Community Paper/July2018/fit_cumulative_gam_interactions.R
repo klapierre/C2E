@@ -22,7 +22,7 @@ rm(list = ls(all.names = TRUE))
 ####  LOAD LIBRARIES -----------------------------------------------------------
 ####
 library(tidyverse)
-library(ggthemes)
+#library(ggthemes)
 library(mgcv)
 
 
@@ -265,6 +265,7 @@ change_metrics <- as_tibble(read.csv(paste0(data_dir, data_file))) %>%
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
+  filter(treatment_year!=0)%>%
   group_by(site_project_comm, treatment, plot_id) %>%
   mutate(richness_change_abs = abs(richness_change)) %>%
   mutate(evenness_change_abs = abs(evenness_change)) %>%
@@ -276,7 +277,7 @@ change_cumsum <- change_metrics %>%
                  gains, 
                  losses,
                  composition_change), 
-            funs(cumsum)) %>%
+            list(cumsum)) %>%
   mutate(control = ifelse(plot_mani==0,"control","treatment")) %>%
   arrange(site_project_comm, plot_id, treatment_year)
 
