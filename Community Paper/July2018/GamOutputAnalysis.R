@@ -21,10 +21,6 @@ gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_ta
   rename(site_project_comm=site_proj_comm)%>%
   separate(site_project_comm, into=c("site_code","project_name","community_type"), sep="_", remove=F)
 
-
-#read in directional change results
-dir<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
-
 #filter the press treatments for the experiments with enough data
 trt_touse<-read.csv("C2E/Products/CommunityChange/March2018 WG/ExperimentInformation_March2019.csv")%>%
   filter(pulse==0, plot_mani!=0)%>%
@@ -60,6 +56,15 @@ gam_touse<-gam%>%
         ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
         ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))
 
+##basic stats on what we are doing.
+gam_exp<-gam_touse%>%
+  select(site_project_comm)%>%
+  unique()
+
+gam_trt<-gam_touse%>%
+  select(site_project_comm, treatment, trt_type2)%>%
+  unique()
+
 ##summary of treatment for table 1
 sum_trts<-gam_trt%>%
   select(site_project_comm, trt_type2)%>%
@@ -75,14 +80,7 @@ sum_trts2<-gam_touse%>%
   summarize(n=length(trt_type2))
 
 
-##basic stats on what we are doing.
-gam_exp<-gam_touse%>%
-  select(site_project_comm)%>%
-  unique()
 
-gam_trt<-gam_touse%>%
-  select(site_project_comm, treatment, trt_type2)%>%
-  unique()
 
 #write.csv(gam_trt, "C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_May2019.csv", row.names=F)
 
@@ -136,26 +134,26 @@ gam_trt<-gam_touse%>%
 #   annotate(geom="text", x = 5, y = 0.05, label="n = 11", size=3)
 # 
 # 
-# #second, of those that saw change, what aspect of the community changes
-# comchange_sig<-gam%>%
-#   filter(response_var == "composition_change" & sig_diff_cntrl_trt == "yes")%>%
-#   select(site_proj_comm, treatment)%>%
-#   mutate(keep = "yes")
-# # 
-# # write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
-# 
-# 
-# #second, of those that saw change, what aspect of the community changes
-# comchange_sig_metrics<-gam%>%
-#   filter(response_var != "composition_change" & sig_diff_cntrl_trt == "yes")%>%
-#   select(site_proj_comm, treatment, response_var)%>%
-#   mutate(keep = "yes")
-# 
-# overlap<-comchange_sig_metrics%>%
-#   select(-keep)%>%
-#   left_join(comchange_sig)
-# 
-# write.csv(comchange_sig_metrics, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change.csv', row.names = F )
+#second, of those that saw change, what aspect of the community changes
+comchange_sig<-gam_touse%>%
+  filter(response_var == "composition_change" & sig_diff_cntrl_trt == "yes")%>%
+  select(site_project_comm, treatment)%>%
+  mutate(keep = "yes")
+#
+# write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
+
+
+#second, of those that saw change, what aspect of the community changes
+comchange_sig_metrics<-gam_touse%>%
+  filter(response_var != "composition_change" & sig_diff_cntrl_trt == "yes")%>%
+  select(site_project_comm, treatment, response_var)%>%
+  mutate(keep = "yes")
+
+overlap<-comchange_sig_metrics%>%
+  select(-keep)%>%
+  left_join(comchange_sig)
+
+write.csv(comchange_sig_metrics, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_may2019.csv', row.names = F )
 # 
 # sig_only<-gam%>%
 #   right_join(comchange_sig)%>%
