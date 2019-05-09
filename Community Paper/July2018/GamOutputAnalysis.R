@@ -17,39 +17,76 @@ setwd("C:\\Users\\megha\\Dropbox\\")
 setwd("~/Dropbox/")
 
 #read in and drop sucessional treatments (those that had a big disturbance to start)
-gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")
-gam_exp<-gam%>%
-  select(site_proj_comm)%>%
-  unique()
+gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table_last_year.csv")%>%
+  rename(site_project_comm=site_proj_comm)%>%
+  separate(site_project_comm, into=c("site_code","project_name","community_type"), sep="_", remove=F)
+
 
 #read in directional change results
 dir<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
 
 #filter the press treatments for the experiments with enough data
-trt_touse<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
-  select(site_proj_comm, treatment)%>%
+trt_touse<-read.csv("C2E/Products/CommunityChange/March2018 WG/ExperimentInformation_March2019.csv")%>%
+  filter(pulse==0, plot_mani!=0)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_")) %>% 
+  select(site_project_comm, treatment, trt_type)%>%
   unique()%>%
-  right_join(gam_exp)
+  mutate(use=ifelse(trt_type=="N"|trt_type=="P"|trt_type=="CO2"|trt_type=="irr"|trt_type=="temp"|trt_type=="N*P"|trt_type=="mult_nutrient"|trt_type=='precip_vari', 1, 0))
+
 
 gam_touse<-gam%>%
- right_join(trt_touse)
+ inner_join(trt_touse)%>%
+  mutate(trt_type2=ifelse(trt_type=="N"|trt_type=="control","N", 
+        ifelse(trt_type=="P", "P", 
+        ifelse(trt_type=="CO2", "CO2",
+        ifelse(trt_type=="irr", "Irrigation",
+        ifelse(trt_type=="temp", "Temperature", 
+        ifelse(trt_type=="N*P"|trt_type=="mult_nutrient", "Mult. Nuts.", 
+        ifelse(trt_type=="drought", "drought", 
+        ifelse(trt_type=="CO2*temp", "CO2*temp", 
+        ifelse(trt_type=="drought*temp", "drought*temp", 
+        ifelse(trt_type=="irr*temp", "irr*temp",
+        ifelse(trt_type=="irr*CO2*temp"|trt_type=="N*CO2*temp"|trt_type=="N*irr*temp"|trt_type=="N*irr*CO2*temp", "mult_res*temp", 
+        ifelse(trt_type=="irr*herb_removal"|trt_type=="irr*plant_mani"|trt_type=="irr*plant_mani*herb_removal", "irr*NR", 
+        ifelse(trt_type=="herb_removal"|trt_type=="till"|trt_type=="mow_clip"|trt_type=="burn"|trt_type=="plant_mani"|trt_type=="stone"|trt_type=="graze"|trt_type=="burn*graze"|trt_type=="fungicide"|trt_type=="plant_mani*herb_removal"|trt_type=="burn*mow_clip", "NR", 
+        ifelse(trt_type=="precip_vari", "Precip. Vari.",  
+        ifelse(trt_type=="N*plant_mani"|trt_type=="N*burn"|trt_type=="N*mow_clip"|trt_type=="N*till"|trt_type=="N*stone"|trt_type=="N*burn*graze"|trt_type=="N*burn*mow_clip", "N*NR", 
+        ifelse(trt_type=="N*temp", "N*temp", 
+        ifelse(trt_type=="N*CO2", "N*CO2",
+        ifelse(trt_type=="irr*CO2", "irr*CO2",
+        ifelse(trt_type=="N*irr", "N*irr",
+        ifelse(trt_type=="mult_nutrient*herb_removal"|trt_type=="mult_nutrient*fungicide"|trt_type=="N*P*burn*graze"|trt_type=="N*P*burn"|trt_type=="*P*mow_clip"|trt_type=="N*P*burn*mow_clip"|trt_type=="N*P*mow_clip", "mult_nutrients*NR",
+        ifelse(trt_type=="P*mow_clip"|trt_type=="P*burn"|trt_type=="P*burn*graze"|trt_type=="P*burn*mow_clip", "P*NR", 
+        ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
+        ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))
+
+##summary of treatment for table 1
+sum_trts<-gam_trt%>%
+  select(site_project_comm, trt_type2)%>%
+  separate(site_project_comm, into=c("site_code", "project_name", "community_type"), sep="_")%>%
+  group_by(trt_type2)%>%
+  summarize(n=length(trt_type2))
+
+sum_trts2<-gam_touse%>%
+  separate(site_project_comm, into=c("site_code", "project_name", "community_type"), sep="_")%>%
+  select(site_code, trt_type2)%>%
+  unique()%>%
+  group_by(trt_type2)%>%
+  summarize(n=length(trt_type2))
+
+
+##basic stats on what we are doing.
+gam_exp<-gam_touse%>%
+  select(site_project_comm)%>%
+  unique()
 
 gam_trt<-gam_touse%>%
-  select(site_proj_comm, treatment)%>%
-  unique()%>%
-  mutate(site_project_comm=site_proj_comm)
+  select(site_project_comm, treatment, trt_type2)%>%
+  unique()
 
-#write.csv(gam_trt, "C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset.csv", row.names=F)
+#write.csv(gam_trt, "C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_May2019.csv", row.names=F)
 
-trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
-  right_join(gam_trt)%>%
-  filter(use==1)
 
-#summary table of treatments
-trt_summary<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
-  select(site_proj_comm, treatment, trt_type, use, trt_type2)%>%
-  unique()%>%
-  right_join(gam_exp)
 
 # write.csv(trt_summary, "treatment_summary.csv")
 
@@ -206,7 +243,7 @@ metrics_sig_tally <- metrics_sig %>%
 #How many communities saw 1 aspect of change?
 metrics_all<-metrics_sig%>%
   filter(sig_diff_cntrl_trt=="yes")%>%
-  select(site_proj_comm, treatment, sig_diff_cntrl_trt)%>%
+  select(site_project_comm, treatment, sig_diff_cntrl_trt)%>%
   unique()
 
 
@@ -245,9 +282,8 @@ ggplot(sig_tograph2, aes(x = response_var2, y = value, fill = sig)) +
 ###how does this differ by GCD?
 
 gamtrts_metrics<-metrics_sig%>%
-  left_join(trts_interactions)%>%
   ungroup()%>%
-  filter(response_var != "composition_change",trt_type2!="Irr + Temp", use == 1)%>%
+  filter(response_var != "composition_change", use == 1)%>%
   group_by(response_var, trt_type2) %>%
   summarise(
     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
@@ -257,13 +293,12 @@ gamtrts_metrics<-metrics_sig%>%
 
 #for emily's bionomial analsis
 gamtrts_metrics_em<-metrics_sig%>%
-  left_join(trts_interactions)%>%
   ungroup()%>%
-  filter(response_var != "composition_change",trt_type2!="Irr + Temp", use == 1)%>%
+  filter(response_var != "composition_change", use == 1)%>%
   mutate(sigdiff=ifelse(sig_diff_cntrl_trt=="no", 0, 1))%>%
   select(site_project_comm, treatment, response_var, site_code, project_name, community_type, trt_type2, sigdiff)
 
-#write.csv(gamtrts_metrics_em, "C2E/Products/CommunityChange/Summer2018_Results/sig_diff_by_trts.csv", row.names = F)
+#write.csv(gamtrts_metrics_em, "C2E/Products/CommunityChange/Summer2018_Results/sig_diff_by_trts_May2019.csv", row.names = F)
 
 # #wihtin a GCD is there a differnce?
 # CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
@@ -310,17 +345,15 @@ gamtrts_metrics_em<-metrics_sig%>%
 # prop.test(x=as.matrix(loss[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
 numexp_trt<-metrics_sig%>%
-  left_join(trts_interactions)%>%
   ungroup()%>%
-  filter(response_var != "composition_change",trt_type2!="Irr + Temp", use == 1)%>%
-  select(site_proj_comm, treatment, trt_type2)%>%
+  filter(response_var != "composition_change", use == 1)%>%
+  select(site_project_comm, treatment, trt_type2)%>%
   unique
          
 anysig_gamtrts_metrics<-metrics_sig%>%
-  left_join(trts_interactions)%>%
   ungroup()%>%
-  filter(response_var != "composition_change",trt_type2!="Irr + Temp", use == 1, sig_diff_cntrl_trt=="yes")%>%
-  select(site_proj_comm, treatment, sig_diff_cntrl_trt, trt_type2)%>%
+  filter(response_var != "composition_change", use == 1, sig_diff_cntrl_trt=="yes")%>%
+  select(site_project_comm, treatment, sig_diff_cntrl_trt, trt_type2)%>%
   unique()%>%
   right_join(numexp_trt)%>%
   mutate(sig_diff=ifelse(is.na(sig_diff_cntrl_trt), "no", "yes"))%>%
@@ -339,7 +372,8 @@ tograph_metrics_trt<-gamtrts_metrics%>%
          pnonsig = num_nonsig/sum)%>%
   select(-num_sig, -num_nonsig, -sum)%>%
   gather(key = sig, value = value, -trt_type2, -response_var) %>%
-  mutate(group=factor(response_var, levels = c("any_change", "richness_change_abs", "evenness_change_abs", "rank_change", "gains", "losses")))
+  mutate(group=factor(response_var, levels = c("any_change", "richness_change_abs", "evenness_change_abs", "rank_change", "gains", "losses")))%>%
+  mutate(trt_type3=factor(trt_type2,levels = c("Temperature","Precip. Vari.", "P", "N", "Mult. Nuts.","Irrigation", "CO2")))
 
 responses<-c(
   evenness_change_abs = "Evenness", 
@@ -350,7 +384,7 @@ responses<-c(
   any_change = "Any Change")
 
 ##overall how many experiments saw some aspect of change.
-ggplot(tograph_metrics_trt, aes(x = trt_type2, y = value, fill = sig)) +
+ggplot(tograph_metrics_trt, aes(x = trt_type3, y = value, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
   theme_minimal() +
