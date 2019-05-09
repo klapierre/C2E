@@ -11,20 +11,20 @@ theme_set(theme_bw(12))
 
 ### Read in data 
 
-sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table.csv")%>%
-  select(site_proj_comm, treatment, response_var, final_treatment_year, sig_diff_cntrl_trt)
+sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table_last_year.csv")%>%
+  select(site_proj_comm, treatment, response_var, sig_diff_cntrl_trt)
 
 
-change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\MetricsTrts_July2018.csv") %>%
+change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\MetricsTrts_March2019.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
-subset<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset.csv")
+subset<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset_may2019.csv")
 
 ### Control data
 change_control <- change_metrics %>%
   filter(plot_mani==0) %>%
-  dplyr::select(treatment_year, treatment_year2, abs_richness_change, abs_evenness_change, 
+  select(treatment_year, treatment_year2, abs_richness_change, abs_evenness_change, 
                 rank_change, gains, losses, site_project_comm, treatment, plot_mani) %>%
   rename(abs_richness_change_ctrl = abs_richness_change,
          abs_evenness_change_ctrl = abs_evenness_change,
@@ -63,7 +63,35 @@ change_glass_d <- change_glass_d %>%
   mutate(losses_glass=replace(losses_glass, losses_glass=="Inf"|losses_glass=="NaN", NA))
 
 # read in treatment variables for subsetting later
-info.trt=read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\treatment interactions_July2018.csv") 
+info.trt<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
+  select(site_code, project_name, community_type, treatment,plot_mani, trt_type)%>%
+  unique()%>%
+  filter(plot_mani!=0)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  mutate(use=ifelse(trt_type=="N"|trt_type=="P"|trt_type=="CO2"|trt_type=="irr"|trt_type=="temp"|trt_type=="N*P"|trt_type=="mult_nutrient"|trt_type=='precip_vari', 1, 0))%>%
+  mutate(trt_type2=ifelse(trt_type=="N"|trt_type=="control","N", 
+                   ifelse(trt_type=="P", "P", 
+                   ifelse(trt_type=="CO2", "CO2",
+                   ifelse(trt_type=="irr", "Irrigation",
+                   ifelse(trt_type=="temp", "Temperature", 
+                   ifelse(trt_type=="N*P"|trt_type=="mult_nutrient", "Mult. Nuts.", 
+                   ifelse(trt_type=="drought", "drought", 
+                   ifelse(trt_type=="CO2*temp", "CO2*temp", 
+                   ifelse(trt_type=="drought*temp", "drought*temp", 
+                   ifelse(trt_type=="irr*temp", "irr*temp",
+                   ifelse(trt_type=="irr*CO2*temp"|trt_type=="N*CO2*temp"|trt_type=="N*irr*temp"|trt_type=="N*irr*CO2*temp", "mult_res*temp", 
+                   ifelse(trt_type=="irr*herb_removal"|trt_type=="irr*plant_mani"|trt_type=="irr*plant_mani*herb_removal", "irr*NR",
+                   ifelse(trt_type=="herb_removal"|trt_type=="till"|trt_type=="mow_clip"|trt_type=="burn"|trt_type=="plant_mani"|trt_type=="stone"|trt_type=="graze"|trt_type=="burn*graze"|trt_type=="fungicide"|trt_type=="plant_mani*herb_removal"|trt_type=="burn*mow_clip", "NR", 
+                   ifelse(trt_type=="precip_vari", "Precip. Vari.",  
+                   ifelse(trt_type=="N*plant_mani"|trt_type=="N*burn"|trt_type=="N*mow_clip"|trt_type=="N*till"|trt_type=="N*stone"|trt_type=="N*burn*graze"|trt_type=="N*burn*mow_clip", "N*NR", 
+                   ifelse(trt_type=="N*temp", "N*temp", 
+                   ifelse(trt_type=="N*CO2", "N*CO2",
+                   ifelse(trt_type=="irr*CO2", "irr*CO2",
+                   ifelse(trt_type=="N*irr", "N*irr",
+                   ifelse(trt_type=="mult_nutrient*herb_removal"|trt_type=="mult_nutrient*fungicide"|trt_type=="N*P*burn*graze"|trt_type=="N*P*burn"|trt_type=="*P*mow_clip"|trt_type=="N*P*burn*mow_clip"|trt_type=="N*P*mow_clip", "mult_nutrients*NR",
+                   ifelse(trt_type=="P*mow_clip"|trt_type=="P*burn"|trt_type=="P*burn*graze"|trt_type=="P*burn*mow_clip", "P*NR", 
+                   ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
+                   ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))
 
 ### calculate mean change through time and combine with predictor variables
 GlassD<-change_glass_d%>%
@@ -77,7 +105,7 @@ GlassD<-change_glass_d%>%
   gather(response_var, glassd, richness_change_abs:losses)%>%
   left_join(sig)%>%
   left_join(info.trt)%>%
-  select(-site_proj_comm, -site_code, -project_name, -community_type, -trt_type, -press)
+  select(-site_proj_comm, -site_code, -project_name, -community_type, -trt_type,)
 
 ###doing with all years
 allyears_all <- GlassD %>%
@@ -104,7 +132,7 @@ sig_alla_overall<-allyears_all%>%
          trt_type2="All GCDs")
 
 sig_alla_trts<-allyears_all%>%
-  filter(use==1, trt_type2!="Irr + Temp")%>%
+  filter(use==1)%>%
   group_by(response_var, trt_type2)%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
   mutate(sig=ifelse(pval<0.05, 1, 0))
@@ -164,7 +192,7 @@ sig_allb_sig<-allyears_sigonly%>%
          trt_type2="All GCDs")
 
 sig_allb_sig_trts<-allyears_sigonly%>%
-  filter(use==1, trt_type2!="Irr + Temp")%>%
+  filter(use==1)%>%
   group_by(response_var, trt_type2)%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
   mutate(sig=ifelse(pval<0.05, 1, 0))
@@ -217,9 +245,7 @@ sig_allb_sig<-allyears_sigonly%>%
 ###doing as a boxplot
 
 glassD_trtb_box<-allyears_sigonly%>%
-   filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")%>%
-  ungroup()%>%
-  mutate(trt_type2=as.factor(trt_type2))
+   filter(use==1)
 
 glassD_allb_box<-allyears_sigonly%>%
   ungroup()%>%
@@ -235,8 +261,8 @@ ggplot(data=glassD_alldatb_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_boxplot()+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   geom_vline(xintercept = 1.5, size = 1)+
@@ -245,10 +271,8 @@ ggplot(data=glassD_alldatb_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
 
 ###using all the data
-glassD_trta_box<-allyears_all%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")%>%
-  ungroup()%>%
-  mutate(trt_type2=as.factor(trt_type2))
+glassD_trta_box<-allyears_all%>% 
+  filter(use==1)
 
 glassD_alla_box<-allyears_all%>%
   ungroup()%>%
@@ -257,15 +281,15 @@ glassD_alla_box<-allyears_all%>%
 glassD_alldata_box<-glassD_alla_box%>%
   bind_rows(glassD_trta_box)%>%
   left_join(sig_alla)%>%
-  mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, NA)))))%>%
+  mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, ifelse(sig==1&response_var=="gains", 2.5, NA))))))%>%
   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
 
 ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_boxplot()+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   geom_vline(xintercept = 1.5, size = 1)+
