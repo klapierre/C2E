@@ -144,14 +144,14 @@ for (i in 1:length(spc)){
 write.csv(delta_mult, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_Metrics_March2019.csv")
 
 ###figuring out treatments
-trts<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
-  select(site_code, trt_type)%>%
-  unique()%>%
-  group_by(trt_type)%>%
-  summarize(n = length(site_code))
-
-
-
+# trts<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
+#   select(site_code, trt_type)%>%
+#   unique()%>%
+#   group_by(trt_type)%>%
+#   summarize(n = length(site_code))
+# 
+# 
+# 
 
 # ##getting the average for each treatment in a year
 # 
