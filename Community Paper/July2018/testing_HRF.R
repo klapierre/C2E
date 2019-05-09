@@ -4,20 +4,18 @@ setwd("C:\\Users\\megha\\Dropbox\\")
 library(tidyverse)
 library(gridExtra)
 
-change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\MetricsTrts_July2018.csv") %>%
+change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\MetricsTrts_March2019.csv") %>%
   mutate(richness_change_abs = abs(richness_change),
          evenness_change_abs = abs(evenness_change))%>%
   select(-X, -richness_change, -evenness_change, -composition_change, -site_code, -project_name, -community_type, -trt_type, -use, -composition_change, -dispersion_change)
 
-subset_studies<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset.csv")
+subset_studies<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset_May2019.csv")
 
 #not doing this.
 # sig_com<-read.csv('C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv')%>%
 #   mutate(site_project_comm = site_proj_comm)
 
-metrics_sig<-read.csv("C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change.csv")%>%
-  mutate(site_project_comm=site_proj_comm)%>%
-  select(-site_proj_comm)%>%
+metrics_sig<-read.csv("C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_may2019.csv")%>%
   filter(response_var!="richness_change_abs")%>%
   right_join(subset_studies)
 
@@ -31,7 +29,7 @@ change_control <- change_metrics %>%
          gains_ctrl = gains,
          losses_ctrl = losses) %>%
   group_by(site_project_comm, treatment_year2) %>%
-  summarise_at(vars(c(rank_change_ctrl:losses_ctrl, richness_change_abs_ctrl, evenness_change_abs_ctrl)), funs(mean, sd), na.rm=T)
+  summarise_at(vars(c(rank_change_ctrl:losses_ctrl, richness_change_abs_ctrl, evenness_change_abs_ctrl)), list(mean=mean, sd=sd), na.rm=T)
 
 change_glass_d <- change_metrics %>%
   filter(plot_mani != 0) %>%
@@ -48,7 +46,7 @@ change_glass_d <- change_metrics %>%
          gains_glass = (gains-gains_ctrl_mean)/gains_ctrl_sd,
          losses_glass = (losses-losses_ctrl_mean)/losses_ctrl_sd
   ) %>%
-  dplyr::select(site_project_comm:plot_mani, abs_richness_glass:losses_glass) %>%
+  select(site_project_comm:plot_mani, abs_richness_glass:losses_glass) %>%
   ungroup()
 
 #change_glass_d is the thing that we want
@@ -118,7 +116,7 @@ rank_table<-rank_sig%>%
   summarize(num=length(order))%>%
   mutate(first=substring(order,1,1))%>%
   arrange(first, -num)%>%
-  mutate(ordered=seq(1:53))
+  mutate(ordered=seq(1:50))
 
 rank_sig_mean<-rank_sig%>%
   group_by(response_var)%>%
