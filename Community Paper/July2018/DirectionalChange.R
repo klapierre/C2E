@@ -15,10 +15,11 @@ setwd("~/Dropbox/")
 setwd("C:\\Users\\megha\\Dropbox")
 
 #to subset only the treatments I want
-subset_studies<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset.csv")
+subset_studies<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_May2019.csv")
 
 #Files from home
-corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
+corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_March2019.csv")%>%
+  select(-X)
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
@@ -37,8 +38,7 @@ jrn<-corredat%>%
   filter(plot_id!=211&plot_id!=210)
 
 knz<-corredat%>%
-  select(-X)%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+    mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="KNZ_GFP_4F")%>%
   filter(plot_id!="7_1_1"&plot_id!="7_2_1")
 
@@ -64,10 +64,35 @@ edge<-corredat%>%
 ###final dataset to use
 corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr, edge)
 
-treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_Nov2017.csv")%>%
-  dplyr::select(site_code, project_name, community_type, treatment,plot_mani)%>%
+treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
+  select(site_code, project_name, community_type, treatment,plot_mani, trt_type)%>%
   unique()%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
+  filter(plot_mani!=0)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  mutate(use=ifelse(trt_type=="N"|trt_type=="P"|trt_type=="CO2"|trt_type=="irr"|trt_type=="temp"|trt_type=="N*P"|trt_type=="mult_nutrient"|trt_type=='precip_vari', 1, 0))%>%
+  mutate(trt_type2=ifelse(trt_type=="N"|trt_type=="control","N", 
+                          ifelse(trt_type=="P", "P", 
+                                 ifelse(trt_type=="CO2", "CO2",
+                                        ifelse(trt_type=="irr", "Irrigation",
+                                               ifelse(trt_type=="temp", "Temperature", 
+                                                      ifelse(trt_type=="N*P"|trt_type=="mult_nutrient", "Mult. Nuts.", 
+                                                             ifelse(trt_type=="drought", "drought", 
+                                                                    ifelse(trt_type=="CO2*temp", "CO2*temp", 
+                                                                           ifelse(trt_type=="drought*temp", "drought*temp", 
+                                                                                  ifelse(trt_type=="irr*temp", "irr*temp",
+                                                                                         ifelse(trt_type=="irr*CO2*temp"|trt_type=="N*CO2*temp"|trt_type=="N*irr*temp"|trt_type=="N*irr*CO2*temp", "mult_res*temp", 
+                                                                                                ifelse(trt_type=="irr*herb_removal"|trt_type=="irr*plant_mani"|trt_type=="irr*plant_mani*herb_removal", "irr*NR", 
+                                                                                                       ifelse(trt_type=="herb_removal"|trt_type=="till"|trt_type=="mow_clip"|trt_type=="burn"|trt_type=="plant_mani"|trt_type=="stone"|trt_type=="graze"|trt_type=="burn*graze"|trt_type=="fungicide"|trt_type=="plant_mani*herb_removal"|trt_type=="burn*mow_clip", "NR", 
+                                                                                                              ifelse(trt_type=="precip_vari", "Precip. Vari.",  
+                                                                                                                     ifelse(trt_type=="N*plant_mani"|trt_type=="N*burn"|trt_type=="N*mow_clip"|trt_type=="N*till"|trt_type=="N*stone"|trt_type=="N*burn*graze"|trt_type=="N*burn*mow_clip", "N*NR", 
+                                                                                                                            ifelse(trt_type=="N*temp", "N*temp", 
+                                                                                                                                   ifelse(trt_type=="N*CO2", "N*CO2",
+                                                                                                                                          ifelse(trt_type=="irr*CO2", "irr*CO2",
+                                                                                                                                                 ifelse(trt_type=="N*irr", "N*irr",
+                                                                                                                                                        ifelse(trt_type=="mult_nutrient*herb_removal"|trt_type=="mult_nutrient*fungicide"|trt_type=="N*P*burn*graze"|trt_type=="N*P*burn"|trt_type=="*P*mow_clip"|trt_type=="N*P*burn*mow_clip"|trt_type=="N*P*mow_clip", "mult_nutrients*NR",
+                                                                                                                                                               ifelse(trt_type=="P*mow_clip"|trt_type=="P*burn"|trt_type=="P*burn*graze"|trt_type=="P*burn*mow_clip", "P*NR", 
+                                                                                                                                                                      ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
+                                                                                                                                                                             ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))
 
 corredat <- corredat_raw %>%
   # left_join(treatment_info, by=c( "site_code","project_name","community_type", "treatment","site_project_comm"))%>%
@@ -82,9 +107,9 @@ numyears<- corredat%>%
   filter(num>4)%>%
   mutate(use=1)
 
-
-corredat_sub<-corredat%>%
-  right_join(numyears)
+corredat_sub<-corredat_raw%>%
+  right_join(numyears)%>%
+  mutate(site_project_comm_trt=paste(site_project_comm, treatment, sep="::"))
   
 
 ### need to subset to only long experiments (8 or more years)
@@ -92,17 +117,17 @@ corredat_sub<-corredat%>%
 #### now finalized dataset is ready and we will use corredat
 
 #####look at directional change and slope - Dont use this because it takes forever AND we need the p-value anyways
-# spct<-unique(corredat$site_project_comm_trt)
+# spct<-unique(corredat_sub$site_project_comm_trt)
 # rate_change<-data.frame()
 # 
 # for (i in 1:length(spct)){
-#   
-#   subset<-corredat%>%
+# 
+#   subset<-corredat_sub%>%
 #     filter(site_project_comm_trt==spct[i])
-#   
+# 
 #   out<-rate_change(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
 #   out$site_project_comm<-spct[i]
-#   
+# 
 #   rate_change<-rbind(rate_change, out)
 # }
 # 
@@ -114,24 +139,24 @@ corredat_sub<-corredat%>%
 
 
 # ### to get all data time lags
-# spct<-unique(corredat_sub$site_project_comm_trt)
-# 
-# rate_change_interval<-data.frame()
-# 
-# for (i in 1:length(spct)){
-#   
-#   subset<-corredat%>%
-#     filter(site_project_comm_trt==spct[i])
-#   
-#   out<-rate_change_interval(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
-#   out$site_project_comm_trt<-spct[i]
-#   
-#   rate_change_interval<-rbind(rate_change_interval, out)
-# }
-# 
-# write.csv(rate_change_interval, "C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval.csv", row.names=F)
+spct<-unique(corredat_sub$site_project_comm_trt)
 
-rate_change_interval <- read.csv("C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval.csv")
+rate_change_interval<-data.frame()
+
+for (i in 1:length(spct)){
+
+  subset<-corredat_sub%>%
+    filter(site_project_comm_trt==spct[i])
+
+  out<-rate_change_interval(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id')
+  out$site_project_comm_trt<-spct[i]
+
+  rate_change_interval<-rbind(rate_change_interval, out)
+}
+
+# write.csv(rate_change_interval, "C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval_may2019.csv", row.names=F)
+
+rate_change_interval <- read.csv("C2E/Products/CommunityChange/Summer2018_Results/rate_change_interval_may2019.csv")
 
 ##to get slopes and p-values for each treatment through time (i.e., putting in all plot to plot combinations into a single linear regression across replicates)
 ##get slopes for each treatment including controls
@@ -165,16 +190,22 @@ cslopes<-lm.slopes2%>%
 
 diffslopes<-lm.slopes2%>%
   filter(trt=="T")%>%
+  right_join(subset_studies)%>%
   left_join(cslopes)%>%
   mutate(diff=est-c_est)
 
 write.csv(diffslopes, "C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv", row.names=F)
 
+conly<-cslopes<-lm.slopes2%>%
+  filter(trt=="C")
 prop_sig<-lm.slopes2%>%
+  filter(trt=="T")%>%
+  right_join(subset_studies)%>%
+  bind_rows(conly)%>%
   group_by(trt)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
   mutate(prop_sig=sum/n)
-# 74% of the time the controls are experiencing directional change and 73% of the time the treatments are experience directional change.
+# 77% of the time the controls are experiencing directional change and 84% of the time the treatments are experience directional change.
 
 
 ##test for sig diff between trt-control slopes
@@ -250,29 +281,30 @@ test.lm2<-test.lm%>%
 prop_diff<-sum(test.lm2$dsig)/219
 
 
-
-##import treatments
-trts_interactions<-read.csv("C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")
-
 diffslopes2<-test.lm2%>%
   left_join(diffslopes)%>%
-  select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff)%>%
-  filter(dsig==1)
+  select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff)
+
+tally_all<-diffslopes2%>%
+  mutate(resp=ifelse(dsig==0, "none", ifelse(c_sig==0&sig==1, "CndTd", ifelse(c_sig==1&sig==0, "CdTnd", ifelse(c_sig==1&sig==1&c_est>est, "C>T", ifelse(c_sig==1&sig==1&c_est<est, "C<T", 999))))))%>%
+  group_by(resp)%>%
+  summarize(num=length(resp))
 
 diffslope_trt<-diffslopes2%>%
-  rename(site_proj_comm=site_project_comm)%>%
- left_join(trts_interactions)%>%
-  select(site_proj_comm, treatment, dsig, est, sig, c_est, c_sig, diff, trt_type2)
+  left_join(treatment_info)%>%
+  filter(use==1)%>%
+  select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff, trt_type2)%>%
+  mutate(resp=ifelse(dsig==0, "none", ifelse(c_sig==0&sig==1, "CndTd", ifelse(c_sig==1&sig==0, "CdTnd", ifelse(c_sig==1&sig==1&c_est>est, "C>T", ifelse(c_sig==1&sig==1&c_est<est, "C<T", 999))))))%>%
+  group_by(trt_type2, resp)%>%
+  summarize(num=length(resp))
 
 ##of the trt-control differences, what treatments?
 test_trt<-test.lm2%>%
-  left_join(trts_interactions)%>%
+  left_join(treatment_info)%>%
   filter(use==1)
 
 
-
-
-alldir<-data.frame(trt_type2=c('All Trts.', 'All Trts.'), n=c(219,219), value=c('prop_sig', 'pnotsig'), sig=c(0.328, 0.671) )
+alldir<-data.frame(trt_type2=c('All Trts.', 'All Trts.'), n=c(219,219), value=c('prop_sig', 'pnotsig'), sig=c(0.324, 0.676))
 
 prop_sig_trt<-test_trt%>%
   group_by(trt_type2)%>%
@@ -303,11 +335,11 @@ ggplot(tograph, aes(x = trt_type2, y = sig, fill = value)) +
   coord_flip() +
   theme_minimal()+
   scale_fill_brewer(name = "", labels = c("Not significant", "Significant")) +
-  scale_x_discrete(limits=c("Temperature",'P', 'N','Mult. Nuts.', 'Irrigation','CO2',  'All Trts.'))+
+  scale_x_discrete(limits=c("Temperature",'Precip. Vari.', 'P', 'N','Mult. Nuts.', 'Irrigation','CO2',  'All Trts.'))+
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept = 0.5)+
-  geom_vline(xintercept = 6.5, linetype="dashed")#+
+  geom_vline(xintercept = 7.5, linetype="dashed")#+
   # geom_text(x=1, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
   # geom_text(x=2, y = 0.06, label="n = 14", size=4,check_overlap = TRUE)+
   # geom_text(x=3, y = 0.06, label="n = 52", size=4,check_overlap = TRUE)+
