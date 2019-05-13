@@ -30,13 +30,13 @@ theme_update(axis.title.x=element_text(size=12, vjust=-0.35), axis.text.x=elemen
 ### Read in data 
 
 
-change_metrics <- read.csv("MetricsTrts_July2018.csv") %>%
+change_metrics <- read.csv("MetricsTrts_March2019.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
-subset<-read.csv("experiment_trt_subset.csv")
+subset<-read.csv("experiment_trt_subset_may2019.csv")
 
-dir<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
+dir<-read.csv("C:\\Users\\megha\\Dropbox\\C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
 
 ### Control data
 change_control <- change_metrics %>%
@@ -50,7 +50,7 @@ change_control <- change_metrics %>%
          losses_ctrl = losses
   ) %>%
   group_by(site_project_comm, treatment_year2) %>%
-  summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), funs(mean, sd), na.rm=T)
+  summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), list(mean=mean, sd=sd), na.rm=T)
 
 change_glass_d <- change_metrics %>%
   filter(plot_mani != 0) %>%
@@ -85,7 +85,35 @@ info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
 
 # read in treatment variables for subsetting later
-info.trt=read.csv("treatment interactions_July2018.csv") 
+info.trt=info.trt<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
+  select(site_code, project_name, community_type, treatment,plot_mani, trt_type)%>%
+  unique()%>%
+  filter(plot_mani!=0)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  mutate(use=ifelse(trt_type=="N"|trt_type=="P"|trt_type=="CO2"|trt_type=="irr"|trt_type=="temp"|trt_type=="N*P"|trt_type=="mult_nutrient"|trt_type=='precip_vari', 1, 0))%>%
+  mutate(trt_type2=ifelse(trt_type=="N"|trt_type=="control","N", 
+                          ifelse(trt_type=="P", "P", 
+                                 ifelse(trt_type=="CO2", "CO2",
+                                        ifelse(trt_type=="irr", "Irrigation",
+                                               ifelse(trt_type=="temp", "Temperature", 
+                                                      ifelse(trt_type=="N*P"|trt_type=="mult_nutrient", "Mult. Nuts.", 
+                                                             ifelse(trt_type=="drought", "drought", 
+                                                                    ifelse(trt_type=="CO2*temp", "CO2*temp", 
+                                                                           ifelse(trt_type=="drought*temp", "drought*temp", 
+                                                                                  ifelse(trt_type=="irr*temp", "irr*temp",
+                                                                                         ifelse(trt_type=="irr*CO2*temp"|trt_type=="N*CO2*temp"|trt_type=="N*irr*temp"|trt_type=="N*irr*CO2*temp", "mult_res*temp", 
+                                                                                                ifelse(trt_type=="irr*herb_removal"|trt_type=="irr*plant_mani"|trt_type=="irr*plant_mani*herb_removal", "irr*NR",
+                                                                                                       ifelse(trt_type=="herb_removal"|trt_type=="till"|trt_type=="mow_clip"|trt_type=="burn"|trt_type=="plant_mani"|trt_type=="stone"|trt_type=="graze"|trt_type=="burn*graze"|trt_type=="fungicide"|trt_type=="plant_mani*herb_removal"|trt_type=="burn*mow_clip", "NR", 
+                                                                                                              ifelse(trt_type=="precip_vari", "Precip. Vari.",  
+                                                                                                                     ifelse(trt_type=="N*plant_mani"|trt_type=="N*burn"|trt_type=="N*mow_clip"|trt_type=="N*till"|trt_type=="N*stone"|trt_type=="N*burn*graze"|trt_type=="N*burn*mow_clip", "N*NR", 
+                                                                                                                            ifelse(trt_type=="N*temp", "N*temp", 
+                                                                                                                                   ifelse(trt_type=="N*CO2", "N*CO2",
+                                                                                                                                          ifelse(trt_type=="irr*CO2", "irr*CO2",
+                                                                                                                                                 ifelse(trt_type=="N*irr", "N*irr",
+                                                                                                                                                        ifelse(trt_type=="mult_nutrient*herb_removal"|trt_type=="mult_nutrient*fungicide"|trt_type=="N*P*burn*graze"|trt_type=="N*P*burn"|trt_type=="*P*mow_clip"|trt_type=="N*P*burn*mow_clip"|trt_type=="N*P*mow_clip", "mult_nutrients*NR",
+                                                                                                                                                               ifelse(trt_type=="P*mow_clip"|trt_type=="P*burn"|trt_type=="P*burn*graze"|trt_type=="P*burn*mow_clip", "P*NR", 
+                                                                                                                                                                      ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
+                                                                                                                                                                             ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))
 
 ### calculate mean change through time and combine with predictor variables
 change_glass_d_mean <- change_glass_d %>%
