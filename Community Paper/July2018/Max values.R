@@ -11,7 +11,6 @@ dat <- read.csv("MetricsTrts_July2018.csv")%>%
 sig_com<-read.csv('../Summer2018_Results/gam_com_sig_change.csv')%>%
   mutate(site_project_comm = site_proj_comm)
 
-
 plotid<-read.csv("SpeciesRelativeAbundance_Oct2017.csv")%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
