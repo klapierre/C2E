@@ -9,8 +9,8 @@
 # NOTES:
 #  (1) for deviance and AIC, negative deltas indicate better models
 #  (2) the p-value then says whether the deviance difference is significant
-#  (3) some p-values will be NA -- this is OK and indicates the full the model is
-#      DEFINITELY NOT BETTER than the null model. So, think of NA as p>0.05.
+#  (3) some p-values will be NA -- this is OK and indicates the full the model
+#      is DEFINITELY NOT BETTER than the null model. So, think of NA as p>0.05.
 
 
 ##  Clear the workspace
@@ -22,7 +22,7 @@ rm(list = ls(all.names = TRUE))
 ####  LOAD LIBRARIES -----------------------------------------------------------
 ####
 library(tidyverse)
-library(ggthemes)
+#library(ggthemes)
 library(mgcv)
 
 
@@ -31,24 +31,30 @@ library(mgcv)
 ####  SET WORKING DIRECTORIES AND FILENAMES ------------------------------------
 ####
 work_dir  <- "~/Repos/C2E/Community Paper/" # change as needed
-data_dir  <- "~/Dropbox/C2E/Products/CommunityChange/March2018 WG/"
+data_dir  <- "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG"
 results_dir <- "~/Dropbox/C2E/Products/CommunityChange/Summer2018_Results/"
-data_file <- "MetricsTrts_July2018.csv"
+data_file <- "MetricsTrts_March2019.csv"
 setwd(work_dir)
 
-##meghan's computer
-
+# ##meghan's computer
+setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+dat<-read.csv("MetricsTrts_March2019.csv")
 
 ####
 ####  DEFINE MODEL FITTING FUNCTION --------------------------------------------
 ####
 
-fit_compare_gams <- function(df, response){
+fit_compare_gams <- function(df, response, diff_type = "last_year"){
   # Fits two GAMs and compares them with AIC and LLR
   #
   # Args:
   #  data: a dataframe with necessary columns for fitting the GAMMs
   #  response: name of the response variable, must be a column in the dataframe
+  #  diff_type: type of treatment-control different to return. options are one
+  #   of "all_years" (mean of all diffs), "year_five" (diff at year 5), and
+  #   "last_year" (diff at final year of data). Note that the option "year_five"
+  #   requires the dataset to have at least five years of data. "last_year" is
+  #   default.
   #
   # Returns:
   #  A tibble with LLR delta deviance, LLR p-value, and delta AIC
@@ -62,9 +68,14 @@ fit_compare_gams <- function(df, response){
     return(
       tibble(
         response_var = response,
-        p_value = NA,
+        p_value = -9999,
         delta_deviance = NA,
-        delta_aic = NA
+        delta_aic = NA,
+        diff = NA,
+        diff_se = NA,
+        diff_lower = NA,
+        diff_upper = NA,
+        diff_treatment_year = NA
       )
     )
   }
@@ -105,12 +116,50 @@ fit_compare_gams <- function(df, response){
     aics <- AIC(gam_null, gam_test)$AIC
     delta_aic <- diff(aics)  # full - null
     
+    # Simulate predictions from the interaction model
+    min_year <- min(df$treatment_year)
+    max_year <- max(df$treatment_year)
+    pdat <- expand.grid(
+      treatment_year = seq(min_year, max_year, by = 1),
+      treatment = unique(df$treatment)
+    )
+    pdat$plot_id <- unique(df$plot_id)[1]
+    
+    control_name <- filter(df, plot_mani == 0) %>% pull(treatment) %>% unique()
+    treat_name <- filter(df, plot_mani != 0) %>% pull(treatment) %>% unique()
+    tmp_diffs <- smooth_diff(model = gam_test, newdata = pdat, 
+                             f1 = treat_name, 
+                             f2 = control_name, 
+                             var = "treatment", alpha = 0.05, 
+                             unconditional = FALSE)
+    
+    if(diff_type == "all_years"){
+      outdiff <- as.data.frame(t(colMeans(tmp_diffs[c("diff","se","upper","lower")])))
+      outdiff$treatment_year <- NA
+    }
+    
+    if(diff_type == "mid_year"){
+      # find median index, rounds up
+      # mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))
+      mid_year <- 5
+      outdiff <- tmp_diffs[mid_year,] 
+    }
+    
+    if(diff_type == "last_year"){
+      outdiff <- tail(tmp_diffs, 1)
+    }
+    
     return(
       tibble(
         response_var = response,
         p_value = pvalue,
         delta_deviance = delta_div,
-        delta_aic = delta_aic
+        delta_aic = delta_aic,
+        diff = outdiff$diff,
+        diff_se = outdiff$se,
+        diff_lower = outdiff$lower,
+        diff_upper = outdiff$upper,
+        diff_treatment_year = outdiff$treatment_year
       )
     )
   }
@@ -118,9 +167,68 @@ fit_compare_gams <- function(df, response){
 }  # end of model fit and comparison function
 
 
+####
+####  DEFINE FUNCTION FOR CALCULATING SMOOTHER DIFFS ---------------------------
+####
+
+smooth_diff <- function(model, newdata, f1, f2, var, alpha = 0.05,
+                        unconditional = FALSE) {
+  # Calculates the difference between two fitted smooths from
+  # a GAM model with a 'by' interaction term. This function written
+  # by Gavin Simpson:
+  # (https://www.fromthebottomoftheheap.net/2017/10/10/difference-splines-i/)
+  # Modified slightly by Andrew Tredennick.
+  #
+  # Args:
+  #   model: A fitted GAM model object. Must include an interaction smooth
+  #    term via 's(by = xterm)'
+  #  newdata: A dataframe with specific predictors for the model.
+  #  f1: First factor variable for comparison (control id)
+  #  f2: Second factor variable for comparison (treatment id)
+  #  var: Name of the 'by' variable (e.g., column name that contains f1 and f2)
+  #  alpha: Significance level. Default is 0.05.
+  #  unconditional: Correct for uncertainty in paramter covariance (TRUE) or 
+  #   or not (FALSE). Default is FALSE.
+  #
+  # Returns:
+  #  A data frame with the difference, se, and 95% CIs for each of the time
+  #  points in newdata.
+  
+  xp <- predict(model, newdata = newdata, type = 'lpmatrix', 
+                exclude = "s(plot_id)")  # make prediction for avareage plot
+  
+  c1 <- grepl(f1, colnames(xp))
+  c2 <- grepl(f2, colnames(xp))
+  r1 <- newdata[[var]] == f1
+  r2 <- newdata[[var]] == f2
+  
+  # difference rows of xp for data from comparison
+  X <- xp[r1, ] - xp[r2, ]
+  
+  # zero out cols of X related to splines for other factors (redundant here)
+  X[, ! (c1 | c2)] <- 0
+  
+  # zero out the parametric cols
+  X[, !grepl('^s\\(', colnames(xp))] <- 0
+  
+  dif <- X %*% coef(model)
+  se <- sqrt(rowSums((X %*% vcov(model, unconditional = unconditional)) * X))
+  crit <- qt(alpha/2, df.residual(model), lower.tail = FALSE)
+  upr <- dif + (crit * se)
+  lwr <- dif - (crit * se)
+  
+  data.frame(treatment_year = unique(newdata$treatment_year),
+             pair = paste(f1, f2, sep = '-'),
+             diff = dif,
+             se = se,
+             upper = upr,
+             lower = lwr)
+}  # end of smooth_diff function
+
+
 
 ####
-####  DEFINE FUNCTION TO FILL TIBBLE WHEN YEARS < 4
+####  DEFINE FUNCTION TO FILL TIBBLE WHEN YEARS < 4 ----------------------------
 ####
 
 fill_empties <- function(...){
@@ -136,7 +244,12 @@ fill_empties <- function(...){
       ),
       p_value = NA,
       delta_deviance = NA,
-      delta_aic = NA
+      delta_aic = NA,
+      diff = NA,
+      diff_se = NA,
+      diff_lower = NA,
+      diff_upper = NA,
+      diff_treatment_year = NA
     )
   )
 }
@@ -148,10 +261,11 @@ fill_empties <- function(...){
 ####
 change_metrics <- as_tibble(read.csv(paste0(data_dir, data_file))) %>%
   dplyr::select(-X)  # remove row number column
-  
+
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
+  filter(treatment_year!=0)%>%
   group_by(site_project_comm, treatment, plot_id) %>%
   mutate(richness_change_abs = abs(richness_change)) %>%
   mutate(evenness_change_abs = abs(evenness_change)) %>%
@@ -163,7 +277,7 @@ change_cumsum <- change_metrics %>%
                  gains, 
                  losses,
                  composition_change), 
-            funs(cumsum)) %>%
+            list(cumsum)) %>%
   mutate(control = ifelse(plot_mani==0,"control","treatment")) %>%
   arrange(site_project_comm, plot_id, treatment_year)
 
@@ -174,6 +288,7 @@ change_cumsum <- change_metrics %>%
 ####
 all_sites <- unique(change_cumsum$site_project_comm)
 all_comparisons <- {} # empty object for storage
+diff_type <- "last_year"
 
 for(do_site in all_sites){
   site_data <- filter(change_cumsum, site_project_comm == do_site)
@@ -209,37 +324,43 @@ for(do_site in all_sites){
       # Richness
       rich_test <- fit_compare_gams(
         df = model_data,
-        response = "richness_change_abs"
+        response = "richness_change_abs",
+        diff_type
       )
       
       # Evenness
       even_test <- fit_compare_gams(
         df = model_data,
-        response = "evenness_change_abs"
+        response = "evenness_change_abs",
+        diff_type
       )
       
       # Rank change
       rank_test <- fit_compare_gams(
         df = model_data,
-        response = "rank_change"
+        response = "rank_change",
+        diff_type
       )
       
       # Gains
       gain_test <- fit_compare_gams(
         df = model_data,
-        response = "gains"
+        response = "gains",
+        diff_type
       )
       
       # Losses
       loss_test <- fit_compare_gams(
         df = model_data,
-        response = "losses"
+        response = "losses",
+        diff_type
       )
       
       # Compositional change
       comp_test <- fit_compare_gams(
         df = model_data,
-        response = "composition_change"
+        response = "composition_change",
+        diff_type
       )
       
       tmp_out <- bind_rows(
@@ -260,7 +381,12 @@ for(do_site in all_sites){
           response_var,
           p_value,
           delta_deviance,
-          delta_aic
+          delta_aic,
+          diff,
+          diff_se,
+          diff_lower,
+          diff_upper,
+          diff_treatment_year
         )
       
     } # end if for num_years
@@ -280,7 +406,7 @@ for(do_site in all_sites){
 ####  SAVE DELTA_AIC TABLE -----------------------------------------------------
 ####
 save_comparisons <- all_comparisons %>%
-  filter(is.na(delta_deviance) == FALSE) %>%
+  filter(is.na(delta_deviance) == FALSE) %>%  # remove sites we don't model
   mutate(
     sig_diff_cntrl_trt = ifelse(
       p_value <= 0.05 & sign(delta_deviance) == -1,
@@ -292,90 +418,96 @@ save_comparisons <- all_comparisons %>%
     sig_diff_cntrl_trt = ifelse(is.na(sig_diff_cntrl_trt) == TRUE, "no", sig_diff_cntrl_trt)
   )
 
+outfile <- paste0("gam_comparison_table_", diff_type, ".csv")
 write_csv(
-  x = save_comparisons, 
-  path = paste0(results_dir, "gam_comparison_table.csv")
+  x = save_comparisons,
+  path = paste0(results_dir, outfile)
 )
 
+
+# ggplot(save_comparisons, aes(x = final_diff, fill = sig_diff_cntrl_trt)) +
+#   geom_histogram() +
+#   geom_vline(aes(xintercept = 0)) +
+#   facet_wrap(~response_var, scales = "free")
 
 
 ####
 ####  TALLY THE RESULTS --------------------------------------------------------
 ####
-gam_results <- read_csv(paste0(results_dir, "gam_comparison_table.csv"))
-
-sig_tally <- gam_results %>%
-  group_by(response_var) %>%
-  summarise(
-    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
-    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
-  ) %>%
-  gather(key = sig, value = value, -response_var) %>%
-  mutate(
-    response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
-    response_var = ifelse(response_var == "gains", "Species gains", response_var),
-    response_var = ifelse(response_var == "losses", "Species losses", response_var),
-    response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
-    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var),
-    response_var = ifelse(response_var == "composition_change", "Composition", response_var)
-  )
-
-# Of them all, how many had treatment-time interactions for composition change?
-percent_with_compositional_change <- sig_tally %>%
-  filter(response_var == "Composition") %>%
-  spread(sig, value) %>%
-  mutate(
-    percent_sig = num_sig/(num_nonsig + num_sig)
-  )
-
-# Of the significant treatment-time interactions, tally other aspects
-sites_with_trt_time_itxn <- gam_results %>%
-  filter(response_var == "composition_change") %>%
-  filter(sig_diff_cntrl_trt == "yes") %>%
-  dplyr::select(site_proj_comm, treatment)
-
-aspects_of_sigones <- gam_results %>%
-  right_join(sites_with_trt_time_itxn, by = c("site_proj_comm", "treatment")) %>%
-  filter(response_var != "composition_change")
-
-sig_tally_changers <- aspects_of_sigones %>%
-  group_by(response_var) %>%
-  summarise(
-    num_sig = length(which(sig_diff_cntrl_trt == "yes")),
-    num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
-  ) %>%
-  gather(key = sig, value = value, -response_var) %>%
-  mutate(
-    response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
-    response_var = ifelse(response_var == "gains", "Species gains", response_var),
-    response_var = ifelse(response_var == "losses", "Species losses", response_var),
-    response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
-    response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
-  ) %>%
-  spread(sig, value) %>%
-  mutate(
-    proportion_nonsig = num_nonsig / (num_nonsig + num_sig),
-    proportion_sig = num_sig / (num_nonsig + num_sig)
-  ) %>%
-  dplyr::select(-num_nonsig, -num_sig) %>%
-  gather(key = sig, value = value, -response_var)
-
-ggplot(sig_tally_changers, aes(x = response_var, y = value, fill = sig)) +
-  geom_col(width = 0.7) +
-  geom_hline(aes(yintercept = 0.5)) +
-  coord_flip() +
-  theme_minimal() +
-  scale_fill_manual(values = c("grey25", "grey75"), name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  # scale_fill_brewer(type = "bw", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-  labs(x = "Aspect of community change", y = "Proportion of communities") +
-  theme(legend.position = "top")
-
-ggsave(
-  filename = paste0(results_dir, "cumulative_changers_summary.png"),
-  width = 6,
-  height = 4,
-  units = "in"
-)
+# gam_results <- read_csv(paste0(results_dir, "gam_comparison_table.csv"))
+# 
+# sig_tally <- gam_results %>%
+#   group_by(response_var) %>%
+#   summarise(
+#     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+#     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+#   ) %>%
+#   gather(key = sig, value = value, -response_var) %>%
+#   mutate(
+#     response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
+#     response_var = ifelse(response_var == "gains", "Species gains", response_var),
+#     response_var = ifelse(response_var == "losses", "Species losses", response_var),
+#     response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
+#     response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var),
+#     response_var = ifelse(response_var == "composition_change", "Composition", response_var)
+#   )
+# 
+# # Of them all, how many had treatment-time interactions for composition change?
+# percent_with_compositional_change <- sig_tally %>%
+#   filter(response_var == "Composition") %>%
+#   spread(sig, value) %>%
+#   mutate(
+#     percent_sig = num_sig/(num_nonsig + num_sig)
+#   )
+# 
+# # Of the significant treatment-time interactions, tally other aspects
+# sites_with_trt_time_itxn <- gam_results %>%
+#   filter(response_var == "composition_change") %>%
+#   filter(sig_diff_cntrl_trt == "yes") %>%
+#   dplyr::select(site_proj_comm, treatment)
+# 
+# aspects_of_sigones <- gam_results %>%
+#   right_join(sites_with_trt_time_itxn, by = c("site_proj_comm", "treatment")) %>%
+#   filter(response_var != "composition_change")
+# 
+# sig_tally_changers <- aspects_of_sigones %>%
+#   group_by(response_var) %>%
+#   summarise(
+#     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
+#     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
+#   ) %>%
+#   gather(key = sig, value = value, -response_var) %>%
+#   mutate(
+#     response_var = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
+#     response_var = ifelse(response_var == "gains", "Species gains", response_var),
+#     response_var = ifelse(response_var == "losses", "Species losses", response_var),
+#     response_var = ifelse(response_var == "rank_change", "Rank change", response_var),
+#     response_var = ifelse(response_var == "richness_change_abs", "Richness", response_var)
+#   ) %>%
+#   spread(sig, value) %>%
+#   mutate(
+#     proportion_nonsig = num_nonsig / (num_nonsig + num_sig),
+#     proportion_sig = num_sig / (num_nonsig + num_sig)
+#   ) %>%
+#   dplyr::select(-num_nonsig, -num_sig) %>%
+#   gather(key = sig, value = value, -response_var)
+# 
+# ggplot(sig_tally_changers, aes(x = response_var, y = value, fill = sig)) +
+#   geom_col(width = 0.7) +
+#   geom_hline(aes(yintercept = 0.5)) +
+#   coord_flip() +
+#   theme_minimal() +
+#   scale_fill_manual(values = c("grey25", "grey75"), name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+#   # scale_fill_brewer(type = "bw", name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+#   labs(x = "Aspect of community change", y = "Proportion of communities") +
+#   theme(legend.position = "top")
+# 
+# ggsave(
+#   filename = paste0(results_dir, "cumulative_changers_summary.png"),
+#   width = 6,
+#   height = 4,
+#   units = "in"
+# )
 
 
 
