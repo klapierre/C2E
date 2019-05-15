@@ -67,7 +67,7 @@ corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr, edge)
 treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani, trt_type)%>%
   unique()%>%
-  filter(plot_mani!=0)%>%
+  #filter(plot_mani!=0)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   mutate(use=ifelse(trt_type=="N"|trt_type=="P"|trt_type=="CO2"|trt_type=="irr"|trt_type=="temp"|trt_type=="N*P"|trt_type=="mult_nutrient"|trt_type=='precip_vari', 1, 0))%>%
   mutate(trt_type2=ifelse(trt_type=="N"|trt_type=="control","N", 
@@ -194,7 +194,7 @@ diffslopes<-lm.slopes2%>%
   left_join(cslopes)%>%
   mutate(diff=est-c_est)
 
-write.csv(diffslopes, "C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv", row.names=F)
+#write.csv(diffslopes, "C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv", row.names=F)
 
 conly<-cslopes<-lm.slopes2%>%
   filter(trt=="C")
@@ -205,7 +205,7 @@ prop_sig<-lm.slopes2%>%
   group_by(trt)%>%
   summarise(sum=sum(sig), n=length(sig))%>%
   mutate(prop_sig=sum/n)
-# 77% of the time the controls are experiencing directional change and 84% of the time the treatments are experience directional change.
+# 77% of the time the controls are experiencing directional change and 84% of the time the treatments are experience directional change - this is not the best way to do this.
 
 
 ##test for sig diff between trt-control slopes
