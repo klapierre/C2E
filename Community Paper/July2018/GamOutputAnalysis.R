@@ -299,8 +299,8 @@ gamtrts_metrics_em<-metrics_sig%>%
 #write.csv(gamtrts_metrics_em, "C2E/Products/CommunityChange/Summer2018_Results/sig_diff_by_trts_May2019.csv", row.names = F)
 
 # #wihtin a GCD is there a differnce?
-# CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
-# prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
+prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 # 
 # #N
 # N <- gamtrts_metrics%>%filter(trt_type2=='N')
@@ -324,9 +324,9 @@ gamtrts_metrics_em<-metrics_sig%>%
 # 
 # ###now looking within communitychange
 # 
-# rich <- gamtrts_metrics%>%filter(response_var=='richness_change_abs')
-# prop.test(x=as.matrix(rich[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
+rich <- gamtrts_metrics%>%filter(response_var=='richness_change_abs')
+prop.test(x=as.matrix(rich[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
 # even <- gamtrts_metrics%>%filter(response_var=='evenness_change_abs')
 # prop.test(x=as.matrix(even[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 # 
