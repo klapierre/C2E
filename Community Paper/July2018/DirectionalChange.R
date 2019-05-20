@@ -285,18 +285,78 @@ diffslopes2<-test.lm2%>%
   left_join(diffslopes)%>%
   select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff)
 
+###binning the reuslts to 3 categoreis, no diff, C>T, C<T"
 tally_all<-diffslopes2%>%
-  mutate(resp=ifelse(dsig==0, "none", ifelse(c_sig==0&sig==1, "CndTd", ifelse(c_sig==1&sig==0, "CdTnd", ifelse(c_sig==1&sig==1&c_est>est, "C>T", ifelse(c_sig==1&sig==1&c_est<est, "C<T", 999))))))%>%
+  mutate(resp=ifelse(dsig==0, "c", ifelse(dsig==1&c_est>est, "b", ifelse(dsig==1&c_est<est, "a", 999))))%>%
   group_by(resp)%>%
-  summarize(num=length(resp))
+  summarize(num=length(resp))%>%
+  mutate(trt_type2="All GCDs",
+         pct = num/219)
 
 diffslope_trt<-diffslopes2%>%
   left_join(treatment_info)%>%
   filter(use==1)%>%
   select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff, trt_type2)%>%
-  mutate(resp=ifelse(dsig==0, "none", ifelse(c_sig==0&sig==1, "CndTd", ifelse(c_sig==1&sig==0, "CdTnd", ifelse(c_sig==1&sig==1&c_est>est, "C>T", ifelse(c_sig==1&sig==1&c_est<est, "C<T", 999))))))%>%
+  mutate(resp=ifelse(dsig==0, "c", ifelse(dsig==1&c_est>est, "b", ifelse(dsig==1&c_est<est, "a", 999))))%>%
   group_by(trt_type2, resp)%>%
-  summarize(num=length(resp))
+  summarize(num=length(resp))%>%
+  mutate(pct = ifelse(trt_type2=="CO2", num/7, ifelse(trt_type2=="Irrigation",num/12, ifelse(trt_type2=="Precip. Vari.", num/8, ifelse(trt_type2=="Temperature", num/7, ifelse(trt_type2=="N" , num/31, ifelse(trt_type2=="P", num/9, ifelse(trt_type2=="Mult. Nuts.", num/51,999))))))))%>%
+  bind_rows(tally_all)
+
+ggplot(diffslope_trt, aes(x = trt_type2, y = pct, fill = resp)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  theme_minimal()+
+  scale_fill_manual(name = "Response", limits=c("c", "b", "a"),labels = c("C=T", "C>T", "C<T"), values=c("light gray", "skyblue",'gold')) +
+  scale_x_discrete(limits=c( 'Mult. Nuts.','P', 'N',"Temperature",'Precip. Vari.', 'Irrigation','CO2',  'All GCDs'))+
+  labs(x = "Treatment", y = "Proportion of communities") +
+  theme(legend.position = "top")+
+  geom_vline(xintercept = 7.5, linetype="dashed")+
+  geom_text(x=1, y = 0.05, label="61%", size=4,check_overlap = TRUE)+
+  geom_text(x=2, y = 0.05, label="11%", size=4,check_overlap = TRUE)+
+  geom_text(x=3, y = 0.05, label="19%", size=4,check_overlap = TRUE)+
+  geom_text(x=4, y = 0.05, label="29%", size=4,check_overlap = TRUE)+
+  geom_text(x=5, y = 0.05, label="38%", size=4,check_overlap = TRUE)+
+  geom_text(x=6, y = 0.05, label="25%", size=4,check_overlap = TRUE)+
+  geom_text(x=7, y = 0.05, label="14%", size=4,check_overlap = TRUE)+
+  geom_text(x=8, y = 0.05, label="32%", size=4, check_overlap = T)
+
+
+##this bins to 5 categories
+# tally_all<-diffslopes2%>%
+#   mutate(resp=ifelse(dsig==0, "e", ifelse(c_sig==0&sig==1, "b", ifelse(c_sig==1&sig==0, "d", ifelse(c_sig==1&sig==1&c_est>est, "c", ifelse(c_sig==1&sig==1&c_est<est, "a", 999))))))%>%
+#   group_by(resp)%>%
+#   summarize(num=length(resp))%>%
+#   mutate(trt_type2="All GCDs",
+#          pct = num/219)
+# 
+# diffslope_trt<-diffslopes2%>%
+#   left_join(treatment_info)%>%
+#   filter(use==1)%>%
+#   select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff, trt_type2)%>%
+#   mutate(resp=ifelse(dsig==0, "e", ifelse(c_sig==0&sig==1, "b", ifelse(c_sig==1&sig==0, "d", ifelse(c_sig==1&sig==1&c_est>est, "c", ifelse(c_sig==1&sig==1&c_est<est, "a", 999))))))%>%
+#   group_by(trt_type2, resp)%>%
+#   summarize(num=length(resp))%>%
+#   mutate(pct = ifelse(trt_type2=="CO2", num/7, ifelse(trt_type2=="Irrigation",num/12, ifelse(trt_type2=="Precip. Vari.", num/8, ifelse(trt_type2=="Temperature", num/7, ifelse(trt_type2=="N" , num/31, ifelse(trt_type2=="P", num/9, ifelse(trt_type2=="Mult. Nuts.", num/51,999))))))))%>%
+#   bind_rows(tally_all)
+# 
+# ggplot(diffslope_trt, aes(x = trt_type2, y = pct, fill = resp)) +
+#   geom_col(width = 0.7) +
+#   coord_flip() +
+#   theme_minimal()+
+#   scale_fill_manual(name = "Response", limits=c("e", "d", "c", "b", "a"),labels = c("C=T", "CdTnd","C>T", "CndTd", "C<T"), values=c("light gray", "skyblue","steelblue", "khaki1",'gold')) +
+#   scale_x_discrete(limits=c( 'Mult. Nuts.','P', 'N',"Temperature",'Precip. Vari.', 'Irrigation','CO2',  'All GCDs'))+
+#   labs(x = "Treatment", y = "Proportion of communities") +
+#   theme(legend.position = "top")+
+#   geom_vline(xintercept = 7.5, linetype="dashed")+
+#   geom_text(x=1, y = 0.05, label="61%", size=4,check_overlap = TRUE)+
+#   geom_text(x=2, y = 0.05, label="11%", size=4,check_overlap = TRUE)+
+#   geom_text(x=3, y = 0.05, label="19%", size=4,check_overlap = TRUE)+
+#   geom_text(x=4, y = 0.05, label="29%", size=4,check_overlap = TRUE)+
+#   geom_text(x=5, y = 0.05, label="38%", size=4,check_overlap = TRUE)+
+#   geom_text(x=6, y = 0.05, label="25%", size=4,check_overlap = TRUE)+
+#   geom_text(x=7, y = 0.05, label="14%", size=4,check_overlap = TRUE)+
+#   geom_text(x=8, y = 0.05, label="32%", size=4, check_overlap = T)
 
 ##of the trt-control differences, what treatments?
 test_trt<-test.lm2%>%
