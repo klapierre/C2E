@@ -311,15 +311,15 @@ ggplot(diffslope_trt, aes(x = trt_type2, y = pct, fill = resp)) +
   scale_x_discrete(limits=c( 'Mult. Nuts.','P', 'N',"Temperature",'Precip. Vari.', 'Irrigation','CO2',  'All GCDs'))+
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
-  geom_vline(xintercept = 7.5, linetype="dashed")+
-  geom_text(x=1, y = 0.05, label="61%", size=4,check_overlap = TRUE)+
-  geom_text(x=2, y = 0.05, label="11%", size=4,check_overlap = TRUE)+
-  geom_text(x=3, y = 0.05, label="19%", size=4,check_overlap = TRUE)+
-  geom_text(x=4, y = 0.05, label="29%", size=4,check_overlap = TRUE)+
-  geom_text(x=5, y = 0.05, label="38%", size=4,check_overlap = TRUE)+
-  geom_text(x=6, y = 0.05, label="25%", size=4,check_overlap = TRUE)+
-  geom_text(x=7, y = 0.05, label="14%", size=4,check_overlap = TRUE)+
-  geom_text(x=8, y = 0.05, label="32%", size=4, check_overlap = T)
+  geom_vline(xintercept = 7.5, linetype="dashed")
+  # geom_text(x=1, y = 0.05, label="61%", size=4,check_overlap = TRUE)+
+  # geom_text(x=2, y = 0.05, label="11%", size=4,check_overlap = TRUE)+
+  # geom_text(x=3, y = 0.05, label="19%", size=4,check_overlap = TRUE)+
+  # geom_text(x=4, y = 0.05, label="29%", size=4,check_overlap = TRUE)+
+  # geom_text(x=5, y = 0.05, label="38%", size=4,check_overlap = TRUE)+
+  # geom_text(x=6, y = 0.05, label="25%", size=4,check_overlap = TRUE)+
+  # geom_text(x=7, y = 0.05, label="14%", size=4,check_overlap = TRUE)+
+  # geom_text(x=8, y = 0.05, label="32%", size=4, check_overlap = T)
 
 
 ##this bins to 5 categories
