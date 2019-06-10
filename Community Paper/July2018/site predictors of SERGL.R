@@ -19,11 +19,7 @@ library(gridExtra)
 
 
 theme_set(theme_bw())
-theme_update(axis.title.x=element_text(size=12, vjust=-0.35), axis.text.x=element_text(size=12),
-             axis.title.y=element_text(size=12, angle=90, vjust=0.5), axis.text.y=element_text(size=12),
-             plot.title = element_text(size=24, vjust=2),
-             panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
-             legend.title=element_text(size=12), legend.text=element_text(size=12))
+theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
 
@@ -618,3 +614,4 @@ grid.arrange(mr, cor, ncol=1, heights=c(1.8,4))
 #   geom_vline(xintercept = 1.5, size = 1)+
 #   geom_point(aes(trt_type2, location), shape=8)+
 #   facet_wrap(~metric_group, ncol=1, labeller = labeller(metric_group=vari))
+
