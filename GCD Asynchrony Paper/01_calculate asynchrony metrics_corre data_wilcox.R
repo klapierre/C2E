@@ -154,6 +154,7 @@ synchrony_rr_long %>%
 ?pairwise.t.test
 mutate(test = map(data, ~ cor.test(.x$age, .x$circumference)))
 library(broom)
+
 ###
 ### Look at response ratios across environmental gradients
 ###
@@ -1025,3 +1026,52 @@ data[] <- lapply(data, function(x) x[drop=T])
 
 data <- data[data$site_code!='doane.us',]
 
+
+
+
+
+###
+### Take a look at old patches site list and current full list to see what we removed
+###
+
+file.choose()
+old_metrics_df <- read.csv("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\Patches\\Patches\\full_analysis\\data\\Site level synch and var metrics_Jan2017_final.csv")
+new_metrics_df <- read.csv("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\Synchrony metrics response ratios_long form_13May2019.csv") %>%
+  mutate(site_proj_comm = paste(site_code, project_name, community_type, sep=".."))
+
+new_sites <- new_metrics_df %>%
+  dplyr::select(site_proj_comm) %>%
+  mutate(new_present=1) %>%
+  unique()
+
+sites_merged <- old_metrics_df %>%
+  dplyr::select(site_proj_comm) %>%
+  unique() %>%
+  mutate(old_present=1) %>%
+  full_join(new_sites, by="site_proj_comm") 
+
+select_site_vector <- sites_merged %>%
+  filter(old_present == 1) %>%
+  .$site_proj_comm
+
+diff_site_vec <- sites_merged %>%
+  filter(is.na(old_present)) %>%
+  .$site_proj_comm
+
+
+synchrony_df_diff_sites <- synchrony_vars_df %>%
+  mutate(site_proj_comm = paste(site_code, project_name, community_type, sep="_")) %>%
+  filter(site_proj_comm %in% diff_site_vec)
+
+plot_df <- full_df %>%
+  dplyr::select(site_code:plot_id, community_type) %>%
+  unique()
+
+# CDR_e001_C
+with(filter(plot_df, site_code=="CDR" & project_name == "e001" & community_type=="A"), table(calendar_year, factor(treatment)))
+
+data <- read.csv("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\SpeciesRawAbundance_March2019.csv")
+
+data %>%
+  filter(site_code == "CAR" &
+           project_name == "salt marsh" &)
