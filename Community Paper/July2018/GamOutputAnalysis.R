@@ -271,7 +271,7 @@ ggplot(sig_tograph2, aes(x = response_var2, y = value, fill = sig)) +
   coord_flip() +
   theme_minimal() +
   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant"))+
-  scale_x_discrete(limits=c("Species losses", "Species gains", "Rank change", "Evenness","Richness change", "Any Change"), labels = c("Species Losses","Species Gains", "Rank Change","Evenness Change","Richness change","Any Change" ))+
+  scale_x_discrete(limits=c("Richness change", "Species losses", "Species gains", "Rank change", "Evenness", "Any Change"), labels = c("Richness change","Species Losses","Species Gains", "Rank Change","Evenness Change","Any Change" ))+
   labs(x = "Change metric", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept = 0.5)+
@@ -299,48 +299,52 @@ gamtrts_metrics_em<-metrics_sig%>%
 #write.csv(gamtrts_metrics_em, "C2E/Products/CommunityChange/Summer2018_Results/sig_diff_by_trts_May2019.csv", row.names = F)
 
 # #wihtin a GCD is there a differnce?
-# CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
-# prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
+prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 # 
-# #N
-# N <- gamtrts_metrics%>%filter(trt_type2=='N')
-# prop.test(x=as.matrix(N[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #P
-# P <- gamtrts_metrics%>%filter(trt_type2=='P')
-# prop.test(x=as.matrix(P[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #irr
-# irr <- gamtrts_metrics%>%filter(trt_type2=='Irrigation')
-# prop.test(x=as.matrix(irr[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #mult nuts
-# multnuts <- gamtrts_metrics%>%filter(trt_type2=='Mult. Nuts.')
-# prop.test(x=as.matrix(multnuts[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #temp
-# temp <- gamtrts_metrics%>%filter(trt_type2=='Temperature')
-# prop.test(x=as.matrix(temp[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
+#N
+N <- gamtrts_metrics%>%filter(trt_type2=='N')
+prop.test(x=as.matrix(N[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#P
+P <- gamtrts_metrics%>%filter(trt_type2=='P')
+prop.test(x=as.matrix(P[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#irr
+irr <- gamtrts_metrics%>%filter(trt_type2=='Irrigation')
+prop.test(x=as.matrix(irr[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#mult nuts
+multnuts <- gamtrts_metrics%>%filter(trt_type2=='Mult. Nuts.')
+prop.test(x=as.matrix(multnuts[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#temp
+temp <- gamtrts_metrics%>%filter(trt_type2=='Temperature')
+prop.test(x=as.matrix(temp[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#precip var
+pv <- gamtrts_metrics%>%filter(trt_type2=='Precip. Vari.')
+prop.test(x=as.matrix(pv[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
 # ###now looking within communitychange
 # 
-# rich <- gamtrts_metrics%>%filter(response_var=='richness_change_abs')
-# prop.test(x=as.matrix(rich[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# even <- gamtrts_metrics%>%filter(response_var=='evenness_change_abs')
-# prop.test(x=as.matrix(even[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #rank
-# rank <- gamtrts_metrics%>%filter(response_var=='rank_change')
-# prop.test(x=as.matrix(rank[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #gain
-# gain <- gamtrts_metrics%>%filter(response_var=='gains')
-# prop.test(x=as.matrix(gain[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-# 
-# #loss
-# loss <- gamtrts_metrics%>%filter(response_var=='losses')
-# prop.test(x=as.matrix(loss[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+rich <- gamtrts_metrics%>%filter(response_var=='richness_change_abs')
+prop.test(x=as.matrix(rich[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+even <- gamtrts_metrics%>%filter(response_var=='evenness_change_abs')
+prop.test(x=as.matrix(even[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#rank
+rank <- gamtrts_metrics%>%filter(response_var=='rank_change')
+prop.test(x=as.matrix(rank[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#gain
+gain <- gamtrts_metrics%>%filter(response_var=='gains')
+prop.test(x=as.matrix(gain[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+
+#loss
+loss <- gamtrts_metrics%>%filter(response_var=='losses')
+prop.test(x=as.matrix(loss[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
 numexp_trt<-metrics_sig%>%
   ungroup()%>%
@@ -370,11 +374,11 @@ tograph_metrics_trt<-gamtrts_metrics%>%
          pnonsig = num_nonsig/sum)%>%
   select(-num_sig, -num_nonsig, -sum)%>%
   gather(key = sig, value = value, -trt_type2, -response_var) %>%
-  mutate(group=factor(response_var, levels = c("any_change", "richness_change_abs", "evenness_change_abs", "rank_change", "gains", "losses")))%>%
-  mutate(trt_type3=factor(trt_type2,levels = c("Temperature","Precip. Vari.", "P", "N", "Mult. Nuts.","Irrigation", "CO2")))
+  mutate(group=factor(response_var, levels = c("any_change", "evenness_change_abs", "rank_change", "gains", "losses", "richness_change_abs")))%>%
+  mutate(trt_type3=factor(trt_type2,levels = c("Mult. Nuts.", "P", "N", "Temperature","Precip. Vari.","Irrigation", "CO2")))
 
 responses<-c(
-  evenness_change_abs = "Evenness", 
+  evenness_change_abs = "Evenness Change", 
   gains = "Species Gains", 
   losses = "Species Losses",
   rank_change = "Rank Change",

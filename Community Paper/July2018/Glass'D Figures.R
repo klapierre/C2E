@@ -15,11 +15,11 @@ sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_ta
   select(site_proj_comm, treatment, response_var, sig_diff_cntrl_trt)
 
 
-change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\MetricsTrts_March2019.csv") %>%
+change_metrics <- read.csv("C2E/Products/CommunityChange/March2018 WG/MetricsTrts_March2019.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
-subset<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset_may2019.csv")
+subset<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_may2019.csv")
 
 ### Control data
 change_control <- change_metrics %>%
@@ -33,7 +33,7 @@ change_control <- change_metrics %>%
          losses_ctrl = losses
   ) %>%
   group_by(site_project_comm, treatment_year2) %>%
-  summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), funs(mean, sd), na.rm=T)
+  summarise_at(vars(abs_richness_change_ctrl:losses_ctrl), list(mean=mean, sd=sd), na.rm=T)
 
 change_glass_d <- change_metrics %>%
   filter(plot_mani != 0) %>%
@@ -164,11 +164,11 @@ glassD_alldata<-glassD_alla%>%
   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
 
 response_label<-c(
-  richness_change_abs="Richness Change",
   evenness_change_abs="Evenness Change",
   rank_change="Rank Change",
   gains = "Species Gains",
-  losses="Species Losses")
+  losses="Species Losses", 
+  richness_change_abs="Richness Change")
 
 ggplot(data=glassD_alldata, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
@@ -224,6 +224,14 @@ glassD_alldatb<-glassD_allb%>%
   mutate(location=ifelse(sig==1, mean+0.3,NA))%>%
   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
 
+response_label<-c(
+  evenness_change_abs="Evenness Change",
+  rank_change="Rank Change",
+  gains = "Species Gains",
+  losses="Species Losses", 
+  richness_change_abs="Richness Change")
+
+
 ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   geom_bar(position=position_dodge(), stat="identity")+
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
@@ -242,33 +250,33 @@ sig_allb_sig<-allyears_sigonly%>%
   mutate(sig=ifelse(pval<0.05, 1, 0),
          trt_type2="All GCDs")
 
-###doing as a boxplot
+###doing as a boxplot NOW using all the data
 
-glassD_trtb_box<-allyears_sigonly%>%
-   filter(use==1)
-
-glassD_allb_box<-allyears_sigonly%>%
-  ungroup()%>%
-    mutate(trt_type2="All GCDs")
-
-glassD_alldatb_box<-glassD_allb_box%>%
-  bind_rows(glassD_trtb_box)%>%
-  left_join(sig_allb)%>%
-  mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, NA)))))%>%
-  mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
-
-ggplot(data=glassD_alldatb_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
-  geom_boxplot()+
-  ylab("Glass's D")+
-  xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
-  geom_vline(xintercept = 1.5, size = 1)+
-  geom_hline(yintercept = 0)+
-  geom_point(aes(trt_type2, location), shape=8, size=3)+
-  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+# glassD_trtb_box<-allyears_sigonly%>%
+#    filter(use==1)
+#
+# glassD_allb_box<-allyears_sigonly%>%
+#   ungroup()%>%
+#     mutate(trt_type2="All GCDs")
+#
+# glassD_alldatb_box<-glassD_allb_box%>%
+#   bind_rows(glassD_trtb_box)%>%
+#   left_join(sig_allb)%>%
+#   mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, NA)))))%>%
+#   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
+#
+# ggplot(data=glassD_alldatb_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
+#   geom_boxplot()+
+#   ylab("Glass's D")+
+#   xlab("")+
+#   scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
+#   scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+#   geom_vline(xintercept = 1.5, size = 1)+
+#   geom_hline(yintercept = 0)+
+#   geom_point(aes(trt_type2, location), shape=8, size=3)+
+#   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
 
 ###using all the data
 glassD_trta_box<-allyears_all%>% 
@@ -282,7 +290,7 @@ glassD_alldata_box<-glassD_alla_box%>%
   bind_rows(glassD_trta_box)%>%
   left_join(sig_alla)%>%
   mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, ifelse(sig==1&response_var=="gains", 2.5, NA))))))%>%
-  mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
+  mutate(response_var2=factor(response_var, level=c("evenness_change_abs","rank_change",'gains','losses',"richness_change_abs")))
 
 ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_boxplot()+
@@ -296,6 +304,50 @@ ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_hline(yintercept = 0)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+
+###using all the data with ABSOLUTE VALUE
+sig_alla_overall_abs<-allyears_all%>%
+  group_by(response_var)%>%
+  summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0),
+         trt_type2="All GCDs")
+
+sig_alla_trts_abs<-allyears_all%>%
+  filter(use==1)%>%
+  group_by(response_var, trt_type2)%>%
+  summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))
+
+sig_alla_abs<-sig_alla_overall_abs%>%
+  bind_rows(sig_alla_trts_abs)
+
+glassD_trta_box<-allyears_all%>% 
+  filter(use==1)
+
+glassD_alla_box<-allyears_all%>%
+  ungroup()%>%
+  mutate(trt_type2="All GCDs")
+
+
+glassD_alldata_box<-glassD_alla_box%>%
+  bind_rows(glassD_trta_box)%>%
+  left_join(sig_alla_abs)%>%
+  mutate(location=ifelse(sig==1, -0.25, NA))%>%
+  mutate(response_var2=factor(response_var, level=c("evenness_change_abs","rank_change",'gains','losses', "richness_change_abs")))
+
+ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=abs(mglassd), fill=trt_type2))+
+  geom_boxplot()+
+  ylab("Glass's D")+
+  xlab("")+
+  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
+  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  geom_vline(xintercept = 1.5, size = 1)+
+  geom_hline(yintercept = 0)+
+  geom_point(aes(trt_type2, location), shape=8, size=3)+
+  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+
 
 # WE DECIDED TO USE ALL THE DATA SINCE THERE WERE NO BIG DIFFERENCES AMONG THE DIFFERNT YEAR SUBSETS. 
 # ###doing with 5th year only
