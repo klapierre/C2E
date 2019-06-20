@@ -12,46 +12,65 @@ library(tidyverse)
 library(vegan)
 library(ggthemes)
 
-corredat1<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_March2019.csv")
+
+#gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
+corredat1<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0")
+  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0", project_name!="e001", project_name!="e002",site_project_comm!="CHY_EDGE_0", site_project_comm!="HYS_EDGE_0", site_project_comm!="SGS_EDGE_0")
 
 ##several studies only have two measurments of a plot. I am dropping those plots
-azi<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+azi<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_code=="AZI")%>%
   filter(plot_id!=11&plot_id!=15&plot_id!=35&plot_id!=37)
 
-jrn<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+jrn<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="JRN_study278_0")%>%
   filter(plot_id!=211&plot_id!=210)
 
-knz<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+knz<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="KNZ_GFP_4F")%>%
   filter(plot_id!="7_1_1"&plot_id!="7_2_1")
 
-sak<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\SpeciesRelativeAbundance_Oct2017.csv")%>%
+sak<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
   filter(site_project_comm=="Saskatchewan_CCD_0")%>%
   filter(plot_id!=2)
 
-corredat_raw <-rbind(corredat1, azi, jrn, knz, sak)
+###remove extra treatments from CDR e001 and e002
+cdr <- corredat%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(project_name=="e001"|project_name=="e002")%>%
+  filter(treatment==1|treatment==6|treatment==8|treatment==9|treatment=='1_f_u_n'|treatment=='6_f_u_n'|treatment=='8_f_u_n'|treatment=='9_f_u_n')
 
-treatment_info<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\ExperimentInformation_Nov2017.csv")%>%
+##remove one of 2 pre-treatment years in edge for CHY, SGS, and HAYS
+edge<-corredat%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_code=="CHY"|site_code=="SGS"|site_code=="HYS"&project_name=="EDGE")%>%
+  filter(calendar_year!=2012)
+
+
+###final dataset to use
+corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr, edge)
+
+treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
   dplyr::select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
 
 corredat <- corredat_raw %>%
-  filter(site_project_comm != "GVN_FACE_0") %>%
   left_join(treatment_info, by=c( "site_code","project_name","community_type", "treatment","site_project_comm"))
+
 
 site_project_comm_vec <- unique(corredat$site_project_comm)
 
