@@ -9,6 +9,8 @@ library(tidyverse)
 library(gridExtra)
 library(grid)
 library(gtable)
+library(devtools)
+install_github("NCEAS/codyn", ref = "sp_diff_test")
 library(codyn)
 library(vegan)
 #home
@@ -17,13 +19,13 @@ setwd("~/Dropbox/")
 setwd("C:\\Users\\megha\\Dropbox\\")
 
 #Files from home
-corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Oct2017.csv")
+corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_March2019.csv")
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
   select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
-  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0", project_name!="e001", project_name!="e002")
+  filter(site_project_comm!="GVN_FACE_0", site_project_comm!="AZI_NitPhos_0", site_project_comm!="JRN_study278_0", site_project_comm!="KNZ_GFP_4F", site_project_comm!="Saskatchewan_CCD_0", project_name!="e001", project_name!="e002",site_project_comm!="CHY_EDGE_0", site_project_comm!="HYS_EDGE_0", site_project_comm!="SGS_EDGE_0")
 
 ##several studies only have two measurments of a plot. I am dropping those plots
 azi<-corredat%>%
@@ -57,11 +59,18 @@ cdr <- corredat%>%
   filter(project_name=="e001"|project_name=="e002")%>%
   filter(treatment==1|treatment==6|treatment==8|treatment==9|treatment=='1_f_u_n'|treatment=='6_f_u_n'|treatment=='8_f_u_n'|treatment=='9_f_u_n')
 
+##remove one of 2 pre-treatment years in edge for CHY, SGS, and HAYS
+edge<-corredat%>%
+  select(-X)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
+  filter(site_code=="CHY"|site_code=="SGS"|site_code=="HYS"&project_name=="EDGE")%>%
+  filter(calendar_year!=2012)
+
 
 ###final dataset to use
-corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr)
+corredat_raw<-rbind(corredat1, azi, jrn, knz, sak, cdr, edge)
 
-treatment_info<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\data\\ExperimentInformation_Nov2017.csv")%>%
+treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
   dplyr::select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))
@@ -86,7 +95,7 @@ for (i in 1:length(spc)){
   diff_rac<-rbind(diff_rac, out)
 }
 
-write.csv(diff_rac, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_Metrics_Oct2018.csv", row.names = F)
+write.csv(diff_rac, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_Metrics_June2019.csv", row.names = F)
 
 
 #####CALCULATING RAC differences CONTROLS ONLY
@@ -106,7 +115,7 @@ for (i in 1:length(spc)){
   diff_rac_c<-rbind(diff_rac_c, out)
 }
 
-write.csv(diff_rac_c, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_control_Metrics_Oct2018.csv", row.names = F)
+write.csv(diff_rac_c, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_control_Metrics_Jun2019.csv", row.names = F)
 
 #####CALCULATING multivariate differences
 spc<-unique(corredat$site_project_comm)
