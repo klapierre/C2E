@@ -6,6 +6,8 @@ library(plyr)
 library(dplyr)
 library(tidyr)
 
+#1212 this is just a test
+
 #kim's wd
 setwd('C:\\Users\\Kim\\Dropbox\\working groups\\converge diverge working group\\converge_diverge\\datasets\\LongForm\\to yang')
 
