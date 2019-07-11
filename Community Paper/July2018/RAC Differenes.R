@@ -145,4 +145,66 @@ diff_mult2 <- diff_mult%>%
          control=as.character(control))%>%
   mutate(greater_disp=ifelse(trt_greater_disp == control, "C","T"))
 
-write.csv(diff_mult2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_Oct2018.csv", row.names = F)
+write.csv(diff_mult2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_Jun2019.csv", row.names = F)
+
+noraresp<-corredat%>%
+  filter(plot_mani==0)%>%
+  group_by(site_project_comm, genus_species)%>%
+  summarize(mrelcov=mean(relcov))%>%
+  filter(mrelcov>0.1)%>%
+  select(-mrelcov)
+
+
+corredat_norare <- corredat %>%
+  right_join(noraresp)
+
+
+#####CALCULATING multivariate differences no rares
+
+spc<-unique(corredat_norare$site_project_comm)
+diff_mult_norare<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_norare%>%
+    filter(site_project_comm==spc[i])
+  
+  ref_trt <- unique(subset(subset, plot_mani==0)$treatment)
+  
+  out<-multivariate_difference(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment", reference.treatment = ref_trt)
+  
+  out$site_project_comm<-spc[i]
+  
+  diff_mult_norare<-rbind(diff_mult_norare, out)
+}
+
+control<-treatment_info%>%
+  filter(plot_mani==0)%>%
+  mutate(control=treatment)%>%
+  select(site_project_comm, control)
+
+diff_mult_norare2 <- diff_mult_norare%>%
+  left_join(control)%>%
+  mutate(trt_greater_disp=as.character(trt_greater_disp),
+         control=as.character(control))%>%
+  mutate(greater_disp=ifelse(trt_greater_disp == control, "C","T"))
+
+write.csv(diff_mult_norare2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Jun2019.csv", row.names = F)
+
+####species differences
+spc<-unique(corredat$site_project_comm)
+diff_abund<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat%>%
+    filter(site_project_comm==spc[i])
+  
+  ref_trt <- unique(subset(subset, plot_mani==0)$treatment)
+  
+  out<-abundance_difference(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment", reference.treatment = ref_trt)
+  
+  out$site_project_comm<-spc[i]
+  
+  diff_abund<-rbind(diff_abund, out)
+}
+
+write.csv(diff_abund, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_June2019.csv", row.names = F)
