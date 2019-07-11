@@ -133,7 +133,8 @@ for(i in 1:length(site_project_comm_vec)) {
 }
        
 permanova_out_mod <- permanova_out_master %>%
-  mutate(pval_flag = ifelse(Pvalue<.05, 1, 0)) %>%
+  mutate(pval_flag_perm = ifelse(perm_Pvalue<.05, 1, 0)) %>%
+  mutate(pval_flag_disp = ifelse(disp_Pvalue<.05, 1, 0)) %>%
   mutate(permanova="permanova") %>%
   group_by(site_project_comm, treatment) %>%
   summarise(tot_pval=sum(pval_flag)) %>%
@@ -143,8 +144,81 @@ permanova_out_mod <- permanova_out_master %>%
 
 filter(permanova_out_master, site_project_comm =="ASGA_clonal_0")
 
-write.csv(permanova_out_master, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output.csv", row.names=F)
+write.csv(permanova_out_master, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_outputJul2019.csv", row.names=F)
+
+
+noraresp<-corredat%>%
+  filter(plot_mani==0)%>%
+  group_by(site_project_comm, genus_species)%>%
+  summarize(mrelcov=mean(relcov))%>%
+  filter(mrelcov>0.1)%>%
+  select(-mrelcov)
+
+
+corredat_norare <- corredat %>%
+  right_join(noraresp)
+
+site_project_comm_vec <- unique(corredat_norare$site_project_comm)
+
+permanova_out_master_norare <- {}
+
+for(i in 1:length(site_project_comm_vec)) {
+  corredat_temp <- filter(corredat_norare, site_project_comm==site_project_comm_vec[i])
+  control_temp <- filter(corredat_temp, plot_mani==0)
+  treatment_temp <- filter(corredat_temp, plot_mani !=0)
+  
+  treatment_vec <- unique(treatment_temp$treatment)
+  
+  for(trt in 1:length(treatment_vec)){
+    treatment_temp_2 <- filter(treatment_temp, treatment==treatment_vec[trt])
+    control_years_vec <- unique(control_temp$calendar_year)
+    treatment_years_vec <- unique(treatment_temp_2$calendar_year)
+    
+    year_keeper <- intersect(control_years_vec, treatment_years_vec)
+    
+    one_treatment_temp <- filter(treatment_temp, treatment==treatment_vec[trt]) %>%
+      filter(calendar_year %in% year_keeper)
+    control_temp_2 <- filter(control_temp, calendar_year %in% year_keeper)
+    
+    trt_ctrl_df_temp <- one_treatment_temp %>%
+      bind_rows(control_temp_2)
+    
+    year_vec <- unique(trt_ctrl_df_temp$calendar_year)
+    
+    for(yr in 1:length(year_vec)){
+      
+      trt_ctrl_yr_temp <- trt_ctrl_df_temp %>%
+        filter(calendar_year==year_vec[yr]) %>%
+        spread(key=genus_species, value=relcov, fill=0)
+      
+      cover_temp <- trt_ctrl_yr_temp %>%
+        dplyr::select(-(site_code:plot_mani))
+      
+      env_temp <- trt_ctrl_yr_temp %>%
+        dplyr::select(site_code:plot_mani)
+      
+      permanova_temp <- adonis(cover_temp ~ plot_mani, data=env_temp, permutations=99)
+      
+      
+      permdisp_temp <- betadisper(vegdist(cover_temp), env_temp$plot_mani, type = "centroid")
+      sig_disp <- permutest(permdisp_temp)
+      
+      perm_out_temp <- data.frame(
+        site_project_comm = site_project_comm_vec[i],
+        treatment = treatment_vec[trt],
+        calendar_year = year_vec[yr],
+        perm_Pvalue =  permanova_temp$aov.tab$'Pr(>F)'[1],
+        disp_Pvalue = sig_disp$tab$'Pr(>F)'[1]
+        
+      )
+      
+      permanova_out_master_norare <- rbind(permanova_out_master_norare, perm_out_temp)
+      
+    }
+  }
+}
 
 
 
+write.csv(permanova_out_master_norare, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Jul2019.csv", row.names=F)
 
