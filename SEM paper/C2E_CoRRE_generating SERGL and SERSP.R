@@ -1,11 +1,10 @@
-library(tidyverse)
 library(codyn)
-library(vegan)
 library(Kendall)
 library(gridExtra)
 library(reldist)
 library(grid)
 library(gtable)
+library(tidyverse)
 
 
 #kim's desktop
@@ -28,7 +27,12 @@ correRelCover <- read.csv('SpeciesRelativeAbundance_March2019.csv')%>%
   filter(treatment_year>0)%>%
   rename(time=treatment_year, replicate=plot_id, species=genus_species, abundance=relcov)%>%
   mutate(C_T=as.factor(ifelse(plot_mani==0, 'Control', 'Treatment')), site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
-  select(site_project_comm, time, treatment, replicate, species, abundance, C_T)
+  select(site_project_comm, time, treatment, replicate, species, abundance, C_T)%>%
+  group_by(site_project_comm, treatment)%>%
+  mutate(min_year=min(time))%>%
+  ungroup()%>%
+  #drop datasets where first year isn't year 1
+  filter(min_year==1)
 
 
 #make a new dataframe with just the label;
@@ -37,18 +41,20 @@ site=correRelCover%>%
   unique()
 
 #makes an empty dataframe
-correSERSp=data.frame(row.names=1) 
-correMultDiff=data.frame(row.names=1)
+correMultChange=data.frame(row.names=1)
 
 
 ###first get SERSp
-###second get multivariate differences
+###second get multivariate change
 for(i in 1:length(site$site_project_comm)) {
   #creates a dataset for each unique year, trt, exp combo
   subset=correRelCover[correRelCover$site_project_comm==as.character(site$site_project_comm[i]),]%>%
     mutate(treatment=ifelse(C_T=='Control', 'Control', as.character(treatment)))
   
   #get site_project_comm label to paste back on after functions are run
+  repLabels=subset%>%
+    select(site_project_comm, treatment, replicate)%>%
+    unique()
   labels=subset%>%
     select(site_project_comm, treatment)%>%
     unique()
@@ -57,19 +63,20 @@ for(i in 1:length(site$site_project_comm)) {
     select(-site_project_comm)
   
   #calculate SERGL metrics
-  sersp=RAC_difference(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', treatment.var='treatment', reference.treatment='Control')%>%
+  sergl=RAC_change(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', reference.time=1)%>%
+    left_join(repLabels)%>%
   #calculate mean across replicates
-    group_by(time, treatment, treatment2)%>%
-    summarise(richness_diff=mean(richness_diff), evenness_diff=mean(evenness_diff), rank_diff=mean(rank_diff), species_diff=mean(species_diff))
+    group_by(treatment, time, time2)%>%
+    summarise(richness_change=mean(richness_change), evenness_change=mean(evenness_change), rank_change=mean(rank_change), gains=mean(gains), losses=mean(losses))
     
-  #calculate multivariate difference
-  mult_diff=multivariate_difference(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', treatment.var='treatment', reference.treatment='Control')%>%
-    left_join(sersp)%>%
+  #calculate multivariate change
+  mult_change=multivariate_change(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', treatment.var='treatment', reference.time=1)%>%
+    left_join(sergl)%>%
     left_join(labels)
   
   #pasting dispersions into the dataframe made for this analysis
-  correMultDiff=rbind(mult_diff, correMultDiff)  
+  correMultChange=rbind(mult_change, correMultChange)  
 }
 
-write.csv(correMultDiff, 'corre_community differences_March2019.csv', row.names=F)
+# write.csv(correMultChange, 'corre_community_change_July2019.csv', row.names=F)
 
