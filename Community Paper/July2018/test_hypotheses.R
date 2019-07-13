@@ -4,6 +4,7 @@
 ### Last updated: Oct 30 2018
 
 setwd("C:\\Users\\megha\\Dropbox\\")
+theme_set(theme_bw(12))
 
 library(tidyverse)
 library(devtools)
@@ -155,12 +156,12 @@ write.csv(ttests, "C2E\\Products\\CommunityChange\\March2018 WG\\RAC_diff_CT_tte
 ####linking RAC differences with compositon/disperison differences
 
 #there are more perm_output b/c did not subset CDR e001/e002
-perm_output<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output.csv")
+perm_output<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_outputJul2019.csv")
 
-mult_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_Oct2018.csv")%>%
+mult_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_Jun2019.csv")%>%
   mutate(treatment = treatment2)
 
-CT_ttests<- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\RAC_diff_CT_ttests.csv")
+CT_ttests<- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\RAC_diff_CT_ttests_Jun2019.csv")
 
 
 #merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
@@ -175,10 +176,10 @@ scenarios<-perm_output%>%
   right_join(mult_diff)%>%
   mutate(scenario=ifelse(perm_Pvalue>0.0501&disp_Pvalue>0.0501, 1, 
                          ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "T", 2,
-                                ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "C", 3,
-                                       ifelse(perm_Pvalue<0.0501&disp_Pvalue>0.0501,4,
-                                              ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "T",5,
-                                                     ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))
+                         ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "C", 3,
+                         ifelse(perm_Pvalue<0.0501&disp_Pvalue>0.0501,4,
+                         ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "T",5,
+                         ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))
 
 
 
@@ -188,18 +189,19 @@ RAC_diff_outcomes <- scenarios%>%
   mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
          even=ifelse(even_pval<0.0601, 1, 0),
          rank=ifelse(rank_pval<0.0501, 1, 0),
-         spdiff=ifelse(spdiff_pval<0.501, 1, 0))%>%
-  na.omit()
+         spdiff=ifelse(spdiff_pval<0.501, 1, 0))
 
 num_scen<- RAC_diff_outcomes%>%
   group_by(scenario)%>%
-  summarize(n=length(scenario))
+  summarize(n=length(scenario))%>%
+  na.omit()
 
 prop_diff<-RAC_diff_outcomes%>%
+  na.omit()%>%
   group_by(scenario)%>%
   summarize_at(vars(rich, even, rank, spdiff), funs(sum))%>%
   gather(metric, num, rich:spdiff)%>%
-  mutate(prop = ifelse(scenario==1, num/1735, ifelse(scenario==2, num/103, ifelse(scenario==3, num/127, ifelse(scenario==4, num/572, ifelse(scenario==5, num/130, ifelse(scenario==6, num/165, 999)))))))%>%
+  mutate(prop = ifelse(scenario==1, num/1762, ifelse(scenario==2, num/98, ifelse(scenario==3, num/132, ifelse(scenario==4, num/586, ifelse(scenario==5, num/152, ifelse(scenario==6, num/153, 999)))))))%>%
   mutate(notsig=1-prop)%>%
   select(-num)%>%
   gather(sig, proportion, notsig:prop)
@@ -211,8 +213,10 @@ ggplot(data=prop_diff, aes(x = metric, y = proportion, fill=sig))+
   scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"))+
   ylab("Proportion")+
   xlab("RAC Difference Metric")+
-  facet_wrap(~scenario, ncol=3)
+  facet_wrap(~scenario, ncol=3)+
+  geom_hline(yintercept = 0.5)
 
+#people like this figure less
 ggplot(data=prop_diff, aes(x = scenario, y = proportion, fill=sig))+
   geom_bar(stat="identity")+
   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
@@ -220,3 +224,73 @@ ggplot(data=prop_diff, aes(x = scenario, y = proportion, fill=sig))+
   xlab("Community Difference Scenario")+
   scale_x_continuous(breaks = c(1:6))+
   facet_wrap(~metric, ncol=2)
+
+###redoing this with out the rare species
+perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Jul2019.csv")
+
+mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Jun2019.csv")%>%
+  mutate(treatment = treatment2)
+
+#merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
+#1 = no change comp, no change disp
+#2 = no change comp, increase disp (T > C)
+#3 = no change comp, decrease disp (C > T)
+#4 = change comp, no change disp
+#5 = change comp, increase disp (T > C )
+#6 = change comp, decrease disp (C > T)
+
+scenariosnorare<-perm_outputnorare%>%
+  right_join(mult_diffnorare)%>%
+  mutate(scenario=ifelse(perm_Pvalue>0.0501&disp_Pvalue>0.0501, 1, 
+                         ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "T", 2,
+                                ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "C", 3,
+                                       ifelse(perm_Pvalue<0.0501&disp_Pvalue>0.0501,4,
+                                              ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "T",5,
+                                                     ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))
+
+num_scenmprare<- scenarios%>%
+  group_by(scenario)%>%
+  summarize(n=length(scenario))%>%
+  na.omit()
+
+####what is the role of species differneces?
+abund_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_June2019.csv")%>%
+  mutate(treatment = treatment2)
+
+numrep<-abund_diff%>%
+  select(site_project_comm, treatment, plot_id2)%>%
+  unique()%>%
+  group_by(site_project_comm, treatment)%>%
+  summarise(rep=length(plot_id2))
+
+scen56<-scenarios%>%
+  filter(scenario==5|scenario==6)%>%
+  select(site_project_comm, treatment, calendar_year, scenario)
+
+abund_diff56<-abund_diff%>%
+  right_join(scen56)%>%
+  filter(difference>0.2)%>%
+  select(calendar_year, plot_id2, treatment, genus_species, site_project_comm, scenario)%>%
+  unique()%>%
+  ungroup()%>%
+  group_by(calendar_year, treatment, genus_species, site_project_comm, scenario)%>%
+  summarize(numplot=length(plot_id2))%>%
+  left_join(numrep)%>%
+  mutate(propinc=numplot/rep)
+
+ave<-abund_diff56%>%
+  group_by(scenario)%>%
+  summarize(ave=mean(propinc),
+            std=sd(propinc),
+            n=length(propinc))%>%
+  mutate(se=std/sqrt(n))
+
+s5<-abund_diff56%>%
+  filter(scenario==5)
+s6<-abund_diff56%>%
+  filter(scenario==6)
+
+s5t<-s5$propinc
+s6t<-s6$propinc
+
+t.test(s5t, s6t)
