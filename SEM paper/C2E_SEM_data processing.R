@@ -3,7 +3,7 @@ library(grid)
 library(PerformanceAnalytics)
 
 #kim's desktop
-setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
+# setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
 
 #kim's laptop
 setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
@@ -15,9 +15,6 @@ theme_update(axis.title.x=element_text(size=40, vjust=-0.35, margin=margin(t=15)
              plot.title = element_text(size=40, vjust=2),
              panel.grid.major=element_blank(), panel.grid.minor=element_blank(),
              legend.title=element_blank(), legend.text=element_text(size=20))
-
-
-#######MODEL STRUCTURE: use differences between treatment and control plots in each year (horizontal arrows); include treatments as factors at the bottom, with multi-factor treatments having more than one greater than 0 (continuous treatment variables)-------------------
 
 
 ####data input
@@ -66,7 +63,6 @@ correANPPctl <- correANPP%>%
   ungroup()
 #anpp change
 correANPPdiff <- correANPP%>%
-  filter(treatment_year>1)%>%
   group_by(site_code, project_name, community_type, treatment_year, treatment)%>%
   summarise(anpp=mean(anpp))%>%
   ungroup()%>%
@@ -116,3 +112,5 @@ correSEMdataTrt <- correSEMdata%>%
   #make binary treatments just in case we want them later
   mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt+drought_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
   na.omit()
+
+rm(list=setdiff(ls(), "correSEMdataTrt"))
