@@ -41,11 +41,11 @@ site=correRelCover%>%
   unique()
 
 #makes an empty dataframe
-correMultChange=data.frame(row.names=1)
+correMultDiff=data.frame(row.names=1)
 
 
 ###first get SERSp
-###second get multivariate change
+###second get multivariate difference
 for(i in 1:length(site$site_project_comm)) {
   #creates a dataset for each unique year, trt, exp combo
   subset=correRelCover[correRelCover$site_project_comm==as.character(site$site_project_comm[i]),]%>%
@@ -63,20 +63,20 @@ for(i in 1:length(site$site_project_comm)) {
     select(-site_project_comm)
   
   #calculate SERGL metrics
-  sergl=RAC_change(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', reference.time=1)%>%
-    left_join(repLabels)%>%
+  sersp=RAC_difference(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', treatment.var='treatment', reference.treatment='Control')%>%
+    left_join(labels)%>%
   #calculate mean across replicates
-    group_by(treatment, time, time2)%>%
-    summarise(richness_change=mean(richness_change), evenness_change=mean(evenness_change), rank_change=mean(rank_change), gains=mean(gains), losses=mean(losses))
+    group_by(time, treatment, treatment2)%>%
+    summarise(richness_difference=mean(richness_diff), evenness_diff=mean(evenness_diff), rank_difference=mean(rank_diff), species_difference=mean(species_diff))
     
   #calculate multivariate change
-  mult_change=multivariate_change(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', treatment.var='treatment', reference.time=1)%>%
-    left_join(sergl)%>%
+  mult_diff=multivariate_difference(subset2, time.var='time', species.var='species', abundance.var='abundance', replicate.var='replicate', treatment.var='treatment', reference.treatment='Control')%>%
+    left_join(sersp)%>%
     left_join(labels)
   
   #pasting dispersions into the dataframe made for this analysis
-  correMultChange=rbind(mult_change, correMultChange)  
+  correMultDiff=rbind(mult_diff, correMultDiff)  
 }
 
-# write.csv(correMultChange, 'corre_community_change_July2019.csv', row.names=F)
+# write.csv(correMultDiff, 'corre_community_difference_July2019.csv', row.names=F)
 
