@@ -27,7 +27,8 @@ trt <- read.csv('ExperimentInformation_March2019.csv')%>%
 ###community data
 correCommDiff <- read.csv('corre_community_difference_July2019.csv')%>%
   select(-treatment)%>%
-  rename(treatment=treatment2)
+  rename(treatment=treatment2)%>%
+  rename(treatment_year=time)
 
 ###anpp data
 correANPP <- read.csv('ANPP_Oct2017.csv')%>%
@@ -63,6 +64,7 @@ correANPPctl <- correANPP%>%
   ungroup()
 #anpp change
 correANPPdiff <- correANPP%>%
+  filter(plot_mani!=0)%>%
   group_by(site_code, project_name, community_type, treatment_year, treatment)%>%
   summarise(anpp=mean(anpp))%>%
   ungroup()%>%
@@ -114,3 +116,4 @@ correSEMdataTrt <- correSEMdata%>%
   na.omit()
 
 rm(list=setdiff(ls(), "correSEMdataTrt"))
+# write.csv(correSEMdataTrt, 'CoRRE_comm and anpp diff_07160219.csv')
