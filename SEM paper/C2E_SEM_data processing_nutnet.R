@@ -100,3 +100,4 @@ chart.Correlation(dataVis, histogram=T, pch=19)
 
 
 rm(list=setdiff(ls(), "nutnetSEMdata"))
+# write.csv(nutnetSEMdata, 'NutNet_comm and anpp diff_07160219.csv')
