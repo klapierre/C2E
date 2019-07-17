@@ -1,23 +1,24 @@
 #meghan's working directory
 setwd("C:\\Users\\megha\\Dropbox\\")
-
+setwd("~/Dropbox/")
 library(tidyverse)
 library(gridExtra)
 
-change_metrics <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\MetricsTrts_March2019.csv") %>%
+change_metrics <- read.csv("C2E/Products/CommunityChange/March2018 WG/MetricsTrts_March2019.csv") %>%
   mutate(richness_change_abs = abs(richness_change),
          evenness_change_abs = abs(evenness_change))%>%
   select(-X, -richness_change, -evenness_change, -composition_change, -site_code, -project_name, -community_type, -trt_type, -use, -composition_change, -dispersion_change)
 
-subset_studies<-read.csv("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\experiment_trt_subset_May2019.csv")
+subset_studies<-read.csv("C2E/Products//CommunityChange//March2018 WG//experiment_trt_subset_May2019.csv")
 
 #not doing this.
 # sig_com<-read.csv('C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv')%>%
 #   mutate(site_project_comm = site_proj_comm)
 
-metrics_sig<-read.csv("C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_may2019.csv")%>%
+metrics_sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_metrics_sig_change_may2019.csv")%>%
   filter(response_var!="richness_change_abs")%>%
-  right_join(subset_studies)
+  right_join(subset_studies)%>%
+  na.omit()
 
 ### Control data
 change_control <- change_metrics %>%
@@ -60,7 +61,8 @@ change_glass_d <- change_glass_d %>%
   mutate(abs_evenness_glass=replace(abs_evenness_glass, abs_evenness_glass=="NaN", 0))%>%
   mutate(rank_glass=replace(rank_glass, rank_glass=="NaN", 0)) %>%
   mutate(gains_glass=replace(gains_glass, gains_glass=="NaN", 0))%>%
-  mutate(losses_glass=replace(losses_glass, losses_glass=="NaN", 0))
+  mutate(losses_glass=replace(losses_glass, losses_glass=="NaN", 0))%>%
+  right_join(subset_studies)
 
 ##getting max glass D for each metric
 max <- change_glass_d%>%
@@ -116,7 +118,7 @@ rank_table<-rank_sig%>%
   summarize(num=length(order))%>%
   mutate(first=substring(order,1,1))%>%
   arrange(first, -num)%>%
-  mutate(ordered=seq(1:50))
+  mutate(ordered=seq(1:54))
 
 rank_sig_mean<-rank_sig%>%
   group_by(response_var)%>%
