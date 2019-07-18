@@ -8,7 +8,8 @@ setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\
 library(tidyverse)
 
 ### Read in synchrony metrics
-synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
+synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv") %>%
+  filter(!metric_name %in% c("spp_asynch","spatial_asynch","pop_asynch"))
 
 ### Read in difference metrics
 rac_diff_metrics <- read.csv("..\\corre_community differences_March2019.csv") %>%
