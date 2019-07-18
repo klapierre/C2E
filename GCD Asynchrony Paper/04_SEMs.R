@@ -34,7 +34,7 @@ synch_RR_diff_wide <- synch_metrics_sub %>%
 ### Run piecewise SEM
 ## original structure
 dispersion_model_all <- psem(
-  lm(gamma_stab ~ spatial_synch + alpha_stab + pop_synch, data=synch_RR_diff_wide),
+  lm(gamma_stab ~ spatial_synch + alpha_stab, data=synch_RR_diff_wide),
   lm(spatial_synch ~ dispersion_diff + pop_synch, data=synch_RR_diff_wide),
   lm(alpha_stab ~ spp_stab + spp_synch, data=synch_RR_diff_wide),
   lm(pop_synch ~ dispersion_diff, data=synch_RR_diff_wide),
@@ -49,8 +49,11 @@ dispersion_model_all <- psem(
 
 summary(dispersion_model_all)
 
+coefs(dispersion_model_all, standardize = "scale", standardize.type = "latent.linear", intercepts = FALSE)%>%
+  select(Response, Predictor, Estimate, Std.Error, DF, Crit.Value, P.Value, Std.Estimate)
 
-## flipped pop and spatial synch structure
+### Trying to figure out what happens when variables occur in different orders
+### flipped pop and spatial synch structure
 dispersion_model_flipped <- psem(
   lm(gamma_stab ~ pop_synch + alpha_stab, data=synch_RR_diff_wide),
   lm(pop_synch ~ dispersion_diff + spatial_synch, data=synch_RR_diff_wide),
