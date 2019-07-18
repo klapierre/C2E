@@ -1,9 +1,10 @@
 ##### Load packages
+library(reshape2)
 library(tidyverse) # data munging
 library(codyn)     # community dynamics metrics
 library(vegan)     # diversity metrics
-#library(piecewiseSEM)
-#library(nlme)
+library(piecewiseSEM)
+library(nlme)
 
 #############################################################################
 #############################################################################
@@ -52,11 +53,15 @@ synchrony_vars_df <- master_partition_vars_df %>%
   mutate(spp_stab = 1/CV_S_L,
          alpha_stab = 1/CV_C_L,
          gamma_stab = 1/CV_C_R,
-         pop_asynch = 1/phi_S_L2R,
-         spatial_asynch = 1/phi_C_L2R,
-         spp_asynch = 1/phi_S2C_L)
+         pop_synch = phi_S_L2R,
+         spatial_synch = phi_C_L2R,
+         spp_synch = phi_S2C_L)
 
 write.csv(synchrony_vars_df, file="partition variables from Shaopeng's function_13May2019.csv", row.names=F)
+synchrony_vars_df <- read.csv("partition variables from Shaopeng's function_13May2019.csv") %>%
+  mutate(pop_synch       = 1/pop_asynch,
+         spatial_synch   = 1/spatial_asynch,
+         spp_synch       = 1/spp_asynch)
 
 ###
 ### Take a quick look
@@ -109,7 +114,7 @@ synchrony_rr_long <- synchrony_vars_long %>%
   full_join(synchrony_controls, by=c("site_code", "project_name", "community_type", "metric_name")) %>%
   mutate(lnRR = log(metric_value_trt/metric_value_control))
   
-write.csv(synchrony_rr_long, file="Synchrony metrics response ratios_long form_13May2019.csv", row.names=F)
+write.csv(synchrony_rr_long, file="Synchrony metrics response ratios_long form_17July2019.csv", row.names=F)
 
 ###
 ### Visualize response ratios
@@ -144,23 +149,64 @@ ggplot(synchrony_rr_subset_summary, aes(x=trt_type, y=lnRR_mean, ymin=lnRR_mean-
 ###
 ### t tests
 ###
-synchrony_rr_long %>% 
-  filter(trt_type %in% c("CO2", "drought", "irr", "N", "P", "temp")) %>%
+spp_stab_model_out <- synch_RR_diff_metrics %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
   filter(metric_name == "spp_stab") %>%
-  group_by(trt_type) %>%
-  do(data.frame(tidy(t.test(.$lnRR))))
-##
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "spp_stab")
 
-?pairwise.t.test
-mutate(test = map(data, ~ cor.test(.x$age, .x$circumference)))
-library(broom)
+spp_synch_model_out <- synch_RR_diff_metrics %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "spp_synch") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "spp_synch")
+
+alpha_stab_model_out <- synch_RR_diff_metrics %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "alpha_stab") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "alpha_stab")
+
+spatial_synch_model_out <- synch_RR_diff_metrics %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "spatial_synch") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "spatial_synch")
+
+pop_synch_model_out <- synch_RR_diff_metrics %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "pop_synch") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR)))) %>%
+  mutate(metric = "pop_synch")
+
+gamma_stab_model_out <- synch_RR_diff_metrics %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "spp_stab") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "gamma_stab")
+
+model_out_all <- spp_stab_model_out %>%
+  bind_rows(spp_synch_model_out,
+            alpha_stab_model_out,
+            spatial_synch_model_out,
+            pop_synch_model_out,
+            gamma_stab_model_out) %>%
+  mutate(bonf_adjP = p.adjust(p.value, method = "bonferroni"))
+?p.adjust
+write.table(model_out_all, file="..//model out//t test output_response ratios of stability metric.csv", row.names=F, sep=",")
+
 
 ###
 ### Look at response ratios across environmental gradients
 ###
 synchrony_rr_long_with_env <- synchrony_rr_long %>%
   full_join(site_info, by=c("site_code", "project_name", "community_type"))
-
 
 ### Visualize RR across MAP MAT richness anpp and exp length
 ### Nitrogen alone
