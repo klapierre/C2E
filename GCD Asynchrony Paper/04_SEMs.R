@@ -3,10 +3,15 @@
 ### Author: Kevin Wilcox (kevin.wilcox@uwyo.edu)
 ### Script created: July 17, 2019; last updated: July 17, 2019
 
+# Updated piecewiseSEM package
+install.packages("devtools") # if devtools not installed
+devtools::install_github("jslefche/piecewiseSEM@devel")
+
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\")
 library(tidyverse)
 library(piecewiseSEM)
+
 
 ### Read in synchrony metrics
 synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
@@ -27,44 +32,110 @@ synch_RR_diff_wide <- synch_metrics_sub %>%
   spread(key=metric_name, value=lnRR)
 
 ### Run piecewise SEM
+## original structure
 dispersion_model_all <- psem(
-  lm(gamma_stab ~ spatial_asynch, data=synch_RR_diff_wide),
-  lm(spatial_asynch ~ dispersion_diff + pop_asynch, data=synch_RR_diff_wide),
-  lm(pop_asynch ~ dispersion_diff, data=synch_RR_diff_wide)
+  lm(gamma_stab ~ spatial_synch + alpha_stab + pop_synch, data=synch_RR_diff_wide),
+  lm(spatial_synch ~ dispersion_diff + pop_synch, data=synch_RR_diff_wide),
+  lm(alpha_stab ~ spp_stab + spp_synch, data=synch_RR_diff_wide),
+  lm(pop_synch ~ dispersion_diff, data=synch_RR_diff_wide),
+  spp_synch %~~% dispersion_diff,
+  spp_synch %~~% spatial_synch,
+  spp_stab %~~% spatial_synch,
+  spp_stab %~~% spp_synch,
+  spp_stab %~~% pop_synch,
+  alpha_stab %~~% spatial_synch,
+  spp_synch %~~% pop_synch
 )
 
 summary(dispersion_model_all)
 
+
+## flipped pop and spatial synch structure
+dispersion_model_flipped <- psem(
+  lm(gamma_stab ~ pop_synch + alpha_stab, data=synch_RR_diff_wide),
+  lm(pop_synch ~ dispersion_diff + spatial_synch, data=synch_RR_diff_wide),
+  lm(alpha_stab ~ spp_stab + spp_synch, data=synch_RR_diff_wide),
+  lm(spatial_synch ~ dispersion_diff, data=synch_RR_diff_wide),
+  spp_synch %~~% dispersion_diff,
+  spp_synch %~~% spatial_synch,
+  spp_stab %~~% spatial_synch,
+  spp_stab %~~% spp_synch,
+  spp_stab %~~% pop_synch,
+  alpha_stab %~~% spatial_synch,
+  spp_synch %~~% pop_synch
+)
+
+summary(dispersion_model_flipped)
+
+coefs(dispersion_model_flipped, standardize = "scale", standardize.type = "latent.linear", intercepts = FALSE)%>%
+  select(Response, Predictor, Estimate, Std.Error, DF, Crit.Value, P.Value, Std.Estimate)
+
+## flipped pop and spatial synch structure
+dispersion_model_nopop <- psem(
+  lm(gamma_stab ~ spatial_synch + alpha_stab, data=synch_RR_diff_wide),
+  lm(alpha_stab ~ spp_stab + spp_synch, data=synch_RR_diff_wide),
+  lm(spatial_synch ~ dispersion_diff, data=synch_RR_diff_wide),
+  spp_synch %~~% dispersion_diff,
+  spp_synch %~~% spatial_synch,
+  spp_stab %~~% spatial_synch,
+  spp_stab %~~% spp_synch,
+  alpha_stab %~~% spatial_synch
+)
+
+summary(dispersion_model_nopop)
+
 coefs(dispersion_model_all, standardize = "scale", standardize.type = "latent.linear", intercepts = FALSE)%>%
   select(Response, Predictor, Estimate, Std.Error, DF, Crit.Value, P.Value, Std.Estimate)
 
-# 
-# 
+
+dispersion_model_all3 <- psem(
+  lm(gamma_stab ~ spatial_synch + pop_synch, data=synch_RR_diff_wide),
+  lm(spatial_synch ~ dispersion_diff + pop_synch, data=synch_RR_diff_wide),
+  lm(pop_synch ~ dispersion_diff, data=synch_RR_diff_wide)
+)
+
+
+sem.fit(dispersion_model_all3)
+summary(dispersion_model_all3)
+str(dispersion_model_all3)
+with(synch_RR_diff_wide, plot(spatial_asynch,gamma_stab))
+
+with(synch_RR_diff_wide, cor(pop_asynch, gamma_stab))
+
+
+summary(dispersion_model_all3)
+
+### Chekcing residuals
+gamma_resids <- residuals(lm(gamma_stab ~ pop_asynch, data=synch_RR_diff_wide))
+plot(gamma_resids, synch_RR_diff_wide$spatial_asynch)
+cor(gamma_resids, synch_RR_diff_wide$spatial_asynch)
+
+#
+#
 # dispersion_model_all <- psem( ### flipping arrows
 #   lm(gamma_stab ~ spatial_asynch, data=synch_RR_diff_wide),
 #   lm(dispersion_diff ~ spatial_asynch + pop_asynch, data=synch_RR_diff_wide),
 #   lm(spatial_asynch ~ pop_asynch, data=synch_RR_diff_wide)
 # )
-# 
-# 
-# dispersion_model_all_lavaan <- "
-#   level:1
-#   gamma_stab ~ spatial_asynch
-#   spatial_asynch ~ dispersion_diff + pop_asynch
-#   pop_asynch ~ dispersion_diff
-#   level:2
-#   gamma_stab ~~ spatial_asynch + pop_asynch + dispersion_diff
-#   spatial_asynch ~~ pop_asynch + dispersion_diff
-#   pop_asynch ~~ dispersion_diff
-# "
+#
+#
+dispersion_model_all_lavaan <- "
+   gamma_stab ~ spatial_asynch + alpha stab
+   spatial_asynch ~ dispersion_diff + pop_asynch
+   pop_asynch ~ dispersion_diff
+   level:2
+   gamma_stab ~~ spatial_asynch + pop_asynch + dispersion_diff
+   spatial_asynch ~~ pop_asynch + dispersion_diff
+   pop_asynch ~~ dispersion_diff
+ "
 # dispersion_model_all_output <- sem(dispersion_model_all_lavaan, data=synch_RR_diff_wide,
 #                                    cluster="site_code", optim.method="em")
-# 
+#
 # with(synch_RR_diff_wide, plot(gamma_stab, spatial_asynch))
 # with(synch_RR_diff_wide, plot(pop_asynch, spatial_asynch))
 # with(synch_RR_diff_wide, plot(dispersion_diff, spatial_asynch))
 # with(synch_RR_diff_wide, plot(dispersion_diff, pop_asynch))
-# 
+#
 # summary(dispersion_model_all)
 # summary(compositionModel10 <- psem(
 #   lm(anpp_pdiff ~ n + p + k + richness_difference + evenness_diff + rank_difference + species_difference, data=subset(allSEMdata, treatment_year==10)),
@@ -76,8 +147,8 @@ coefs(dispersion_model_all, standardize = "scale", standardize.type = "latent.li
 # coefs10 <- coefs(compositionModel10, standardize = "scale", standardize.type = "latent.linear", intercepts = FALSE)%>%
 #   select(Response, Predictor, Estimate, Std.Error, DF, Crit.Value, P.Value, Std.Estimate)%>%
 #   mutate(treatment_year=10)
-# 
-# 
+#
+#
 # spatial_model <- lm(spatial_asynch ~ dispersion_diff + pop_asynch, data=synch_RR_diff_wide)
 # anova(spatial_model)
 
