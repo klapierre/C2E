@@ -14,7 +14,7 @@ old_metrics_vec <- read.csv("ecolett paper_site_proj_comm vector.csv") %>%
 site_info <- read.csv('SiteExperimentDetails_March2019.csv')
 
 ### Read in synchrony metrics and experimental information
-synch_metrics <- read.csv("..\\Synchrony metrics response ratios_long form_13May2019.csv") %>%
+synch_metrics <- read.csv("..\\Synchrony metrics response ratios_long form_17July2019.csv") %>%
 #  filter(plot_mani <= 1) %>%
   mutate(site_proj_comm = paste(site_code, project_name, community_type, sep="_")) %>%
   filter(site_proj_comm %in% c(as.character(old_metrics_vec), "CHY_EDGE_0","HYS_EDGE_0","KNZ_EDGE_0","SGS_EDGE_0","SEV_EDGE_EB","SEV_EDGE_EG")) %>%
@@ -67,12 +67,15 @@ synch_metrics_sub$trt_type2 <- factor(synch_metrics_sub$trt_type2,
                                                  "Temperature","N","P","Mult. Nuts.",
                                                  "drought*temp","irr*temp","N*irr", "NR"))
 
+write.csv(synch_metrics_sub, file="..\\synchrony metrics with environmental_subset.csv", row.names=F)
+synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
+
 ###
 ### means and se's for response ratios
 ###
 unique(synch_metrics$trt_type2)
 synchrony_rr_summary <- synch_metrics_sub %>%
-#  filter(trt_type2 %in% c("CO2", "drought", "irr", "N", "P", "temp")) %>%
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
   group_by(trt_type2, metric_name) %>%
   summarize(lnRR_mean = mean(lnRR, na.rm=T),
             lnRR_se = sd(lnRR)/sqrt(length(lnRR)))
@@ -89,13 +92,23 @@ synch_metrics_nuts <- synch_metrics_sub %>%
 ### Visualize
 ###
 ## boxplots and jitter
-ggplot(synch_metrics_sub, aes(x=factor(trt_type2), y=lnRR, col=factor(trt_type2))) +
-  geom_boxplot() +
+synch_metrics_for_plotting <- synch_metrics_sub %>%
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts."))
+synch_metrics_for_plotting$trt_type2 <- factor(synch_metrics_for_plotting$trt_type2,
+                                               levels=c("drought", "Irrigation", "Precip. Vari.", "Temperature", "CO2", "N", "P", "Mult. Nuts."))
+
+metrics_boxplot <- ggplot(filter(synch_metrics_for_plotting, !metric_name %in% c("spp_asynch", "spatial_asynch", "pop_asynch")),
+                                 aes(x=factor(trt_type2), y=lnRR, col=factor(trt_type2))) +
   geom_jitter(shape=21) +
+  geom_boxplot(col="black", alpha=0.3) +
   facet_wrap(~metric_name, scales="free") +
-  theme_bw() +
+  theme_few() +
   geom_hline(yintercept=0) + 
   theme(axis.text.x = element_text(angle=60, hjust=1))
+
+pdf("boxplot figure.pdf", width=9, height=5, useDingbats=F)
+print(metrics_boxplot)
+dev.off()
 
 ## boxplots and jitter -- Water
 ggplot(synch_metrics_water, aes(x=factor(trt_type2), y=lnRR, col=factor(trt_type2))) +
@@ -116,7 +129,7 @@ ggplot(synch_metrics_nuts, aes(x=factor(trt_type2), y=lnRR, col=factor(trt_type2
   theme(axis.text.x = element_text(angle=60, hjust=1))
 
 ## means and se's
-ggplot(synchrony_rr_summary, aes(x=trt_type2, y=lnRR_mean, ymin=lnRR_mean-lnRR_se,ymax=lnRR_mean+lnRR_se, col=factor(trt_type2))) +
+ggplot(synchrony_rr_summary, aes(x=trt_type2, y=lnRR_mean, ymin=lnRR_mean-(lnRR_se*1.96),ymax=lnRR_mean+(lnRR_se*1.96), col=factor(trt_type2))) +
   geom_point() +
   geom_errorbar(width=0) +
   facet_wrap(~metric_name, scales="free") +
@@ -161,6 +174,8 @@ ggplot(filter(synchrony_rr_long_with_env, trt_type2=="N"), aes(x=rrich, y=lnRR))
   facet_wrap(~metric_name) +
   theme_bw()
 
+summary(lm(lnRR ~ rrich, data=filter(synchrony_rr_long_with_env, trt_type2=="N"&metric_name=="gamma_stab")))
+with(filter(synchrony_rr_long_with_env, trt_type2=="N"&metric_name=="gamma_stab"), plot(MAP, lnRR))
 ggplot(filter(synchrony_rr_long_with_env, trt_type2=="N"), aes(x=experiment_length, y=lnRR)) +
   geom_hline(yintercept=0) +
   geom_point(size=2) +

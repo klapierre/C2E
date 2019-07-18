@@ -1,17 +1,15 @@
 ### Compare lnRR with difference metrics
 ###
-###
-###
-
 ### Author: Kevin wilcox (kevin.wilcox@uwyo.edu)
-### Created: May 14th 2019, last updated: May 14th, 2019
+### Created: May 14th 2019, last updated: June 13th, 2019
 
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\")
 library(tidyverse)
 
 ### Read in synchrony metrics
-synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
+synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv") %>%
+  filter(!metric_name %in% c("spp_asynch","spatial_asynch","pop_asynch"))
 
 ### Read in difference metrics
 rac_diff_metrics <- read.csv("..\\corre_community differences_March2019.csv") %>%
@@ -37,6 +35,34 @@ synch_RR_diff_metrics <- synch_metrics_sub %>%
 ###
 ### Visualize
 ###
+synch_rac_for_plotting <- synch_RR_diff_metrics %>%
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts."))
+
+synch_rac_for_plotting$trt_type2 <- factor(synch_rac_for_plotting$trt_type2,
+                                           levels=c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts."))
+  
+  ## All treatments
+comp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=composition_diff, y=lnRR, col=trt_type2)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F) +
+  geom_hline(yintercept=0) +
+  theme_few() +
+  facet_wrap(~metric_name)
+
+disp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=dispersion_diff, y=lnRR, col=trt_type2)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F) +
+  geom_hline(yintercept=0) +
+  theme_few() +
+  facet_wrap(~metric_name)
+
+pdf("..//figures//composition_fig_17July2019.pdf", width=9, height=5, useDingbats=F)
+print(comp_plot_all)
+dev.off()
+
+pdf("..//figures//dispersion_fig_17July2019.pdf", width=9, height=5, useDingbats=F)
+print(disp_plot_all)
+dev.off()
 
 ## N
 ggplot(subset(synch_RR_diff_metrics, trt_type2=="N"), aes(x=composition_diff, y=lnRR)) +
