@@ -108,12 +108,28 @@ experiment_length_lstrends <- summary(lstrends(experiment_length_model_temp,  "m
 
 model_out_temp <- rbind(MAP_lstrends, MAT_lstrends, anpp_lstrends, rrich_lstrends, experiment_length_lstrends)
 model_out <- rbind(model_out, model_out_temp)
-
+model_out_subset <- model_out %>%
+  filter(trt_type2 %in% c(
+    "drought",
+    "Irrigation",
+    "Precip. Vari.",
+    "Temperature",
+    "Mult. Nuts.",
+    "N",
+    "P",
+    "All"
+  ))
 ###
 ### Visualize slopes
 ###
 
-
+ggplot(model_out_subset, aes(x=site_char, y=slope, ymin=lower.CL, ymax=upper.CL, col=trt_type2)) +
+  geom_hline(yintercept=0) +
+  geom_point(position=position_dodge(width=0.9)) +
+  geom_errorbar(position=position_dodge(width=0.9), width=0) +
+  facet_wrap(~metric_name, scales="free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=60, hjust=1))
 
 
 
