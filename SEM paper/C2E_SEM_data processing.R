@@ -114,7 +114,7 @@ correSEMdataTrt <- correSEMdata%>%
   #make binary treatments just in case we want them later
   mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt+drought_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
   na.omit()%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='::'))
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='_'))
 
 rm(list=setdiff(ls(), "correSEMdataTrt"))
 # write.csv(correSEMdataTrt, 'CoRRE_comm and anpp diff_07160219.csv')
