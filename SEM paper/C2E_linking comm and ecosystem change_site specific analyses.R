@@ -107,21 +107,54 @@ regressionOutput <- regressionOutput%>%
 
 # write.csv(regressionOutput, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\corre results\\site_responses_time\\site_responses_time.csv', row.names=F)
 
+regressionFormulas <- regressionOutput%>%
+  select(site_project_comm_trt, reg_factor, anpp_est, comp_est, evenness_est, rank_est, richness_est, species_est)%>%
+  rename(anpp_pdiff=anpp_est, composition_diff=comp_est, evenness_diff=evenness_est, rank_difference=rank_est, richness_difference=richness_est, species_difference=species_est)%>%
+  gather(key=factor_type, value=regression_est, anpp_pdiff:species_difference)%>%
+  spread(key=reg_factor, value=regression_est, fill=NA)%>%
+  mutate(formula=paste('stat_function(fun=function(x){',intercept,'+',treatment_year,'+',treatment_year_sq,'}, size=2, xlim=c(0,2))'))
 
-### create for loop to produce ggplot2 graphs with only significant lines
-#get the values from the regressionOutput dataframe for the lines for each site
-#plot the data from correDataTrt and the regression with stat_function from the regressionOutput variables
-#paste the five plots together into one "plot" file then print those to the files
+correDataTrtFormula <- regressionFormulas%>%
+  select(site_project_comm_trt, factor_type, formula)%>%
+  left_join(correDataTrt)
+
+
+# ### create for loop to produce ggplot2 graphs with only significant lines
+# #get the values from the regressionOutput dataframe for the lines for each site
+# #plot the data from correDataTrt and the regression with stat_function from the regressionOutput variables
+# #paste the five plots together into one "plot" file then print those to the files
+# 
+# #or better idea! create a stat function column in the data?
+# #or can I get the values from the sheet directly somehow into stat function for the data subset?
+# for (i in seq_along(site_trt_list)) { 
+#   
+#   # create plot for each treatment in df
+#   anppSubset <- subset(correDataTrtFormula, site_project_comm_trt==site_trt_list[i]&factor_type=='anpp_pdiff')
+#   
+#   anppPlot <- 
+#     ggplot(anppSubset, aes(x=treatment_year, y=value)) + 
+#     geom_point() + 
+#     print(anppSubset[1,6]) +
+#     facet_grid(rows=vars(factor_type), scales='free_y')
+#   
+#   # save plots as .png
+#   ggsave(plot, file=paste('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\corre results\\site_responses_time\\',
+#                           site_trt_list[i], ".png", sep=''), scale=3)
+#   
+#   # print plots to screen
+#   print(plot)
+# }
+
+
+### create for loop to produce ggplot2 graphs with all lines (including non-significant)
 for (i in seq_along(site_trt_list)) { 
   
-  # create plot for each treatment in df
-  anpp_intercept <- regressionOutput$
-  anpp_plot <- 
+  # create plot for each treatment in df 
+  plot <- 
     ggplot(subset(correDataTrt, site_project_comm_trt==site_trt_list[i]), aes(x=treatment_year, y=value)) + 
     geom_point() + 
-    stat_function(fun=function(x){}, size=2, xlim=c(0,2)) +
-  
-  
+    facet_grid(rows=vars(factor_type), scales='free_y') +
+    stat_smooth(data=subset(regressionFormulas, site_project_comm_trt==site_trt_list[i]&(intercept+treatment_year+treatment_year_sq)>0), method="lm", formula = y ~ x + I(x^2), fill=NA)
   
   # save plots as .png
   ggsave(plot, file=paste('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\corre results\\site_responses_time\\',
@@ -130,6 +163,7 @@ for (i in seq_along(site_trt_list)) {
   # print plots to screen
   print(plot)
 }
+
 
 
 
