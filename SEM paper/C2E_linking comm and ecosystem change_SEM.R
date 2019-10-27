@@ -30,24 +30,26 @@ theme_update(axis.title.x=element_text(size=40, vjust=-0.35, margin=margin(t=15)
 
 ###all data, all years-----------
 
-###difference metrics through composition model - with interactions
+###difference metrics through composition model
 #all years
 summary(compositionModel <- psem(
-  lm(anpp_pdiff ~ composition_diff_transform*treatment_year, data=correSEMdataTrt),
-  lm(composition_diff_transform ~ richness_difference*treatment_year + evenness_diff*treatment_year + rank_difference*treatment_year + species_difference*treatment_year, data=correSEMdataTrt))
+  lm(anpp_pdiff ~ composition_diff_transform, data=correSEMdataTrt),
+  lm(composition_diff_transform ~ richness_difference + evenness_diff + rank_difference + species_difference, data=correSEMdataTrt))
   )
-
-###difference metrics not through composition model - with interactions
-#all years
-summary(compositionModel <- psem(
-  lm(anpp_pdiff ~ richness_difference*treatment_year + evenness_diff*treatment_year + rank_difference*treatment_year + species_difference*treatment_year, data=correSEMdataTrt))
-)
 
 
 ###all data, split into single years
 #year 1
 summary(compositionModel1 <- psem(
-  lm(anpp_pdiff ~ richness_difference + evenness_diff + rank_difference + species_difference, data=subset(correSEMdataTrt, treatment_year==1)))
+  lm(anpp_pdiff_transform ~ composition_diff_transform + richness_difference + evenness_diff + rank_difference + species_difference, data=subset(correSEMdataTrt, treatment_year==1)),
+  lm(composition_diff_transform ~ richness_difference + evenness_diff + rank_difference + species_difference, data=subset(correSEMdataTrt, treatment_year==1)),
+  richness_difference %~~% evenness_diff,
+  richness_difference %~~% rank_difference,
+  richness_difference %~~% species_difference,
+  evenness_diff %~~% rank_difference,
+  evenness_diff %~~% species_difference,
+  rank_difference %~~% species_difference
+  )
 )
 coefs1 <- coefs(compositionModel1, standardize = "scale", standardize.type = "latent.linear", intercepts = FALSE)%>%
   select(Response, Predictor, Estimate, Std.Error, DF, Crit.Value, P.Value, Std.Estimate)%>%
