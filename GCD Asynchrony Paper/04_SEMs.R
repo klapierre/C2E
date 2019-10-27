@@ -9,9 +9,12 @@ devtools::install_github("jslefche/piecewiseSEM@devel")
 
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\data\\")
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\GCD asynchrony\\data') #kim's laptop
 library(tidyverse)
 library(piecewiseSEM)
 library(lme4)
+library(lavaan)
+library(PerformanceAnalytics)
 
 ### Read in synchrony metrics
 synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
@@ -30,6 +33,11 @@ synch_RR_diff_wide <- synch_metrics_sub %>%
   left_join(rac_diff_metrics, by=c("site_code","project_name", "community_type", "treatment")) %>%
   filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
   spread(key=metric_name, value=lnRR)
+
+
+#correlation matrix
+chart.Correlation(synch_RR_diff_wide[,c(11, 12, 13, 15, 17, 19, 20)])
+
 
 ### Run piecewise SEM
 ## original structure
@@ -123,23 +131,30 @@ cor(gamma_resids, synch_RR_diff_wide$spatial_asynch)
 #
 #
 dispersion_model_all_lavaan <- "
-   gamma_stab ~ spatial_asynch + alpha stab
-   spatial_asynch ~ dispersion_diff + pop_asynch
+   gamma_stab ~ spatial_synch + alpha_stab
+   spatial_synch ~ dispersion_diff + pop_synch
+   alpha_stab ~ spp_stab + spp_synch
    pop_asynch ~ dispersion_diff
-   level:2
-   gamma_stab ~~ spatial_asynch + pop_asynch + dispersion_diff
-   spatial_asynch ~~ pop_asynch + dispersion_diff
-   pop_asynch ~~ dispersion_diff
+
+  spp_synch ~~ spatial_synch
+  alpha_stab ~~ spatial_synch
+spp_synch ~~ dispersion_diff
+spp_stab ~~ spatial_synch
+spp_stab ~~ spp_synch
+spp_stab ~~ pop_synch
+spp_synch ~~ pop_synch
  "
-# dispersion_model_all_output <- sem(dispersion_model_all_lavaan, data=synch_RR_diff_wide,
-#                                    cluster="site_code", optim.method="em")
+
+
+dispersion_model_all_output <- sem(dispersion_model_all_lavaan, data=synch_RR_diff_wide,
+                                   cluster="site_code", optim.method="em")
 #
 # with(synch_RR_diff_wide, plot(gamma_stab, spatial_asynch))
 # with(synch_RR_diff_wide, plot(pop_asynch, spatial_asynch))
 # with(synch_RR_diff_wide, plot(dispersion_diff, spatial_asynch))
 # with(synch_RR_diff_wide, plot(dispersion_diff, pop_asynch))
 #
-# summary(dispersion_model_all)
+summary(dispersion_model_all_output)
 # summary(compositionModel10 <- psem(
 #   lm(anpp_pdiff ~ n + p + k + richness_difference + evenness_diff + rank_difference + species_difference, data=subset(allSEMdata, treatment_year==10)),
 #   lm(richness_difference ~ n + p + k, data=subset(allSEMdata, treatment_year==10)),
