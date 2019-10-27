@@ -4,8 +4,9 @@
 ### Created: May 14th 2019, last updated: June 13th, 2019
 
 ### Set up workspace
-setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\")
+setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\data\\")
 library(tidyverse)
+library(ggthemes)
 
 ### Read in synchrony metrics
 synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv") %>%
