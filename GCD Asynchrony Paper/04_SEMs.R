@@ -8,10 +8,10 @@ install.packages("devtools") # if devtools not installed
 devtools::install_github("jslefche/piecewiseSEM@devel")
 
 ### Set up workspace
-setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\")
+setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\data\\")
 library(tidyverse)
 library(piecewiseSEM)
-
+library(lme4)
 
 ### Read in synchrony metrics
 synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
@@ -34,16 +34,16 @@ synch_RR_diff_wide <- synch_metrics_sub %>%
 ### Run piecewise SEM
 ## original structure
 dispersion_model_all <- psem(
-  lm(gamma_stab ~ spatial_synch + alpha_stab, data=synch_RR_diff_wide),
-  lm(spatial_synch ~ dispersion_diff + pop_synch, data=synch_RR_diff_wide),
-  lm(alpha_stab ~ spp_stab + spp_synch, data=synch_RR_diff_wide),
-  lm(pop_synch ~ dispersion_diff, data=synch_RR_diff_wide),
-  spp_synch %~~% dispersion_diff,
+  lmer(gamma_stab ~ spatial_synch + alpha_stab + (1|site_code), data=synch_RR_diff_wide),
+  lmer(spatial_synch ~ dispersion_diff + pop_synch + (1|site_code), data=synch_RR_diff_wide),
+  lmer(alpha_stab ~ spp_stab + spp_synch + (1|site_code), data=synch_RR_diff_wide),
+  lmer(pop_synch ~ dispersion_diff + (1|site_code), data=synch_RR_diff_wide),
   spp_synch %~~% spatial_synch,
+  alpha_stab %~~% spatial_synch,
+  spp_synch %~~% dispersion_diff,
   spp_stab %~~% spatial_synch,
   spp_stab %~~% spp_synch,
   spp_stab %~~% pop_synch,
-  alpha_stab %~~% spatial_synch,
   spp_synch %~~% pop_synch
 )
 
