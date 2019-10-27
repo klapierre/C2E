@@ -5,6 +5,8 @@
 
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\")
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\GCD asynchrony\\data') #kim's laptop
+library(codyn)
 library(tidyverse)
 
 ### Read in synchrony metrics
@@ -54,6 +56,13 @@ disp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=dispersion_diff, y=lnRR, c
   geom_smooth(method="lm", se=F) +
   geom_hline(yintercept=0) +
   theme_few() +
+  facet_wrap(~metric_name)
+
+spp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=species_diff, y=lnRR, col=trt_type2)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F) +
+  geom_hline(yintercept=0) +
+  # theme_few() +
   facet_wrap(~metric_name)
 
 pdf("..//figures//composition_fig_17July2019.pdf", width=9, height=5, useDingbats=F)
