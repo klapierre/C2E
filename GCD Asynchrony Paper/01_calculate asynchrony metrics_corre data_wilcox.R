@@ -13,7 +13,7 @@ library(nlme)
 #############################################################################
 
 # Load data
-setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\")
+setwd( )
 cover_df <- read.csv('data\\SpeciesRawAbundance_March2019.csv', header = T)
 exp_info <- read.csv('data\\ExperimentInformation_March2019.csv', header = T) %>%
   mutate(site_proj_comm_trt = paste(site_code, project_name, community_type, treatment, sep='_'))
