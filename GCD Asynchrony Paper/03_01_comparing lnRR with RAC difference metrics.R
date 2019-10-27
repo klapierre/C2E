@@ -73,6 +73,10 @@ pdf("..//figures//dispersion_fig_17July2019.pdf", width=9, height=5, useDingbats
 print(disp_plot_all)
 dev.off()
 
+pdf("..//figures//sppdiff_fig_27Oct2019.pdf", width=9, height=5, useDingbats=F)
+print(spp_plot_all)
+dev.off()
+
 ## N
 ggplot(subset(synch_RR_diff_metrics, trt_type2=="N"), aes(x=composition_diff, y=lnRR)) +
   geom_point() +
