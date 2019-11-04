@@ -5,7 +5,7 @@ library(tidyverse)
 
 
 #kim's desktop
-setwd('C:\\Users\\la pierrek\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
+setwd('C:\\Users\\komatsuk\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
 
 #kim's laptop
 setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
@@ -52,7 +52,7 @@ KNZsem <- read.csv('NutNet_comm and anpp diff_07160219.csv')%>%
   mutate(anpp_pdiff_transform=log(anpp_pdiff+(1-min(anpp_pdiff))), composition_diff_transform=log(composition_diff))%>%
   filter(site_code %in% c('KNZ', 'konz.us'))
 
-dataVisKNZ <- (allSEMdata)%>%
+dataVisKNZ <- (KNZsem)%>%
   select(anpp_pdiff_transform, composition_diff_transform, richness_difference, evenness_diff, rank_difference, species_difference) #make visualization dataframe
 chart.Correlation(dataVisKNZ, histogram=T, pch=19)
   
@@ -85,7 +85,7 @@ tallgrassSEMsubset <- tallgrassSEM%>%
   rbind(divCDRe001, divCDRe002)
 
 #combine the two CDR experiments
-divTrt<-rbind(divTrt1, divCDRe002, divCDRe001)
+divTrt<-rbind(tallgrassSEMsubset, divCDRe002, divCDRe001)
 
 #######MODEL STRUCTURE: use differences between treatment and control plots in each year (horizontal arrows)-------------------
 
