@@ -4,10 +4,10 @@ library(grid)
 library(gridExtra)
 
 #meghan's working directory
-setwd("C:\\Users\\megha\\Dropbox\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\")
 setwd("~/Dropbox/")
 
-theme_set(theme_bw(12))
+theme_set(theme_bw(20))
 
 ### Read in data 
 
