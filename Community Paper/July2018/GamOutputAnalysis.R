@@ -9,10 +9,10 @@
 
 library(tidyverse)
 library(gridExtra)
-theme_set(theme_bw(20))
+theme_set(theme_bw(30))
 
 #work
-setwd("C:\\Users\\megha\\Dropbox\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\")
 #home
 setwd("~/Dropbox/")
 
@@ -394,4 +394,4 @@ ggplot(tograph_metrics_trt, aes(x = trt_type3, y = value, fill = sig)) +
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
   geom_hline(yintercept=0.50)+
-  facet_wrap(~group, labeller=labeller(group = responses), ncol = 2)
+  facet_wrap(~group, labeller=labeller(group = responses), ncol = 3)
