@@ -2,7 +2,7 @@
 setwd("/Users/egrman/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 #meghan's working directory
-setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+setwd("C:\\Users\\mavolio2\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
 setwd("~/Dropbox/C2E/Products/CommunityChange/March2018 WG")
 
 
@@ -18,7 +18,7 @@ library(car)
 library(gridExtra)
 
 
-theme_set(theme_bw())
+theme_set(theme_bw(20))
 theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
@@ -32,7 +32,7 @@ change_metrics <- read.csv("MetricsTrts_March2019.csv") %>%
 
 subset<-read.csv("experiment_trt_subset_may2019.csv")
 
-dir<-read.csv("C:\\Users\\megha\\Dropbox\\C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
+dir<-read.csv("C:\\Users\\mavolio2\\Dropbox\\C2E/Products/CommunityChange/Summer2018_Results/diff_directinal_slopes.csv")
 
 ### Control data
 change_control <- change_metrics %>%
@@ -81,7 +81,7 @@ info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
 
 # read in treatment variables for subsetting later
-info.trt=info.trt<-read.csv("C:\\Users\\megha\\Dropbox\\converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
+info.trt=info.trt<-read.csv("C:\\Users\\mavolio2\\Dropbox\\converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
   select(site_code, project_name, community_type, treatment,plot_mani, trt_type)%>%
   unique()%>%
   filter(plot_mani!=0)%>%
@@ -358,6 +358,7 @@ fulldataset=rbind(richresults, evenresults, rankresults, gainsresults, lossesres
 #-------make a figure
 
 fulldataset$studies="All manipulations"
+
 # onlyNadditions$studies="N"
 # onlyPadditions$studies="P"
 # onlyIrrmanipulations$studies="Water"
@@ -372,13 +373,14 @@ fulldataset$studies="All manipulations"
 # forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
 # forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
 
-rsqvalues<-data.frame(response=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses"), 
-                      rsq = c(0.03,0.06,0.03,0.11,0.06),
-                      pval = c("n.s.", "*", "n.s.", "**","*"),
-                      combinded=c("0.03 n.s.","0.06*","0.03 n.s.","0.11**","0.06*"))
+rsqvalues<-data.frame(response=c("Richness change", "Rank change", "Evenness change", "Species gains", "Species losses"), 
+                      rsq = c(0.03,0.03,0.06,0.11,0.06),
+                      pval = c("n.s.", "n.s.","*",  "**","*"),
+                      combinded=c("0.03 n.s.","0.03 n.s.","0.06*","0.11**","0.06*"))
 
 forbigfig=fulldataset
-levels(forbigfig$response)=c("Richness change", "Evenness change", "Rank change", "Species gains", "Species losses")
+forbigfig$response2<-factor(forbigfig$response, levels = c("rich", "rank", "even", "gains", "losses"))
+levels(forbigfig$response2)=c("Richness change", "Rank change", "Evenness change", "Species gains", "Species losses")
 levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "Regional SR")
 forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
 forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.02, forbigfig$slope-0.02)
@@ -386,15 +388,15 @@ mr<-
 ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + 
   geom_col() + 
   geom_point(aes(predictor, star.location, shape=significant)) + 
-  facet_wrap(~response, ncol = 5) + 
+  facet_wrap(~response2, ncol = 5) + 
   theme(axis.text.x=element_text(angle = 90, vjust = 0.4, hjust=1)) + 
   xlab("Ecosystem Property") + 
   ylab("Slope from standardized\nmultiple regression") +
   guides(fill = guide_colorbar(title = "Partial R2")) + 
   scale_shape_manual(values=c(NA, 8), guide=FALSE)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  geom_text(data=rsqvalues, aes(x=4.1, y = 0.25, label = combinded), hjust=1.05, vjust=1.5)+
-  ggtitle("A)")
+  geom_text(data=rsqvalues, aes(x=4.1, y = 0.25, label = combinded), hjust=1.05, vjust=1.5)#+
+  #ggtitle("A)")
 
 
 #ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=7, height=9.5)
