@@ -3,7 +3,7 @@
 ### Authors:  Meghan Avolio (meghan.avolio@jhu.edu)
 ### Last updated: Oct 30 2018
 
-setwd("C:\\Users\\megha\\Dropbox\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\")
 theme_set(theme_bw(12))
 
 library(tidyverse)
@@ -206,7 +206,9 @@ prop_diff<-RAC_diff_outcomes%>%
   select(-num)%>%
   gather(sig, proportion, notsig:prop)
 
-theme_set(theme_bw(12))
+theme_set(theme_bw(16))
+theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
+
 ggplot(data=prop_diff, aes(x = metric, y = proportion, fill=sig))+
   geom_bar(stat="identity")+
   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
@@ -214,6 +216,41 @@ ggplot(data=prop_diff, aes(x = metric, y = proportion, fill=sig))+
   ylab("Proportion")+
   xlab("RAC Difference Metric")+
   facet_wrap(~scenario, ncol=3)+
+  geom_hline(yintercept = 0.5)
+
+#controls only
+ggplot(data=subset(prop_diff, scenario==1), aes(x = metric, y = proportion, fill=sig))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+  ylab("Proportion")+
+  xlab("RAC Difference Metric")+
+  geom_hline(yintercept = 0.5)
+
+ggplot(data=subset(prop_diff, scenario==2|scenario==3), aes(x = metric, y = proportion, fill=sig))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+  ylab("Proportion")+
+  xlab("RAC Difference Metric")+
+  facet_wrap(~scenario, ncol=1)+
+  geom_hline(yintercept = 0.5)
+
+ggplot(data=subset(prop_diff, scenario==4), aes(x = metric, y = proportion, fill=sig))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+  ylab("Proportion")+
+  xlab("RAC Difference Metric")+
+  geom_hline(yintercept = 0.5)
+
+ggplot(data=subset(prop_diff, scenario==5|scenario==6), aes(x = metric, y = proportion, fill=sig))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+  ylab("Proportion")+
+  xlab("RAC Difference Metric")+
+  facet_wrap(~scenario, ncol=1)+
   geom_hline(yintercept = 0.5)
 
 #people like this figure less
