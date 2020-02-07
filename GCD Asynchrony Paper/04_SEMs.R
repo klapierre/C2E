@@ -35,6 +35,34 @@ synch_RR_diff_wide <- synch_metrics_sub %>%
   filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
   spread(key=metric_name, value=lnRR)
 
+#get trt magnitude
+nitrogen <- read.csv('ExperimentInformation_March2019.csv')%>%
+  filter(trt_type=='N')%>%
+  group_by(site_code, project_name, community_type, treatment)%>%
+  summarise(N=mean(n))%>%
+  ungroup()%>%
+  left_join(synch_RR_diff_wide)%>%
+  filter(!is.na(trt_type2))
+# write.csv(nitrogen, 'synchrony_community_SEMdata_nitrogen.csv', row.names=F)
+
+irrigation <- read.csv('ExperimentInformation_March2019.csv')%>%
+  filter(trt_type=='irr')%>%
+  group_by(site_code, project_name, community_type, treatment)%>%
+  summarise(irrigation=mean(precip))%>%
+  ungroup()%>%
+  left_join(synch_RR_diff_wide)%>%
+  filter(!is.na(trt_type2))
+# write.csv(irrigation, 'synchrony_community_SEMdata_irrigation.csv', row.names=F)
+
+drought <- read.csv('ExperimentInformation_March2019.csv')%>%
+  filter(trt_type=='drought')%>%
+  group_by(site_code, project_name, community_type, treatment)%>%
+  summarise(drought=mean(precip))%>%
+  ungroup()%>%
+  left_join(synch_RR_diff_wide)%>%
+  filter(!is.na(trt_type2))
+# write.csv(drought, 'synchrony_community_SEMdata_drought.csv', row.names=F)
+
 #summary stats
 summary(as.factor(synch_RR_diff_wide$site_code)) #33 sites
 summary(as.factor(synch_RR_diff_wide$project_name)) #39 projects
