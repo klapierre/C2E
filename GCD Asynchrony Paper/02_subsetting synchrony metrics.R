@@ -5,7 +5,9 @@
 
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\data\\")
+
 library(tidyverse)
+library(broom)
 library(ggthemes)
 
 ### Read in old experiment
@@ -15,7 +17,7 @@ old_metrics_vec <- read.csv("ecolett paper_site_proj_comm vector.csv") %>%
 site_info <- read.csv('SiteExperimentDetails_March2019.csv')
 
 ### Read in synchrony metrics and experimental information
-synch_metrics <- read.csv("..\\Synchrony metrics response ratios_long form_17July2019.csv") %>%
+synch_metrics <- read.csv("..\\Synchrony metrics response ratios_long form_22Apr2020.csv") %>%
 #  filter(plot_mani <= 1) %>%
   mutate(site_proj_comm = paste(site_code, project_name, community_type, sep="_")) %>%
   filter(site_proj_comm %in% c(as.character(old_metrics_vec), "CHY_EDGE_0","HYS_EDGE_0","KNZ_EDGE_0","SGS_EDGE_0","SEV_EDGE_EB","SEV_EDGE_EG")) %>%
@@ -68,8 +70,8 @@ synch_metrics_sub$trt_type2 <- factor(synch_metrics_sub$trt_type2,
                                                  "Temperature","N","P","Mult. Nuts.",
                                                  "drought*temp","irr*temp","N*irr", "NR"))
 
-write.csv(synch_metrics_sub, file="..\\synchrony metrics with environmental_subset.csv", row.names=F)
-synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
+write.csv(synch_metrics_sub, file="..\\synchrony metrics with environmental_subset_22Apr2020.csv", row.names=F)
+synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset_22Apr2020.csv")
 
 ###
 ### means and se's for response ratios
@@ -137,6 +139,52 @@ ggplot(synchrony_rr_summary, aes(x=trt_type2, y=lnRR_mean, ymin=lnRR_mean-(lnRR_
   theme_bw() +
   geom_hline(yintercept=0) +
   theme(axis.text.x = element_text(angle=60, hjust=1))
+
+###
+### T tests for overall effects
+###
+gamma_stab_model_out <- synch_metrics_for_plotting %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "gamma_stab") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "gamma_stab")
+
+alpha_stab_model_out <- synch_metrics_for_plotting %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "alpha_stab") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "alpha_stab")
+
+pop_synch_model_out <- synch_metrics_for_plotting %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "pop_synch") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "pop_synch")
+
+spp_stab_model_out <- synch_metrics_for_plotting %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "spp_stab") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "spp_stab")
+
+spatial_synch_model_out <- synch_metrics_for_plotting %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "spatial_synch") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "spatial_synch")
+
+spp_synch_model_out <- synch_metrics_for_plotting %>% 
+  filter(trt_type2 %in% c("CO2", "drought", "Irrigation", "Precip. Vari.", "Temperature", "N", "P", "Mult. Nuts.")) %>%
+  filter(metric_name == "spp_synch") %>%
+  group_by(trt_type2) %>%
+  do(data.frame(tidy(t.test(.$lnRR))))%>%
+  mutate(metric = "spp_synch")
+
 
 
 ###

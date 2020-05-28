@@ -3,7 +3,7 @@ library(reshape2)
 library(tidyverse) # data munging
 library(codyn)     # community dynamics metrics
 library(vegan)     # diversity metrics
-library(piecewiseSEM)
+#library(piecewiseSEM)
 library(nlme)
 
 #############################################################################
@@ -13,7 +13,7 @@ library(nlme)
 #############################################################################
 
 # Load data
-setwd( )
+setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\")
 cover_df <- read.csv('data\\SpeciesRawAbundance_March2019.csv', header = T)
 exp_info <- read.csv('data\\ExperimentInformation_March2019.csv', header = T) %>%
   mutate(site_proj_comm_trt = paste(site_code, project_name, community_type, treatment, sep='_'))
@@ -27,6 +27,53 @@ full_df <- cover_df %>%
                            "treatment_year",
                            "treatment",
                            "community_type"))
+
+################################################################################################################
+################################################################################################################
+### 2. Shaopeng - Variance partitioning method
+################################################################################################################
+################################################################################################################
+
+###### here is the function for calculating all metrics defined in Wang et al. (2019 Ecography)
+var.partition <- function(metacomm_tsdata){   # metacomm_tsdata = arrayx
+  
+  ## The function "var.partition" performs the partitioning of variability 
+  ## across hierarchical levesl within a metacommunity.
+  ## The input array "metacomm_tsdata" is an N*T*M array. The first dimension represents N species, 
+  ## the second represents time-series observations of length T, and the third represents M local communities. 
+  ## The output includes four variability and four synchrony metrics as defined in the main text.
+  ## Note that, to be able to handle large metacommunities, this code has avoided calculating all covariance.
+  
+  ts_metacom <- apply(metacomm_tsdata,2,sum)
+  ts_patch <- apply(metacomm_tsdata,c(2,3),sum)
+  ts_species <- apply(metacomm_tsdata,c(1,2),sum)
+  
+  sd_metacom <- sd(ts_metacom)
+  sd_patch_k <- apply(ts_patch,2,sd)
+  sd_species_i <- apply(ts_species,1,sd)
+  sd_species_patch_ik <- apply(metacomm_tsdata,c(1,3),sd)
+  
+  mean_metacom <- mean(ts_metacom)
+  
+  CV_S_L <- sum(sd_species_patch_ik)/mean_metacom  # spp_var
+  CV_C_L <- sum(sd_patch_k)/mean_metacom  # alpha_var
+  CV_S_R <- sum(sd_species_i)/mean_metacom
+  CV_C_R <- sd_metacom/mean_metacom  # gamma_var
+  
+  phi_S_L2R <- CV_S_R/CV_S_L # pop synch
+  phi_C_L2R <- CV_C_R/CV_C_L # spatial synch
+  phi_S2C_L <- CV_C_L/CV_S_L # spp_synch
+  phi_S2C_R <- CV_C_R/CV_S_R
+  
+  partition_3level <- c(CV_S_L=CV_S_L, CV_C_L=CV_C_L, CV_S_R=CV_S_R, CV_C_R=CV_C_R, 
+                        phi_S_L2R=phi_S_L2R, phi_C_L2R=phi_C_L2R, phi_S2C_L=phi_S2C_L, phi_S2C_R=phi_S2C_R)
+  return(partition_3level)
+}
+
+
+###
+### Loop through experiments to calculate synchrony/stability metrics
+###
   
 site_vector <- sort(unique(exp_info$site_proj_comm_trt))
 master_partition_vars_df <- {}
@@ -40,7 +87,7 @@ for(SITE in 1:length(site_vector)){
     filter(site_proj_comm_trt == site_vector[SITE]) %>%
     slice(1) ### THIS TAKES THE FIRST OBSERVATION BECAUSE OF CAR AND BOWMAN HAVING DIFFERENT NUTRIENT AMOUNTS ACROSS YEARS... CANNOT TRUST N P AND K AMOUNTS FOR CAR AND BOWMAN IN THE RESULTING DATAFRAME
   
-  temp_array <- acast(temp_df, calendar_year ~ genus_species ~ plot_id) %>%
+  temp_array <- acast(temp_df, genus_species ~ calendar_year ~ plot_id) %>%
     replace_na(0)
   
   temp_vars_object <- var.partition(temp_array)
@@ -57,8 +104,8 @@ synchrony_vars_df <- master_partition_vars_df %>%
          spatial_synch = phi_C_L2R,
          spp_synch = phi_S2C_L)
 
-write.csv(synchrony_vars_df, file="partition variables from Shaopeng's function_13May2019.csv", row.names=F)
-synchrony_vars_df <- read.csv("partition variables from Shaopeng's function_13May2019.csv") %>%
+write.csv(synchrony_vars_df, file="partition variables from Shaopeng's function_22Apr2020.csv", row.names=F)
+synchrony_vars_df <- read.csv("partition variables from Shaopeng's function_22Apr2020.csv") %>%
   mutate(pop_synch       = 1/pop_asynch,
          spatial_synch   = 1/spatial_asynch,
          spp_synch       = 1/spp_asynch)
@@ -114,7 +161,7 @@ synchrony_rr_long <- synchrony_vars_long %>%
   full_join(synchrony_controls, by=c("site_code", "project_name", "community_type", "metric_name")) %>%
   mutate(lnRR = log(metric_value_trt/metric_value_control))
   
-write.csv(synchrony_rr_long, file="Synchrony metrics response ratios_long form_17July2019.csv", row.names=F)
+write.csv(synchrony_rr_long, file="Synchrony metrics response ratios_long form_22Apr2020.csv", row.names=F)
 
 ###
 ### Visualize response ratios

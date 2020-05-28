@@ -1,17 +1,19 @@
 ### Compare lnRR with difference metrics
 ###
 ### Author: Kevin wilcox (kevin.wilcox@uwyo.edu)
-### Created: May 14th 2019, last updated: June 13th, 2019
+### Created: May 14th 2019, last updated: May 21, 2020
 
 ### Set up workspace
-setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\data\\")
+setwd("C:\\Users\\wilco\\Dropbox\\shared working groups\\C2E\\GCD asynchrony\\data\\") # Kevin's laptop
 setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\GCD asynchrony\\data') #kim's laptop
+setwd("C:\\Users\\kwilcox4\\Dropbox\\Shared working groups\\C2E\\GCD asynchrony\\data\\") # Kevin's work comp
+
 library(codyn)
 library(tidyverse)
 library(ggthemes)
 
 ### Read in synchrony metrics
-synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv") %>%
+synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset_22Apr2020.csv") %>%
   filter(!metric_name %in% c("spp_asynch","spatial_asynch","pop_asynch"))
 
 ### Read in difference metrics
@@ -20,7 +22,8 @@ rac_diff_metrics <- read.csv("..\\corre_community differences_March2019.csv") %>
   rename(treatment=treatment2, treatment_year=time) %>%
   mutate(dispersion_diff = ifelse(trt_greater_disp=="Control", abs_dispersion_diff, -(abs_dispersion_diff) )) %>%
   group_by(site_code, project_name, community_type, treatment) %>%
-  summarise_at(.vars=vars(composition_diff, richness_diff:species_diff, dispersion_diff), mean, na.rm=T)
+  filter(treatment_year == max(treatment_year)) %>%
+  filter(treatment_year > 4)
 
 # dispersion_df <- read.csv("..\\ForBayesianAnalysis_May2017.csv") %>%
 #   group_by(site_code, project_name, community_type, treatment) %>%
@@ -50,14 +53,28 @@ comp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=composition_diff, y=lnRR, 
   geom_smooth(method="lm", se=F) +
   geom_hline(yintercept=0) +
   theme_few() +
-  facet_wrap(~metric_name)
+  facet_wrap(~metric_name, scales="free")
+
+comp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=composition_diff, y=lnRR)) +
+  geom_point() +
+  geom_smooth(method="lm") +
+  geom_hline(yintercept=0) +
+  theme_few() +
+  facet_wrap(~metric_name, scales="free")
 
 disp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=dispersion_diff, y=lnRR, col=trt_type2)) +
   geom_point() +
   geom_smooth(method="lm", se=F) +
   geom_hline(yintercept=0) +
   theme_few() +
-  facet_wrap(~metric_name)
+  facet_wrap(~metric_name, scales="free")
+
+disp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=dispersion_diff, y=lnRR)) +
+  geom_point() +
+  geom_smooth(method="lm") +
+  geom_hline(yintercept=0) +
+  theme_few() +
+  facet_wrap(~metric_name, scales="free")
 
 spp_plot_all <- ggplot(synch_rac_for_plotting, aes(x=species_diff, y=lnRR, col=trt_type2)) +
   geom_point() +
@@ -77,6 +94,15 @@ dev.off()
 pdf("..//figures//sppdiff_fig_27Oct2019.pdf", width=9, height=5, useDingbats=F)
 print(spp_plot_all)
 dev.off()
+
+
+## Beta diversity box plots
+ggplot(filter(synch_rac_for_plotting, metric_name=="alpha_stab"), aes(x=trt_type2, y=dispersion_diff, col=trt_type2)) +
+  geom_hline(yintercept=0) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_few()
+
 
 ## N
 ggplot(subset(synch_RR_diff_metrics, trt_type2=="N"), aes(x=composition_diff, y=lnRR)) +
@@ -179,4 +205,75 @@ ggplot(subset(synch_RR_diff_metrics, trt_type2 %in% trt_type_vec), aes(x=richnes
   geom_hline(yintercept=0) +
   theme_classic() +
   facet_wrap(~trt_type2)
+
+synch_metric_sub_wide <- synch_metrics_sub %>%
+  dplyr::select(site_code:community_type, site_proj_comm, trt_type2, metric_name, lnRR) %>%
+  spread(key=metric_name, value=lnRR)
+
+### gamma_stability ~ spatial_synchrony
+ggplot(synch_metric_sub_wide, aes(x=spatial_synch, y=gamma_stab, col=trt_type2)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F) +
+  theme_few()
+
+ggplot(synch_metric_sub_wide, aes(x=spatial_synch, y=gamma_stab)) +
+  geom_point() +
+  geom_smooth(method="lm") +
+  theme_few()
+
+### gamma_stability ~ alpha_stability
+ggplot(synch_metric_sub_wide, aes(x=alpha_stab, y=gamma_stab, col=trt_type2)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F) +
+  theme_few()
+
+ggplot(synch_metric_sub_wide, aes(x=alpha_stab, y=gamma_stab)) +
+  geom_point() +
+  geom_smooth(method="lm") +
+  theme_few()
+
+### spatial_synchrony ~ population_synchrony
+ggplot(synch_metric_sub_wide, aes(y=spatial_synch, x=pop_synch, col=trt_type2)) +
+  geom_point() +
+  geom_smooth(method="lm", se=F) +
+  theme_few()
+
+ggplot(synch_metric_sub_wide, aes(y=spatial_synch, x=pop_synch)) +
+  geom_point() +
+  geom_smooth(method="lm") +
+  theme_few()
+
+### spatial_synchrony ~ all difference metrics
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=composition_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=abs_dispersion_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=richness_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=evenness_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=rank_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=species_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="spatial_synch"), aes(x=dispersion_diff, y=lnRR, col=trt_type2, label=project_name)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0) + geom_text(size=2, nudge_x=0.01)
+
+### pop_synchrony ~ all difference metrics
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=composition_diff, y=lnRR, col=trt_type2, label=project_name)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0) + geom_text(size=2, nudge_x=0.03)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=composition_diff, y=lnRR)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)+geom_smooth(method="lm")
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=abs_dispersion_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=richness_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=evenness_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=rank_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=species_diff, y=lnRR, col=trt_type2)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0)
+ggplot(filter(synch_RR_diff_metrics,metric_name=="pop_synch"), aes(x=dispersion_diff, y=lnRR, col=trt_type2, label=project_name)) +
+  geom_point() + theme_few() + geom_hline(yintercept=0) + geom_text(size=2, nudge_x=0.01)
 
