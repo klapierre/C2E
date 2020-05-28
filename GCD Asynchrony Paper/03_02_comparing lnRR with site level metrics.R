@@ -1,25 +1,27 @@
 ### Compare lnRR with Site-level variables
 ###
 ### Author: Kevin wilcox (kevin.wilcox@uwyo.edu)
-### Created: May 14th 2019, last updated: May 15th, 2019
+### Created: May 14th 2019, last updated: May 21th, 2020
 
 ### Set up workspace
+
 setwd("C:\\Users\\wilco\\Desktop\\Working groups\\C2E_May2019\\asynchrony\\data\\")
-library(tidyverse)
-library(car)
+setwd("C:\\Users\\kwilcox4\\Dropbox\\Shared working groups\\C2E\\GCD asynchrony\\data\\")
 library(MASS)
+library(car)
+library(tidyverse)
 library(lsmeans)
 
 ### Read in synchrony metrics
-synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset.csv")
+synch_metrics_sub <- read.csv("..\\synchrony metrics with environmental_subset_22Apr2020.csv")
 
 ### Read in difference metrics
-site_info <- read.csv("SiteExperimentDetails_March2019.csv") %>%
-  dplyr::select(-treatment) %>%
-  rename(treatment=treatment2, treatment_year=time) %>%
-  mutate(dispersion_diff = ifelse(trt_greater_disp=="Control", abs_dispersion_diff, -(abs_dispersion_diff) )) %>%
-  group_by(site_code, project_name, community_type, treatment) %>%
-  summarise_at(.vars=vars(composition_diff, richness_diff:species_diff, dispersion_diff), mean, na.rm=T)
+site_info <- read.csv("SiteExperimentDetails_March2019.csv") #%>%
+#   dplyr::select(-treatment) %>%
+#   rename(treatment=treatment2, treatment_year=time) %>%
+#   mutate(dispersion_diff = ifelse(trt_greater_disp=="Control", abs_dispersion_diff, -(abs_dispersion_diff) )) %>%
+#   group_by(site_code, project_name, community_type, treatment) %>%
+#   summarise_at(.vars=vars(composition_diff, richness_diff:species_diff, dispersion_diff), mean, na.rm=T)
 
 synch_RR_site_info <- synch_metrics_sub %>%
   dplyr::select(site_code:community_type, metric_name, lnRR, trt_type2) %>%
