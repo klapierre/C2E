@@ -274,7 +274,7 @@ ggplot(sig_tograph2, aes(x = response_var2, y = value, fill = sig)) +
   scale_x_discrete(limits=c("Richness change", "Species losses", "Species gains", "Rank change", "Evenness", "Any Change"), labels = c("Richness change","Species Losses","Species Gains", "Rank Change","Evenness Change","Any Change" ))+
   labs(x = "Change metric", y = "Proportion of communities") +
   theme(legend.position = "top")+
-  geom_hline(yintercept = 0.5)+
+  #geom_hline(yintercept = 0.5)+
   geom_vline(xintercept = 5.5, linetype="dashed")
 
 ###how does this differ by GCD?
@@ -393,5 +393,5 @@ ggplot(tograph_metrics_trt, aes(x = trt_type3, y = value, fill = sig)) +
   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
-  geom_hline(yintercept=0.50)+
-  facet_wrap(~group, labeller=labeller(group = responses), ncol = 3)
+  #geom_hline(yintercept=0.50)+
+  facet_wrap(~group, labeller=labeller(group = responses), ncol = 2)
