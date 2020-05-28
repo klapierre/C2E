@@ -1,8 +1,10 @@
 #meghan's working directory
-setwd("C:\\Users\\megha\\Dropbox\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\")
 setwd("~/Dropbox/")
 library(tidyverse)
 library(gridExtra)
+
+theme_set(theme_bw(12))
 
 change_metrics <- read.csv("C2E/Products/CommunityChange/March2018 WG/MetricsTrts_March2019.csv") %>%
   mutate(richness_change_abs = abs(richness_change),
@@ -10,6 +12,10 @@ change_metrics <- read.csv("C2E/Products/CommunityChange/March2018 WG/MetricsTrt
   select(-X, -richness_change, -evenness_change, -composition_change, -site_code, -project_name, -community_type, -trt_type, -use, -composition_change, -dispersion_change)
 
 subset_studies<-read.csv("C2E/Products//CommunityChange//March2018 WG//experiment_trt_subset_May2019.csv")
+
+subset_studies2<-subset_studies%>%
+  select(site_project_comm)%>%
+  unique()
 
 #not doing this.
 # sig_com<-read.csv('C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv')%>%
@@ -20,7 +26,13 @@ metrics_sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_metri
   right_join(subset_studies)%>%
   na.omit()
 
-### Control data
+#yes the majority of experiments only see one change.
+check<-metrics_sig%>%
+  group_by(site_project_comm, treatment)%>%
+  summarize(n=length(response_var))
+
+#doing Glass' D and max diff. kEEPING THIS APPROACH
+## Control data
 change_control <- change_metrics %>%
   filter(plot_mani==0) %>%
   select(-treatment, -plot_mani)%>%
@@ -88,14 +100,11 @@ max <- change_glass_d%>%
 #   mutate(rank=rank(max_value, ties.method="average"))%>%
 #   mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
 #   right_join(metrics_sig)
-#   
+#
 # rank_mean<-rank%>%
 #   group_by(response_var)%>%
 #   summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
 #   mutate(se = sdrank/sqrt(n))
-
-
-  
 
 ##dropping what didn't change and then ranking everything - I think this is the way to do it.
 rank_sig<-max%>%
@@ -118,21 +127,64 @@ rank_table<-rank_sig%>%
   summarize(num=length(order))%>%
   mutate(first=substring(order,1,1))%>%
   arrange(first, -num)%>%
-  mutate(ordered=seq(1:54))
+  mutate(ordered=seq(1:52),
+         first1=factor(first, levels=c("E", "R", "G", "L")))#%>% dropping code to order by number of community changes
+  # mutate(numchang=nchar(order))%>%
+  # ungroup() %>%
+  # group_by(numchang)%>%
+  # arrange(-num, .by_group=T)%>%
+  # mutate(ordered2=seq(1:length(num)))
 
-rank_sig_mean<-rank_sig%>%
-  group_by(response_var)%>%
-  summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
-  mutate(se = sdrank/sqrt(n))
+# rank_sig_mean<-rank_sig%>%
+#   group_by(response_var)%>%
+#   summarize(mrank=mean(rank), sdrank=sd(rank), n=length(response_var))%>%
+#   mutate(se = sdrank/sqrt(n))
 
-theme_set(theme_bw(12))
+graph_headings<-rank_table%>%
+  group_by(first1)%>%
+  summarize(tot=sum(num))
+
+parameter<-c(
+  E = "Evenness changes occur first",
+  R = "Rank changes occur first",
+  G = "Gains occur first",
+  L = "Losses occur first"
+)
+
+##plotting by what changes first
 ggplot(data=rank_table, aes(x=reorder(order, ordered), y = num))+
   geom_bar(stat="identity", position = position_dodge(0.9))+
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   xlab("Order of Community Changes")+
-  ylab("Number of Experiments")
+  ylab("Number of Experiments")+
+  facet_wrap(~first1, scales="free_x", labeller=labeller(first1 = parameter))+
+  geom_text(data=graph_headings, mapping=aes(x=Inf, y = Inf, label = tot), hjust=1.5, vjust=1.5)
 
+# #plotting by number of changes
+# ggplot(data=rank_table, aes(x=reorder(order, ordered2), y = num))+
+#   geom_bar(stat="identity", position = position_dodge(0.9))+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+#   xlab("Order of Community Changes")+
+#   ylab("Number of Experiments")+
+#   facet_wrap(~numchang, scales="free_x")
+
+
+#investigate gains and losses
+gainloss<-rank_sig%>%
+  filter(response_var=="gains"|response_var=="losses")%>%
+  group_by(site_project_comm, treatment)%>%
+  arrange(rank, .by_group=T)%>%
+  mutate(metric=ifelse(max_metric=="Gmax","G", ifelse(max_metric=="Lmax","L","X")),
+         rank1=ifelse(rank==1, "a", ifelse(rank==2, "b", ifelse(rank==3, "c","d"))))%>%
+  select(site_project_comm, rank1, metric, treatment)%>%
+  spread(rank1, metric, fill="")%>%
+  mutate(order=paste(a, b, c, d, sep=""))%>%
+  ungroup()%>%
+  group_by(order)%>%
+  summarise(num=length(order))
+  
 
 # ggplot(data=rank_mean, aes(x=response_var, y = mrank))+
 #   geom_bar(stat="identity", position=position_dodge(0.9))+
@@ -140,27 +192,148 @@ ggplot(data=rank_table, aes(x=reorder(order, ordered), y = num))+
 #   scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
 #   ylab("Average Rank")+
 #   xlab("Communtiy Change Metric")
-summary(aov(rank~response_var, data=rank_sig))
-ggplot(data=rank_sig_mean, aes(x=response_var, y = mrank))+
-  geom_bar(stat="identity", position=position_dodge(0.9))+
-  geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
-  scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
-  ylab("Average Rank")+
-  xlab("Communtiy Change Metric")
-
-
+# summary(aov(rank~response_var, data=rank_sig))
+# ggplot(data=rank_sig_mean, aes(x=response_var, y = mrank))+
+#   geom_bar(stat="identity", position=position_dodge(0.9))+
+#   geom_errorbar(aes(ymin=mrank-se, ymax=mrank+se), position=position_dodge(0.9), width=0.2)+
+#   scale_x_discrete(limits=c("evenness_change_abs", "rank_change", "gains", "losses"), labels=c("Evenness","Rank","Gains","Losses"))+
+#   ylab("Average Rank")+
+#   xlab("Communtiy Change Metric")
 
 
 ##THS IS MAKING THE OLD PLOT WITH GLASS'S D
 ##need to only select those that saw sig change.
-ggplot(data = subset(max), aes(x = max_metric, y = max_value))+
-  geom_jitter()+
-  geom_boxplot(alpha=.1) +
-  xlab("Change Metric") +
-  ylab("Treatment Year") +
-  theme(axis.text=element_text(size=12, color="black"), strip.text.x=element_text(size=12)) +
-  scale_x_discrete(limits=c("Smax","Emax","Rmax","Gmax","Lmax"),labels=c("Rich","Even","Rank","Gain","Loss"))+
-  coord_flip()
+# ggplot(data = subset(max), aes(x = max_metric, y = max_value))+
+#   geom_jitter()+
+#   geom_boxplot(alpha=.1) +
+#   xlab("Change Metric") +
+#   ylab("Treatment Year") +
+#   theme(axis.text=element_text(size=12, color="black"), strip.text.x=element_text(size=12)) +
+#   scale_x_discrete(limits=c("Smax","Emax","Rmax","Gmax","Lmax"),labels=c("Rich","Even","Rank","Gain","Loss"))+
+#   coord_flip()
 
+# ###testing for first year sig diff trt-controls. This is the approach we are going to use. What is the first year there is sig diff between treatments and controls.
+# ####NO LONGER DOING THIS. TOO MANY T-TEST AND TOO MANY MISMATCHES BETWEEN TTEST RESULTS AND GAM ANALYSIS.
+# change_test_c<-change_metrics%>%
+#   filter(plot_mani==0)%>%
+#   right_join(subset_studies2)
+# 
+# change_test<-change_metrics%>%
+#   mutate(spc_yr_trt=paste(site_project_comm, treatment_year, treatment, sep="::"))%>%
+#   select(-trt_type2)%>%
+#   right_join(subset_studies)
+# 
+# spc_yr_trt_vec<-unique(change_test$spc_yr_trt)
+# 
+# ttests<-data.frame()
+# 
+# for (i in 1:length(spc_yr_trt_vec)){
+#   subset<-change_test%>%
+#     filter(spc_yr_trt==spc_yr_trt_vec[i])
+#   
+#   spc<-unique(subset$site_project_comm)
+#   yr<-unique(subset$treatment_year)
+#   
+#   control_sub<-change_test_c%>%
+#     filter(site_project_comm==spc,
+#            treatment_year==yr)
+#   
+#   r_change<-t.test(subset$rank_change, control_sub$rank_change)$p.value
+#   e_change<-ifelse(anyNA(subset$evenness_change_abs), NA, t.test(subset$evenness_change, control_sub$evenness_change)$p.value)
+#   gains<-t.test(subset$gains, control_sub$gains)$p.value
+#   losses<-t.test(subset$losses, control_sub$losses)$p.value
+#   
+#   ttest_temp <- data.frame(
+#     site_project_comm = spc,
+#     treatment = unique(subset$treatment),
+#     treatment_year = unique(subset$treatment_year),
+#     even_pval =  e_change,
+#     rank_pval =  r_change,
+#     gain_pval =  gains,
+#     loss_pval = losses)
+#   
+#   ttests<-rbind(ttests, ttest_temp)
+#   
+# }
+# 
+# ttests2<-ttests%>%
+#   mutate(evenness_change_abs=ifelse(even_pval<0.05, 1, 0),
+#          rank_change=ifelse(rank_pval<0.05, 1, 0),
+#          gains=ifelse(rank_pval<0.05, 1, 0),
+#          losses=ifelse(loss_pval<0.05, 1, 0))%>%
+#   select(-even_pval, -rank_pval, -gain_pval, -loss_pval)%>%
+#   gather(response_var, sig, evenness_change_abs:losses)%>%
+# #  filter(sig!=0)%>%
+#   right_join(metrics_sig)
+# 
+# firstyr<-ttests2%>%
+#   filter(sig!=0)%>%
+#   group_by(site_project_comm, treatment, response_var)%>%
+#   summarize(minyr=min(treatment_year))%>%
+#   mutate(rank=rank(minyr, ties.method="random"))
+# 
+# rank_table2<-firstyr%>%
+#   group_by(site_project_comm, treatment)%>%
+#   arrange(rank, .by_group=T)%>%
+#   mutate(metric=ifelse(response_var=="evenness_change_abs","E", ifelse(response_var=="gains","G", ifelse(response_var=="rank_change","R", ifelse(response_var=="losses","L","X")))),
+#          rank1=ifelse(rank==1, "a", ifelse(rank==2, "b", ifelse(rank==3, "c","d"))))%>%
+#   select(site_project_comm, rank1, metric, treatment)%>%
+#   spread(rank1, metric, fill="")%>%
+#   mutate(order=paste(a, b, c, d, sep=""))%>%
+#   ungroup()%>%
+#   group_by(order)%>%
+#   summarize(num=length(order))%>%
+#   mutate(first=substring(order,1,1))%>%
+#   arrange(first, -num)%>%
+#   mutate(ordered=seq(1:33))%>%
+#   mutate(numchang=nchar(order))%>%
+#   ungroup() %>% 
+#   group_by(numchang)%>%
+#   arrange(-num, .by_group=T)%>%
+#   mutate(ordered2=seq(1:length(num)))
+# 
+# 
+# ggplot(data=rank_table2, aes(x=reorder(order, ordered), y = num))+
+#   geom_bar(stat="identity", position = position_dodge(0.9))+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+#   xlab("Order of Community Changes")+
+#   ylab("Number of Experiments")+
+#   facet_wrap(~first, scales="free_x")
+# 
+# ggplot(data=rank_table2, aes(x=reorder(order, ordered2), y = num))+
+#   geom_bar(stat="identity", position = position_dodge(0.9))+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+#   xlab("Order of Community Changes")+
+#   ylab("Number of Experiments")+
+#   facet_wrap(~numchang, scales="free_x")
 
+####redoing this. first by comparing each year to the first year.
+plotinfo<-change_metrics%>%
+  select(site_project_comm, plot_id, treatment, plot_mani)%>%
+  unique()
 
+refyear<-read.csv("C2E/Products/CommunityChange/March2018 WG/CORRE_RAC_Refyear_Metrics_May2020.csv")%>%
+  left_join(plotinfo)
+
+refyear_trt<-refyear%>%
+  right_join(subset_studies)
+
+subset_studies2<-subset_studies%>%
+  select(site_project_comm)%>%
+  unique()
+
+refyear_c<-refyear%>%
+  filter(plot_mani==0)%>%
+  right_join(subset_studies2)
+
+ggplot(data=refyear_trt, aes(x=treatment_year2, y=evenness_change, color=trt_type2, group=treatment))+
+  geom_point()+
+  geom_smooth(method="lm", se=F)+
+  facet_wrap(~site_project_comm, scales = "free")
+
+ggplot(data=refyear_c, aes(x=treatment_year2, y=evenness_change))+
+  geom_point()+
+  geom_smooth(method="lm", se=F)+
+  facet_wrap(~site_project_comm, scales = "free")
