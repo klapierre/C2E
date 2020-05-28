@@ -3,7 +3,7 @@
 ##
 ##  Author: Meghan Avolio (meghan.avolio@gmail.com)
 ##  Date: March 19, 2018
-##  Update: July 29, 2018
+##  Update: may 27, 2020
 ################################################################################
 
 library(tidyverse)
@@ -16,9 +16,9 @@ library(vegan)
 #home
 setwd("~/Dropbox/converge_diverge/datasets/LongForm/")
 #work
-setwd("C:\\Users\\megha\\Dropbox\\converge_diverge\\datasets\\LongForm\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\converge_diverge\\datasets\\LongForm\\")
 
-corredat<-read.csv("SpeciesRelativeAbundance_March2019.csv")
+corredat<-read.csv("SpeciesRelativeAbundance_Nov2019.csv")
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
@@ -142,6 +142,160 @@ for (i in 1:length(spc)){
 }
 
 write.csv(delta_mult, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_Metrics_March2019.csv")
+
+
+##calculating RAC changes with a reference year.
+
+firstyear<-corredat_raw%>%
+  group_by(site_project_comm)%>%
+  summarise(yr1=min(treatment_year))%>%
+  mutate(drop=ifelse(yr1>1, 1, 0))
+
+corredat_refyear<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(drop==0)%>%
+  filter(site_project_comm!="dcgs_gap_0")
+
+spc<-unique(corredat_refyear$site_project_comm)
+delta_rac_refyear<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 1)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear<-rbind(delta_rac_refyear, out)
+}
+
+#first year is yr2
+corredat_refyear2<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==2)
+
+spc<-unique(corredat_refyear2$site_project_comm)
+delta_rac_refyear2<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear2%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 2)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear2<-rbind(delta_rac_refyear2, out)
+}
+
+#first year is yr3
+corredat_refyear3<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==3)
+
+spc<-unique(corredat_refyear3$site_project_comm)
+delta_rac_refyear3<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear3%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 3)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear3<-rbind(delta_rac_refyear3, out)
+}
+#first year is yr4
+corredat_refyear4<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==4)
+
+spc<-unique(corredat_refyear4$site_project_comm)
+delta_rac_refyear4<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear4%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 4)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear4<-rbind(delta_rac_refyear4, out)
+}
+#first year is yr5
+corredat_refyear5<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==5)
+
+spc<-unique(corredat_refyear5$site_project_comm)
+delta_rac_refyear5<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear5%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 5)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear5<-rbind(delta_rac_refyear5, out)
+}
+
+#first year is yr6
+corredat_refyear6<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==6)
+
+spc<-unique(corredat_refyear6$site_project_comm)
+delta_rac_refyear6<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear6%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 6)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear6<-rbind(delta_rac_refyear6, out)
+}
+#first year is yr10
+corredat_refyear10<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==10)
+
+spc<-unique(corredat_refyear10$site_project_comm)
+delta_rac_refyear10<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear10%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 10)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear10<-rbind(delta_rac_refyear10, out)
+}
+#first year is yr11
+corredat_refyear11<-corredat_raw%>%
+  left_join(firstyear)%>%
+  filter(yr1==11)
+
+spc<-unique(corredat_refyear11$site_project_comm)
+delta_rac_refyear11<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_refyear11%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time = 11)
+  out$site_project_comm<-spc[i]
+  
+  delta_rac_refyear11<-rbind(delta_rac_refyear11, out)
+}
+
+delta_rac_refyear_all<-delta_rac_refyear%>%
+  bind_rows(delta_rac_refyear10, delta_rac_refyear11, delta_rac_refyear2, delta_rac_refyear3, delta_rac_refyear4, delta_rac_refyear5, delta_rac_refyear6)
+  
+write.csv(delta_rac_refyear_all, "C:\\Users\\mavolio2\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Refyear_Metrics_May2020.csv", row.names = F)
+
 
 ###figuring out treatments
 # trts<-read.csv("~/Dropbox/C2E/Products/CommunityChange/March2018 WG/treatment interactions_July2018.csv")%>%
