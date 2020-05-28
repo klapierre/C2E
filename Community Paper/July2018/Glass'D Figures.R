@@ -7,7 +7,7 @@ library(gridExtra)
 setwd("C:\\Users\\mavolio2\\Dropbox\\")
 setwd("~/Dropbox/")
 
-theme_set(theme_bw(20))
+theme_set(theme_bw(12))
 
 ### Read in data 
 
@@ -243,7 +243,7 @@ ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   geom_vline(xintercept = 1.5, size = 1)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
-  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
 sig_allb_sig<-allyears_sigonly%>%
   group_by(response_var)%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
@@ -303,7 +303,7 @@ ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_vline(xintercept = 1.5, size = 1)+
   geom_hline(yintercept = 0)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
-  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
 
 ###using all the data with ABSOLUTE VALUE
 sig_alla_overall_abs<-allyears_all%>%
@@ -346,7 +346,7 @@ ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=abs(mglassd), fill=trt_type2)
   geom_vline(xintercept = 1.5, size = 1)+
   geom_hline(yintercept = 0)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
-  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
+  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
 
 
 # WE DECIDED TO USE ALL THE DATA SINCE THERE WERE NO BIG DIFFERENCES AMONG THE DIFFERNT YEAR SUBSETS. 
