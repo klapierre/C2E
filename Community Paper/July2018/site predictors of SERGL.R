@@ -18,7 +18,7 @@ library(car)
 library(gridExtra)
 
 
-theme_set(theme_bw(20))
+theme_set(theme_bw(12))
 theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
 ### stealing Kevin's code for creating Glass's delta to compare T vs C at each timestep
@@ -77,8 +77,10 @@ change_glass_d <- change_glass_d %>%
   right_join(subset)
   
 # read in site level predictor variables
-info.spc=read.csv("SiteExperimentDetails_Dec2016.csv") %>%
-  mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
+info.spc=read.csv("ForAnalysis_allAnalysisAllDatasets_04082019.csv") %>%
+  mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))%>%
+  select(site_project_comm, rrich, anpp, MAT, MAP)%>%
+  unique()
 
 # read in treatment variables for subsetting later
 info.trt=info.trt<-read.csv("C:\\Users\\mavolio2\\Dropbox\\converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
@@ -373,30 +375,39 @@ fulldataset$studies="All manipulations"
 # forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
 # forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
 
-rsqvalues<-data.frame(response=c("Richness change", "Rank change", "Evenness change", "Species gains", "Species losses"), 
-                      rsq = c(0.03,0.03,0.06,0.11,0.06),
-                      pval = c("n.s.", "n.s.","*",  "**","*"),
-                      combinded=c("0.03 n.s.","0.03 n.s.","0.06*","0.11**","0.06*"))
+rsqvalues<-data.frame(response=c("rich", "rank", "even", "gains", "losses"), 
+                      rsq = c(0.01,0.03,0.03,0.11,0.04),
+                      pval = c("n.s.", "*","*",  "**","*"),
+                      combinded=c("0.01 n.s.","0.03*","0.03*","0.11**","0.04*"))%>%
+  mutate(response2=factor(response, levels=c("rich", "even", "rank", "gains", "losses")))
 
-forbigfig=fulldataset
-forbigfig$response2<-factor(forbigfig$response, levels = c("rich", "rank", "even", "gains", "losses"))
-levels(forbigfig$response2)=c("Richness change", "Rank change", "Evenness change", "Species gains", "Species losses")
-levels(forbigfig$predictor)=c("(Intercept)", "ANPP", "MAP", "MAT", "Regional SR")
-forbigfig$significant=as.factor(1*(forbigfig$pval<0.05))
-forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.02, forbigfig$slope-0.02)
+forbigfig<-fulldataset%>%
+  mutate(response2=factor(response, levels = c("rich", "even", "rank", "gains", "losses")),
+         predictor2=ifelse(predictor=="sanpp", "ANPP", ifelse(predictor=="sMAP", "MAP", ifelse(predictor=="sMAT", "MAT", ifelse(predictor=="srrich", "Regional SR", "(Intercept)")))), 
+         significant=as.factor(1*(pval<0.05)), 
+         star.location=ifelse(slope>0, slope+0.02, slope-0.02))
+
+parameter<-c(
+  rich = "Richness change",
+  even = "Evenness change",
+  rank = "Rank change",
+  gains = "Species gains",
+  losses = "Species losses"
+)
+
+
 mr<-
-ggplot(aes(predictor, slope, fill=rsq), data=forbigfig[!forbigfig$predictor=="(Intercept)",]) + 
+ggplot(data=subset(forbigfig, predictor2!="(Intercept)"), aes(x=predictor2, y=slope, fill=rsq)) + 
   geom_col() + 
-  geom_point(aes(predictor, star.location, shape=significant)) + 
-  facet_wrap(~response2, ncol = 5) + 
+  geom_point(aes(predictor2, star.location, shape=significant)) + 
+  facet_wrap(~response2, ncol = 5, labeller=labeller(response2 = parameter)) + 
   theme(axis.text.x=element_text(angle = 90, vjust = 0.4, hjust=1)) + 
   xlab("Ecosystem Property") + 
   ylab("Slope from standardized\nmultiple regression") +
-  guides(fill = guide_colorbar(title = "Partial R2")) + 
+  guides(fill = guide_colorbar(title = expression(paste("Partial R"^2)))) + 
   scale_shape_manual(values=c(NA, 8), guide=FALSE)+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  geom_text(data=rsqvalues, aes(x=4.1, y = 0.25, label = combinded), hjust=1.05, vjust=1.5)#+
-  #ggtitle("A)")
+  geom_text(data=rsqvalues, aes(x=0.5, y = 0.22, label = combinded), hjust=0, vjust=1.5)
 
 
 #ggsave("Summer2018_Results/site predictors of SERGL/site predictors of SERGL.pdf", width=7, height=9.5)
@@ -446,7 +457,7 @@ rvalues <- tograph_cor %>%
             p.value = (cor.test(vari_value, value)$p.value))%>%
   mutate(sig=ifelse(p.value<0.05, 1, 0))
 
-parameter<-c(
+parameter2<-c(
   sanpp = "Site ANPP",
   sMAP = "MAP",
   sMAT = "MAT",
@@ -454,27 +465,27 @@ parameter<-c(
 )
 
 vari<-c(
-  abs_richness_glass = "Richness Change",
-  abs_evenness_glass = 'Eveness Change',
-  rank_glass = 'Rank Change',
-  gains_glass = 'Species Gains',
-  losses_glass = 'Species Losses'
+  abs_richness_glass = "Richness change",
+  abs_evenness_glass = 'Evenness change',
+  rank_glass = 'Rank change',
+  gains_glass = 'Species gains',
+  losses_glass = 'Species losses'
 )
 
 cor<-
 ggplot(data=tograph_cor, aes(x = value, y = vari_value))+
   geom_point()+
-  facet_grid(row = vars(vari_group), cols = vars(parm_group), scales="free", labeller=labeller(vari_group = vari, parm_group = parameter))+
+  facet_grid(row = vars(vari_group), cols = vars(parm_group), scales="free", labeller=labeller(vari_group = vari, parm_group = parameter2))+
   xlab("Standardized Value")+
   ylab("Glass's D")+
-  geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="sMAP"), method="lm", se=F, color = "black")+
+  #geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="sMAP"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
+  geom_smooth(data=subset(tograph_cor, vari_group=="rank_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="gains_glass"&parm_group=="sMAP"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="gains_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sMAT"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sanpp"), method="lm", se=F, color = "black")+
-  geom_text(data=rvalues, mapping=aes(x=Inf, y = Inf, label = r.value), hjust=1.05, vjust=1.5)+
-  ggtitle("B)")
+  geom_text(data=rvalues, mapping=aes(x=Inf, y =Inf, label = r.value), hjust=1.05, vjust=1.5)
 
 grid.arrange(mr, cor, ncol=1, heights=c(1.8,4))
 
