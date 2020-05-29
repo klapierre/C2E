@@ -305,6 +305,12 @@ ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
 
+##how often are rank changes greater/lesser than contorls
+nrow(subset(glassD_alldata_box, response_var2=="rank_change"&mglassd>0))
+nrow(subset(glassD_alldata_box, response_var2=="rank_change"&mglassd<0))
+##how oftern are gains greater/less than contorls
+nrow(subset(glassD_alldata_box, response_var2=="gains"&mglassd>0))
+nrow(subset(glassD_alldata_box, response_var2=="gains"&mglassd<0))
 ###using all the data with ABSOLUTE VALUE
 sig_alla_overall_abs<-allyears_all%>%
   group_by(response_var)%>%
