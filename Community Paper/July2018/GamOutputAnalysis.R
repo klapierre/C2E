@@ -9,7 +9,7 @@
 
 library(tidyverse)
 library(gridExtra)
-theme_set(theme_bw(30))
+theme_set(theme_bw(12))
 
 #work
 setwd("C:\\Users\\mavolio2\\Dropbox\\")
@@ -79,12 +79,7 @@ sum_trts2<-gam_touse%>%
   group_by(trt_type2)%>%
   summarize(n=length(trt_type2))
 
-
-
-
 #write.csv(gam_trt, "C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_May2019.csv", row.names=F)
-
-
 
 # write.csv(trt_summary, "treatment_summary.csv")
 
@@ -134,26 +129,26 @@ sum_trts2<-gam_touse%>%
 #   annotate(geom="text", x = 5, y = 0.05, label="n = 11", size=3)
 # 
 # 
-#second, of those that saw change, what aspect of the community changes
-comchange_sig<-gam_touse%>%
-  filter(response_var == "composition_change" & sig_diff_cntrl_trt == "yes")%>%
-  select(site_project_comm, treatment)%>%
-  mutate(keep = "yes")
-#
-# write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
-
-
-#second, of those that saw change, what aspect of the community changes
-comchange_sig_metrics<-gam_touse%>%
-  filter(response_var != "composition_change" & sig_diff_cntrl_trt == "yes")%>%
-  select(site_project_comm, treatment, response_var)%>%
-  mutate(keep = "yes")
-
-overlap<-comchange_sig_metrics%>%
-  select(-keep)%>%
-  left_join(comchange_sig)
-
-write.csv(comchange_sig_metrics, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_may2019.csv', row.names = F )
+# #second, of those that saw change, what aspect of the community changes
+# comchange_sig<-gam_touse%>%
+#   filter(response_var == "composition_change" & sig_diff_cntrl_trt == "yes")%>%
+#   select(site_project_comm, treatment)%>%
+#   mutate(keep = "yes")
+# #
+# # write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
+# 
+# 
+# #second, of those that saw change, what aspect of the community changes
+# comchange_sig_metrics<-gam_touse%>%
+#   filter(response_var != "composition_change" & sig_diff_cntrl_trt == "yes")%>%
+#   select(site_project_comm, treatment, response_var)%>%
+#   mutate(keep = "yes")
+# 
+# overlap<-comchange_sig_metrics%>%
+#   select(-keep)%>%
+#   left_join(comchange_sig)
+# 
+# write.csv(comchange_sig_metrics, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_may2019.csv', row.names = F )
 # 
 # sig_only<-gam%>%
 #   right_join(comchange_sig)%>%
