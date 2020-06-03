@@ -11,15 +11,16 @@ theme_set(theme_bw(12))
 
 ### Read in data 
 
-sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table_last_year.csv")%>%
-  select(site_proj_comm, treatment, response_var, sig_diff_cntrl_trt)
+# sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table_last_year.csv")%>%
+#   select(site_proj_comm, treatment, response_var, sig_diff_cntrl_trt)
 
 
 change_metrics <- read.csv("C2E/Products/CommunityChange/March2018 WG/MetricsTrts_March2019.csv") %>%
   mutate(abs_richness_change = abs(richness_change),
          abs_evenness_change = abs(evenness_change))
 
-subset<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_may2019.csv")
+subset<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_may2019.csv")%>%
+  select(-trt_type2)
 
 ### Control data
 change_control <- change_metrics %>%
@@ -64,7 +65,7 @@ change_glass_d <- change_glass_d %>%
 
 # read in treatment variables for subsetting later
 info.trt<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
-  select(site_code, project_name, community_type, treatment,plot_mani, trt_type)%>%
+  select(site_code, project_name, community_type, treatment,plot_mani, resource_mani, trt_type)%>%
   unique()%>%
   filter(plot_mani!=0)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep="_"))%>%
@@ -93,6 +94,14 @@ info.trt<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformation_Mar
                    ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
                    ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))
 
+
+info.trt2<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\ForAnalysis_allAnalysisAllDatasets_04082019.csv") %>%
+  mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))%>%
+  select(site_project_comm, treatment, trt_type)%>%
+  unique()%>%
+  mutate(trt_type3=ifelse(trt_type=="drought"|trt_type=="irr"|trt_type=="N"|trt_type=="precip_vari"|trt_type=="P"|trt_type=="CO2"|trt_type=="other_resource", "R", ifelse(trt_type=="mow_clip"|trt_type=="temp"|trt_type=="plant_mani"|trt_type=="other_nonresource"|trt_type=="herb_removal"|trt_type=="NxN", "NonR", ifelse(trt_type=="RxR"|trt_type=="RxRxR", "Mult R", ifelse(trt_type=="threeway"|trt_type=="RxN", "R+NonR", "oops")))))%>%
+  select(-trt_type)
+
 ### calculate mean change through time and combine with predictor variables
 GlassD<-change_glass_d%>%
   select(-plot_mani)%>%
@@ -103,24 +112,36 @@ GlassD<-change_glass_d%>%
          gains=gains_glass,
          losses=losses_glass)%>%
   gather(response_var, glassd, richness_change_abs:losses)%>%
-  left_join(sig)%>%
   left_join(info.trt)%>%
-  select(-site_proj_comm, -site_code, -project_name, -community_type, -trt_type,)
+  left_join(info.trt2)%>%
+  ungroup()
+
+#how many replictes of trt type 3
+reps<-GlassD%>%
+  ungroup()%>%
+  select(site_project_comm, treatment, trt_type3)%>%
+  unique()%>%
+  group_by(trt_type3)%>%
+  summarize(n=length(trt_type3))
 
 ###doing with all years
 allyears_all <- GlassD %>%
   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
 
-allyears_sigonly <- GlassD %>%
-  filter(sig_diff_cntrl_trt=="yes")%>%
-  group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
+allyears_all_trt3 <- GlassD %>%
+  group_by(site_project_comm, treatment, response_var, trt_type3) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
 
-allyears_sigonly_direction<-allyears_sigonly%>%
-  mutate(sign = ifelse(mglassd>0, 1, 0))%>%
-  group_by(response_var, sign)%>%
-  summarise(n=length(sign))
+# allyears_sigonly <- GlassD %>%
+#   filter(sig_diff_cntrl_trt=="yes")%>%
+#   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
+#   summarise(mglassd=mean(glassd, na.rm=T))
+# 
+# allyears_sigonly_direction<-allyears_sigonly%>%
+#   mutate(sign = ifelse(mglassd>0, 1, 0))%>%
+#   group_by(response_var, sign)%>%
+#   summarise(n=length(sign))
 
 ###graphing this ALL YEARS A - all data, B - sig only
 
@@ -137,118 +158,124 @@ sig_alla_trts<-allyears_all%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
   mutate(sig=ifelse(pval<0.05, 1, 0))
 
+sig_alla_trts3<-allyears_all_trt3%>%
+  group_by(response_var, trt_type3)%>%
+  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))%>%
+  rename(trt_type2=trt_type3)
+
 sig_alla<-sig_alla_overall%>%
-  bind_rows(sig_alla_trts)
+  bind_rows(sig_alla_trts, sig_alla_trts3)
 
-glassD_trta<-allyears_all%>%
-  group_by(response_var, trt_type2)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
-            num=length(mglassd))%>%
-  mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
+# glassD_trta<-allyears_all%>%
+#   group_by(response_var, trt_type2)%>%
+#   summarize(mean=mean(mglassd),
+#             sd=sd(mglassd),
+#             num=length(mglassd))%>%
+#   mutate(se=sd/sqrt(num))%>%
+#   filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
+# 
+# glassD_alla<-allyears_all%>%
+#   ungroup()%>%
+#   group_by(response_var)%>%
+#   summarize(mean=mean(mglassd),
+#             sd=sd(mglassd),
+#             num=length(mglassd))%>%
+#   mutate(se=sd/sqrt(num))%>%
+#   mutate(trt_type2="All GCDs")
+# 
+# glassD_alldata<-glassD_alla%>%
+#   bind_rows(glassD_trta)%>%
+#   left_join(sig_alla)%>%
+#   mutate(location=ifelse(sig==1, mean+0.3,NA))%>%
+#   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
+# 
+# response_label<-c(
+#   evenness_change_abs="Evenness Change",
+#   rank_change="Rank Change",
+#   gains = "Species Gains",
+#   losses="Species Losses", 
+#   richness_change_abs="Richness Change")
+# 
+# ggplot(data=glassD_alldata, aes(x=trt_type2, y=mean, fill=trt_type2))+
+#   geom_bar(position=position_dodge(), stat="identity")+
+#   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
+#   ylab("Glass's D")+
+#   xlab("")+
+#   scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+#   scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+#   geom_point(aes(trt_type2, location), shape=8, size=3)+
+#   geom_vline(xintercept = 1.5, size = 1)+
+#   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
 
-glassD_alla<-allyears_all%>%
-  ungroup()%>%
-  group_by(response_var)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
-            num=length(mglassd))%>%
-  mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All GCDs")
-
-glassD_alldata<-glassD_alla%>%
-  bind_rows(glassD_trta)%>%
-  left_join(sig_alla)%>%
-  mutate(location=ifelse(sig==1, mean+0.3,NA))%>%
-  mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
-
-response_label<-c(
-  evenness_change_abs="Evenness Change",
-  rank_change="Rank Change",
-  gains = "Species Gains",
-  losses="Species Losses", 
-  richness_change_abs="Richness Change")
-
-ggplot(data=glassD_alldata, aes(x=trt_type2, y=mean, fill=trt_type2))+
-  geom_bar(position=position_dodge(), stat="identity")+
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
-  ylab("Glass's D")+
-  xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
-  geom_point(aes(trt_type2, location), shape=8, size=3)+
-  geom_vline(xintercept = 1.5, size = 1)+
-  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
-
-##B
-
-sig_allb_sig<-allyears_sigonly%>%
-  group_by(response_var)%>%
-  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0),
-         trt_type2="All GCDs")
-
-sig_allb_sig_trts<-allyears_sigonly%>%
-  filter(use==1)%>%
-  group_by(response_var, trt_type2)%>%
-  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0))
-
-sig_allb<-sig_allb_sig%>%
-  bind_rows(sig_allb_sig_trts)
-
-
-glassD_trtb<-allyears_sigonly%>%
-  group_by(response_var, trt_type2)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
-            num=length(mglassd))%>%
-  mutate(se=sd/sqrt(num))%>%
-  filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
-
-glassD_allb<-allyears_sigonly%>%
-  ungroup()%>%
-  group_by(response_var)%>%
-  summarize(mean=mean(mglassd),
-            sd=sd(mglassd),
-            num=length(mglassd))%>%
-  mutate(se=sd/sqrt(num))%>%
-  mutate(trt_type2="All GCDs")
-
-glassD_alldatb<-glassD_allb%>%
-  bind_rows(glassD_trtb)%>%
-  left_join(sig_allb)%>%
-  mutate(location=ifelse(sig==1, mean+0.3,NA))%>%
-  mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
-
-response_label<-c(
-  evenness_change_abs="Evenness Change",
-  rank_change="Rank Change",
-  gains = "Species Gains",
-  losses="Species Losses", 
-  richness_change_abs="Richness Change")
-
-
-ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
-  geom_bar(position=position_dodge(), stat="identity")+
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
-  ylab("Glass's D")+
-  xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
-  geom_vline(xintercept = 1.5, size = 1)+
-  geom_point(aes(trt_type2, location), shape=8, size=3)+
-  facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
-sig_allb_sig<-allyears_sigonly%>%
-  group_by(response_var)%>%
-  summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0),
-         trt_type2="All GCDs")
+# ##B
+# 
+# sig_allb_sig<-allyears_sigonly%>%
+#   group_by(response_var)%>%
+#   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+#   mutate(sig=ifelse(pval<0.05, 1, 0),
+#          trt_type2="All GCDs")
+# 
+# sig_allb_sig_trts<-allyears_sigonly%>%
+#   filter(use==1)%>%
+#   group_by(response_var, trt_type2)%>%
+#   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+#   mutate(sig=ifelse(pval<0.05, 1, 0))
+# 
+# sig_allb<-sig_allb_sig%>%
+#   bind_rows(sig_allb_sig_trts)
+# 
+# 
+# glassD_trtb<-allyears_sigonly%>%
+#   group_by(response_var, trt_type2)%>%
+#   summarize(mean=mean(mglassd),
+#             sd=sd(mglassd),
+#             num=length(mglassd))%>%
+#   mutate(se=sd/sqrt(num))%>%
+#   filter(trt_type2=="N"|trt_type2=="Mult. Nuts."|trt_type2=="Irrigation"|trt_type2=="CO2"|trt_type2=="P"|trt_type2=="Temperature")
+# 
+# glassD_allb<-allyears_sigonly%>%
+#   ungroup()%>%
+#   group_by(response_var)%>%
+#   summarize(mean=mean(mglassd),
+#             sd=sd(mglassd),
+#             num=length(mglassd))%>%
+#   mutate(se=sd/sqrt(num))%>%
+#   mutate(trt_type2="All GCDs")
+# 
+# glassD_alldatb<-glassD_allb%>%
+#   bind_rows(glassD_trtb)%>%
+#   left_join(sig_allb)%>%
+#   mutate(location=ifelse(sig==1, mean+0.3,NA))%>%
+#   mutate(response_var2=factor(response_var, level=c("richness_change_abs","evenness_change_abs","rank_change",'gains','losses')))
+# 
+# response_label<-c(
+#   evenness_change_abs="Evenness Change",
+#   rank_change="Rank Change",
+#   gains = "Species Gains",
+#   losses="Species Losses", 
+#   richness_change_abs="Richness Change")
+# 
+# 
+# ggplot(data=glassD_alldatb, aes(x=trt_type2, y=mean, fill=trt_type2))+
+#   geom_bar(position=position_dodge(), stat="identity")+
+#   geom_errorbar(aes(ymin=mean-se, ymax=mean+se),position= position_dodge(0.9), width=0.2)+
+#   ylab("Glass's D")+
+#   xlab("")+
+#   scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Temperature","N","P","Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation", "Temp","Nitrogen","Phosphorus","Mult Nuts"))+
+#   scale_fill_manual(values=c("black","green3",'blue','darkorange','orange','gold3','red'))+
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+#   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+#   geom_vline(xintercept = 1.5, size = 1)+
+#   geom_point(aes(trt_type2, location), shape=8, size=3)+
+#   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
+# sig_allb_sig<-allyears_sigonly%>%
+#   group_by(response_var)%>%
+#   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
+#   mutate(sig=ifelse(pval<0.05, 1, 0),
+#          trt_type2="All GCDs")
 
 ###doing as a boxplot NOW using all the data
 
@@ -279,28 +306,40 @@ sig_allb_sig<-allyears_sigonly%>%
 #   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=1, scales="free_y")
 
 ###using all the data
-glassD_trta_box<-allyears_all%>% 
+glassD_trt<-allyears_all%>% 
   filter(use==1)
 
-glassD_alla_box<-allyears_all%>%
+glassD_allGCD<-allyears_all%>%
   ungroup()%>%
   mutate(trt_type2="All GCDs")
 
-glassD_alldata_box<-glassD_alla_box%>%
-  bind_rows(glassD_trta_box)%>%
+glassD_allRNonR<-allyears_all_trt3%>%
+  ungroup()%>%
+  rename(trt_type2=trt_type3)
+
+glassD_alldata<-glassD_allGCD%>%
+  bind_rows(glassD_trt,glassD_allRNonR)%>%
   left_join(sig_alla)%>%
   mutate(location=ifelse(sig==1&response_var=="richness_change_abs",3.5,ifelse(sig==1&response_var=="evenness_change_abs", 6.5, ifelse(sig==1&response_var=="rank_change", 3, ifelse(sig==1&response_var=="losses", 2.5, ifelse(sig==1&response_var=="gains", 2.5, NA))))))%>%
   mutate(response_var2=factor(response_var, level=c("evenness_change_abs","rank_change",'gains','losses',"richness_change_abs")))
 
-ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
+response_label<-c(
+    evenness_change_abs="Evenness Change",
+    rank_change="Rank Change",
+    gains = "Species Gains",
+    losses="Species Losses",
+    richness_change_abs="Richness Change")
+
+ggplot(data=glassD_alldata, aes(x=trt_type2, y=mglassd, fill=trt_type2))+
   geom_boxplot()+
   ylab("Glass's D")+
   xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+  scale_x_discrete(limits=c("All GCDs","NonR", 'R', "Mult R", "R+NonR", "CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "Non-Res.","Single Res.", "Multiple Res.", "Res.+Non-Res.",   "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
+  scale_fill_manual(values=c("black", "green3",'blue',"snow4",'darkorange', 'orange',  "gray", 'gold3','lightblue',"lightgray","darkgray", "red"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
-  geom_vline(xintercept = 1.5, size = 1)+
+  geom_vline(xintercept = 5.5, size = 0.5)+
+  geom_vline(xintercept = 1.5, size = 0.5)+
   geom_hline(yintercept = 0)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
@@ -311,6 +350,8 @@ nrow(subset(glassD_alldata_box, response_var2=="rank_change"&mglassd<0))
 ##how oftern are gains greater/less than contorls
 nrow(subset(glassD_alldata_box, response_var2=="gains"&mglassd>0))
 nrow(subset(glassD_alldata_box, response_var2=="gains"&mglassd<0))
+
+
 ###using all the data with ABSOLUTE VALUE
 sig_alla_overall_abs<-allyears_all%>%
   group_by(response_var)%>%
