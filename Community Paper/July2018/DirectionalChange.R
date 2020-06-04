@@ -382,6 +382,9 @@ test_trt<-test.lm2%>%
   left_join(treatment_info)%>%
   filter(use==1)
 
+test_trt3<-test.lm2%>%
+  left_join(info.trt2)
+
 
 alldir<-data.frame(trt_type2=c('All Trts.', 'All Trts.'), n=c(219,219), value=c('prop_sig', 'pnotsig'), sig=c(0.324, 0.676))
 
@@ -406,29 +409,46 @@ chisq<-test_trt%>%
 prop.test(x=as.matrix(chisq[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
 #p = 0.0002
 
-tograph<-prop_sig_trt%>%
-  bind_rows(alldir)
+prop_sig_trt3<-test_trt3%>%
+  group_by(trt_type3)%>%
+  summarise(sum=sum(dsig), n=length(dsig))%>%
+  mutate(prop_sig=sum/n)%>%
+  mutate(pnotsig=1-prop_sig)%>%
+  select(-sum)%>%
+  gather(value, sig, prop_sig:pnotsig)
 
-ggplot(tograph, aes(x = trt_type2, y = sig, fill = value)) +
-  geom_col(width = 0.7) +
-  coord_flip() +
-  theme_minimal()+
-  scale_fill_brewer(name = "", labels = c("Not significant", "Significant")) +
-  scale_x_discrete(limits=c("Temperature",'Precip. Vari.', 'P', 'N','Mult. Nuts.', 'Irrigation','CO2',  'All Trts.'))+
-  labs(x = "Treatment", y = "Proportion of communities") +
-  theme(legend.position = "top")+
-  geom_hline(yintercept = 0.5)+
-  geom_vline(xintercept = 7.5, linetype="dashed")#+
-  # geom_text(x=1, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
-  # geom_text(x=2, y = 0.06, label="n = 14", size=4,check_overlap = TRUE)+
-  # geom_text(x=3, y = 0.06, label="n = 52", size=4,check_overlap = TRUE)+
-  # geom_text(x=4, y = 0.06, label="n = 34", size=4,check_overlap = TRUE)+
-  # geom_text(x=5, y = 0.05, label="n = 9", size=4,check_overlap = TRUE)+
-  # geom_text(x=6, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
-  # geom_text(x=7, y = 0.07, label="n = 218", size=4,check_overlap = TRUE)
+chisq2<-test_trt3%>%
+  mutate(sign=ifelse(dsig==0, "num_nonsig", "num_sig"))%>%
+  group_by(trt_type3, sign)%>%
+  summarise(sum=length(dsig))%>%
+  spread(sign, sum, fill=0)
 
+prop.test(x=as.matrix(chisq2[,c('num_sig', 'num_nonsig')]), alternative='two.sided')
+#p <0.001
 
-#Merge with exeriment info
-#Using rate_change_interval - recalculate slopes and get slope and p-value (0.5)
-#How often are we seeing directional change? OFTEN Does it differe treatment vs control? (plotmani=0) NO
-#Does it different by trt type YES. Higher for N + P or N+PK over N, CO2 and P.
+# tograph<-prop_sig_trt%>%
+#   bind_rows(alldir)
+# 
+# ggplot(tograph, aes(x = trt_type2, y = sig, fill = value)) +
+#   geom_col(width = 0.7) +
+#   coord_flip() +
+#   theme_minimal()+
+#   scale_fill_brewer(name = "", labels = c("Not significant", "Significant")) +
+#   scale_x_discrete(limits=c("Temperature",'Precip. Vari.', 'P', 'N','Mult. Nuts.', 'Irrigation','CO2',  'All Trts.'))+
+#   labs(x = "Treatment", y = "Proportion of communities") +
+#   theme(legend.position = "top")+
+#   geom_hline(yintercept = 0.5)+
+#   geom_vline(xintercept = 7.5, linetype="dashed")#+
+#   # geom_text(x=1, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
+#   # geom_text(x=2, y = 0.06, label="n = 14", size=4,check_overlap = TRUE)+
+#   # geom_text(x=3, y = 0.06, label="n = 52", size=4,check_overlap = TRUE)+
+#   # geom_text(x=4, y = 0.06, label="n = 34", size=4,check_overlap = TRUE)+
+#   # geom_text(x=5, y = 0.05, label="n = 9", size=4,check_overlap = TRUE)+
+#   # geom_text(x=6, y = 0.05, label="n = 7", size=4,check_overlap = TRUE)+
+#   # geom_text(x=7, y = 0.07, label="n = 218", size=4,check_overlap = TRUE)
+# 
+# 
+# #Merge with exeriment info
+# #Using rate_change_interval - recalculate slopes and get slope and p-value (0.5)
+# #How often are we seeing directional change? OFTEN Does it differe treatment vs control? (plotmani=0) NO
+# #Does it different by trt type YES. Higher for N + P or N+PK over N, CO2 and P.
