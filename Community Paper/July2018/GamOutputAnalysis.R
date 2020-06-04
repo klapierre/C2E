@@ -464,7 +464,8 @@ responses<-c(
 ggplot(tograph_metrics_trt, aes(x = trt_type3, y = value, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
-  theme_minimal() +
+  theme_minimal() + 
+  scale_x_discrete(labels=c("Mult. Nuts.", "Phosphorus","Nitrogen","Temperature" , "Precip. Vari.","Irrigation","CO2", "Res.+Non-Res.","Multiple Res.","Single Res.","Non-Res." , "All GCDs"))+
   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
