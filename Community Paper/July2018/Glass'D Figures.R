@@ -365,8 +365,14 @@ sig_alla_trts_abs<-allyears_all%>%
   summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
   mutate(sig=ifelse(pval<0.05, 1, 0))
 
+sig_alla_trts3_abs<-allyears_all_trt3%>%
+  group_by(response_var, trt_type3)%>%
+  summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
+  mutate(sig=ifelse(pval<0.05, 1, 0))%>%
+  rename(trt_type2=trt_type3)
+
 sig_alla_abs<-sig_alla_overall_abs%>%
-  bind_rows(sig_alla_trts_abs)
+  bind_rows(sig_alla_trts_abs, sig_alla_trts3_abs)
 
 glassD_trta_box<-allyears_all%>% 
   filter(use==1)
@@ -375,22 +381,34 @@ glassD_alla_box<-allyears_all%>%
   ungroup()%>%
   mutate(trt_type2="All GCDs")
 
+glassD_allRNonR<-allyears_all_trt3%>%
+  ungroup()%>%
+  rename(trt_type2=trt_type3)
 
 glassD_alldata_box<-glassD_alla_box%>%
-  bind_rows(glassD_trta_box)%>%
+  bind_rows(glassD_trta_box,glassD_allRNonR)%>%
   left_join(sig_alla_abs)%>%
   mutate(location=ifelse(sig==1, -0.25, NA))%>%
   mutate(response_var2=factor(response_var, level=c("evenness_change_abs","rank_change",'gains','losses', "richness_change_abs")))
 
+
+response_label<-c(
+  evenness_change_abs="Evenness Change",
+  rank_change="Rank Change",
+  gains = "Species Gains",
+  losses="Species Losses",
+  richness_change_abs="Richness Change")
+
 ggplot(data=glassD_alldata_box, aes(x=trt_type2, y=abs(mglassd), fill=trt_type2))+
   geom_boxplot()+
-  ylab("Glass's D")+
+  ylab("|Glass's D|")+
   xlab("")+
-  scale_x_discrete(limits=c("All GCDs","CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
-  scale_fill_manual(values=c("black","green3",'blue','darkorange','orange', 'gold3','lightblue','red'))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+  scale_x_discrete(limits=c("All GCDs","NonR", 'R', "Mult R", "R+NonR", "CO2","Irrigation","Precip. Vari." ,"Temperature","N","P", "Mult. Nuts."), labels=c("All GCDs", "Non-Res.","Single Res.", "Multiple Res.", "Res.+Non-Res.",   "CO2","Irrigation","Precip. Vari.", "Temp","Nitrogen","Phosphorus", "Mult. Nuts."))+
+  scale_fill_manual(values=c("black", "green3",'blue',"snow4",'darkorange', 'orange',  "gray", 'gold3','lightblue',"lightgray","darkgray", "red"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
-  geom_vline(xintercept = 1.5, size = 1)+
+  geom_vline(xintercept = 5.5, size = 0.5)+
+  geom_vline(xintercept = 1.5, size = 0.5)+
   geom_hline(yintercept = 0)+
   geom_point(aes(trt_type2, location), shape=8, size=3)+
   facet_wrap(~response_var2, labeller=labeller(response_var2=response_label), ncol=2, scales="free_y")
