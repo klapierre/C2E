@@ -12,7 +12,7 @@ library(vegan)
 #home
 setwd("~/Dropbox/")
 #Meghan Work
-setwd("C:\\Users\\megha\\Dropbox")
+setwd("C:\\Users\\mavolio2\\Dropbox")
 
 #to subset only the treatments I want
 subset_studies<-read.csv("C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_May2019.csv")
@@ -97,6 +97,13 @@ treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformati
 corredat <- corredat_raw %>%
   # left_join(treatment_info, by=c( "site_code","project_name","community_type", "treatment","site_project_comm"))%>%
               mutate(site_project_comm_trt=paste(site_project_comm, treatment, sep="::"))
+
+info.trt2<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\ForAnalysis_allAnalysisAllDatasets_04082019.csv") %>%
+  mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))%>%
+  select(site_project_comm, treatment, trt_type)%>%
+  unique()%>%
+  mutate(trt_type3=ifelse(trt_type=="drought"|trt_type=="irr"|trt_type=="N"|trt_type=="precip_vari"|trt_type=="P"|trt_type=="CO2"|trt_type=="other_resource", "Res.", ifelse(trt_type=="mow_clip"|trt_type=="temp"|trt_type=="plant_mani"|trt_type=="other_nonresource"|trt_type=="herb_removal"|trt_type=="NxN", "Non-Res.", ifelse(trt_type=="RxR"|trt_type=="RxRxR", "Mult. Res.", ifelse(trt_type=="threeway"|trt_type=="RxN", "Res.+Non-Res.", "oops")))))%>%
+  select(-trt_type)
 
 numyears<- corredat%>%
   select(site_project_comm, treatment_year)%>%
@@ -300,18 +307,30 @@ diffslope_trt<-diffslopes2%>%
   mutate(resp=ifelse(dsig==0, "c", ifelse(dsig==1&c_est>est, "b", ifelse(dsig==1&c_est<est, "a", 999))))%>%
   group_by(trt_type2, resp)%>%
   summarize(num=length(resp))%>%
-  mutate(pct = ifelse(trt_type2=="CO2", num/7, ifelse(trt_type2=="Irrigation",num/12, ifelse(trt_type2=="Precip. Vari.", num/8, ifelse(trt_type2=="Temperature", num/7, ifelse(trt_type2=="N" , num/31, ifelse(trt_type2=="P", num/9, ifelse(trt_type2=="Mult. Nuts.", num/51,999))))))))%>%
-  bind_rows(tally_all)
+  mutate(pct = ifelse(trt_type2=="CO2", num/7, ifelse(trt_type2=="Irrigation",num/12, ifelse(trt_type2=="Precip. Vari.", num/8, ifelse(trt_type2=="Temperature", num/7, ifelse(trt_type2=="N" , num/31, ifelse(trt_type2=="P", num/9, ifelse(trt_type2=="Mult. Nuts.", num/51,999))))))))
 
-ggplot(diffslope_trt, aes(x = trt_type2, y = pct, fill = resp)) +
+diffslope_trt3<-diffslopes2%>%
+  left_join(info.trt2)%>%
+  select(site_project_comm, treatment, dsig, est, sig, c_est, c_sig, diff, trt_type3)%>%
+  mutate(resp=ifelse(dsig==0, "c", ifelse(dsig==1&c_est>est, "b", ifelse(dsig==1&c_est<est, "a", 999))))%>%
+  group_by(trt_type3, resp)%>%
+  summarize(num=length(resp))%>%
+  mutate(pct = ifelse(trt_type3=="Res.", num/70, ifelse(trt_type3=="Mult. Res.",num/60, ifelse(trt_type3=="Res.+Non-Res.", num/58, ifelse(trt_type3=="Non-Res.", num/31, 999)))))%>%
+  rename(trt_type2=trt_type3)
+  
+tograph<-diffslope_trt%>%
+  bind_rows(tally_all, diffslope_trt3)
+
+ggplot(tograph, aes(x = trt_type2, y = pct, fill = resp)) +
   geom_col(width = 0.7) +
   coord_flip() +
   theme_minimal()+
   scale_fill_manual(name = "Response", limits=c("c", "b", "a"),labels = c("C=T", "C>T", "C<T"), values=c("light gray", "skyblue",'gold')) +
-  scale_x_discrete(limits=c( 'Mult. Nuts.','P', 'N',"Temperature",'Precip. Vari.', 'Irrigation','CO2',  'All GCDs'))+
+  scale_x_discrete(limits=c( 'Mult. Nuts.','P', 'N',"Temperature",'Precip. Vari.', 'Irrigation','CO2', 'Res.+Non-Res.', "Mult. Res.", "Res.", 'Non-Res.',  'All GCDs'), labels=c("Mult. Nuts.", "Phosphorus","Nitrogen","Temperature" , "Precip. Vari.","Irrigation","CO2", "Res.+Non-Res.","Multiple Res.","Single Res.","Non-Res." , "All GCDs"))+
   labs(x = "Treatment", y = "Proportion of communities") +
   theme(legend.position = "top")+
-  geom_vline(xintercept = 7.5, linetype="dashed")
+  geom_vline(xintercept = 7.5, linetype="dashed")+
+  geom_vline(xintercept = 11.5, linetype="dashed")
   # geom_text(x=1, y = 0.05, label="61%", size=4,check_overlap = TRUE)+
   # geom_text(x=2, y = 0.05, label="11%", size=4,check_overlap = TRUE)+
   # geom_text(x=3, y = 0.05, label="19%", size=4,check_overlap = TRUE)+
