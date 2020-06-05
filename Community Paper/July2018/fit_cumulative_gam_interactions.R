@@ -37,7 +37,7 @@ data_file <- "MetricsTrts_March2019.csv"
 setwd(work_dir)
 
 # ##meghan's computer
-setwd("C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
+setwd("C:\\Users\\mavolio2\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG")
 dat<-read.csv("MetricsTrts_March2019.csv")
 
 ####
@@ -260,8 +260,11 @@ fill_empties <- function(...){
 ####  READ IN DATA AND CALCULATE CUMULATIVE CHANGE -----------------------------
 ####
 change_metrics <- as_tibble(read.csv(paste0(data_dir, data_file))) %>%
-  dplyr::select(-X)  # remove row number column
+  dplyr::select(-X) 
 
+change_metrics <- as_tibble(dat) %>%
+  dplyr::select(-X)%>%# remove row number column
+  mutate(treatment=as.factor(treatment))
 
 ##  Calculate cumulative sums of each metric (from Kevin)
 change_cumsum <- change_metrics %>%
