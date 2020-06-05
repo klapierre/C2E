@@ -267,7 +267,8 @@ fill_empties <- function(...){
 #   dplyr::select(-X)  # remove row number column
 change_metrics<-dat%>%
   select(-X)%>%
-  left_join(treatment_info)
+  left_join(treatment_info)%>%
+  mutate(treatment=as.factor(treatment))
 
 #write.csv(change_metrics, "forGAMnorare.csv")
 
