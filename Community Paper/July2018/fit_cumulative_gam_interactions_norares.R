@@ -4,6 +4,11 @@
 ##
 ##  Author: Andrew Tredennick (atredenn@gmail.com)
 ##  Date created: March 21, 2018
+##  Date update: 2020-06-08
+##    1. Added check to abort GAM fitting if response has fewer than 2 unique
+##       values.
+##    2. Added test of NA fractions on a per-treatment basis.
+##    3. Added tryCatch to drop any GAMs that produce warnings.
 ################################################################################
 
 # NOTES:
@@ -36,6 +41,10 @@ library(mgcv)
 # data_file <- "MetricsTrts_March2019.csv"
 # setwd(work_dir)
 
+## ATT testing
+# setwd("C:/Users/atredennick/Desktop/")
+# dat <- read.csv("forGAMnorare.csv")
+
 # ##meghan's computer
 setwd("C:\\Users\\mavolio2\\Dropbox\\converge_diverge\\datasets\\LongForm\\")
 dat<-read.csv("CORRE_RAC_Metrics_June2020_allReplicates_norares.csv")
@@ -64,11 +73,18 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
   #  A tibble with LLR delta deviance, LLR p-value, and delta AIC
   
   # Check that there aren't too many NAs and skip modeling if fraction > 0.5
-  y <- df[ , response]
-  num_nas <- length(which(is.na(y)))
-  fraction_nas <- num_nas/nrow(y)
+  y <- df %>% pull(response)
+  # num_nas <- length(which(is.na(y)))
+  # fraction_nas <- num_nas/length(y)
   
-  if(fraction_nas >= 0.5){
+  fraction_nas <- df %>% 
+    ungroup() %>%
+    dplyr::select(response, treatment) %>%
+    group_by(treatment) %>%
+    summarize(frac_nas = sum(is.na(UQ(rlang::sym(response)))) / n())
+  test <- length(which(fraction_nas$frac_nas > 0.5))
+  
+  if(test | length(unique(y)) < 2){
     return(
       tibble(
         response_var = response,
@@ -84,7 +100,7 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
     )
   }
   
-  if(fraction_nas <= 0.5){
+  if(!test & length(unique(y)) > 1){
     test_formula <- as.formula(
       paste(response, 
             "~ treatment + s(treatment_year, by = treatment, k = (num_years-1)) + 
@@ -99,73 +115,97 @@ fit_compare_gams <- function(df, response, diff_type = "last_year"){
       )
     )
     
-    gam_test <- gam(
-      test_formula, 
-      data = df,
-      method = "REML"
-    )
-    
-    gam_null <- gam(
-      null_formula,
-      data = df, 
-      method = "REML"
-    )
-    
-    # LLR tests
-    pvalue <- anova(gam_null, gam_test, test="Chisq")$`Pr(>Chi)`[2]
-    dev <- anova(gam_null, gam_test, test="Chisq")$`Resid. Dev`
-    delta_div <- diff(dev)  # full - null
-    
-    # AIC tests
-    aics <- AIC(gam_null, gam_test)$AIC
-    delta_aic <- diff(aics)  # full - null
-    
-    # Simulate predictions from the interaction model
-    min_year <- min(df$treatment_year)
-    max_year <- max(df$treatment_year)
-    pdat <- expand.grid(
-      treatment_year = seq(min_year, max_year, by = 1),
-      treatment = unique(df$treatment)
-    )
-    pdat$plot_id <- unique(df$plot_id)[1]
-    
-    control_name <- filter(df, plot_mani == 0) %>% pull(treatment) %>% unique()
-    treat_name <- filter(df, plot_mani != 0) %>% pull(treatment) %>% unique()
-    tmp_diffs <- smooth_diff(model = gam_test, newdata = pdat, 
-                             f1 = treat_name, 
-                             f2 = control_name, 
-                             var = "treatment", alpha = 0.05, 
-                             unconditional = FALSE)
-    
-    if(diff_type == "all_years"){
-      outdiff <- as.data.frame(t(colMeans(tmp_diffs[c("diff","se","upper","lower")])))
-      outdiff$treatment_year <- NA
-    }
-    
-    if(diff_type == "mid_year"){
-      # find median index, rounds up
-      # mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))
-      mid_year <- 5
-      outdiff <- tmp_diffs[mid_year,] 
-    }
-    
-    if(diff_type == "last_year"){
-      outdiff <- tail(tmp_diffs, 1)
-    }
-    
-    return(
-      tibble(
-        response_var = response,
-        p_value = pvalue,
-        delta_deviance = delta_div,
-        delta_aic = delta_aic,
-        diff = outdiff$diff,
-        diff_se = outdiff$se,
-        diff_lower = outdiff$lower,
-        diff_upper = outdiff$upper,
-        diff_treatment_year = outdiff$treatment_year
+    gam_test <- tryCatch(expr = {
+      gam(
+        test_formula, 
+        data = df,
+        method = "REML"
       )
-    )
+    }, error = function(e) e, warning = function(w) w)
+    
+    gam_null <- tryCatch(expr = {
+      gam(
+        null_formula, 
+        data = df,
+        method = "REML"
+      )
+    }, error = function(e) e, warning = function(w) w)
+    
+    test1 <- class(gam_test)[1] %in% c("simpleWarning", "simpleError", "try-error")
+    test2 <- class(gam_null)[1] %in% c("simpleWarning", "simpleError", "try-error")
+    
+    if(test1 == FALSE & test2 == FALSE) {
+      # LLR tests
+      pvalue <- anova(gam_null, gam_test, test="Chisq")$`Pr(>Chi)`[2]
+      dev <- anova(gam_null, gam_test, test="Chisq")$`Resid. Dev`
+      delta_div <- diff(dev)  # full - null
+      
+      # AIC tests
+      aics <- AIC(gam_null, gam_test)$AIC
+      delta_aic <- diff(aics)  # full - null
+      
+      # Simulate predictions from the interaction model
+      min_year <- min(df$treatment_year)
+      max_year <- max(df$treatment_year)
+      pdat <- expand.grid(
+        treatment_year = seq(min_year, max_year, by = 1),
+        treatment = unique(df$treatment)
+      )
+      pdat$plot_id <- unique(df$plot_id)[1]
+      
+      control_name <- filter(df, plot_mani == 0) %>% pull(treatment) %>% unique()
+      treat_name <- filter(df, plot_mani != 0) %>% pull(treatment) %>% unique()
+      tmp_diffs <- smooth_diff(model = gam_test, newdata = pdat, 
+                               f1 = treat_name, 
+                               f2 = control_name, 
+                               var = "treatment", alpha = 0.05, 
+                               unconditional = FALSE)
+      
+      if(diff_type == "all_years"){
+        outdiff <- as.data.frame(t(colMeans(tmp_diffs[c("diff","se","upper","lower")])))
+        outdiff$treatment_year <- NA
+      }
+      
+      if(diff_type == "mid_year"){
+        # find median index, rounds up
+        # mid_year <- floor(0.5 + median(1:nrow(tmp_diffs)))
+        mid_year <- 5
+        outdiff <- tmp_diffs[mid_year,] 
+      }
+      
+      if(diff_type == "last_year"){
+        outdiff <- tail(tmp_diffs, 1)
+      }
+      
+      return(
+        tibble(
+          response_var = response,
+          p_value = pvalue,
+          delta_deviance = delta_div,
+          delta_aic = delta_aic,
+          diff = outdiff$diff,
+          diff_se = outdiff$se,
+          diff_lower = outdiff$lower,
+          diff_upper = outdiff$upper,
+          diff_treatment_year = outdiff$treatment_year
+        )
+      )
+    } else {
+      return(
+        tibble(
+          response_var = response,
+          p_value = -9999,
+          delta_deviance = NA,
+          delta_aic = NA,
+          diff = NA,
+          diff_se = NA,
+          diff_lower = NA,
+          diff_upper = NA,
+          diff_treatment_year = NA
+        )
+      )
+    }
+    
   }
   
 }  # end of model fit and comparison function
@@ -288,7 +328,8 @@ change_cumsum <- change_metrics %>%
                  losses), 
             list(cumsum)) %>%
   mutate(control = ifelse(plot_mani==0,"control","treatment")) %>%
-  arrange(site_project_comm, plot_id, treatment_year)
+  arrange(site_project_comm, plot_id, treatment_year) %>%
+  ungroup()
 
 
 
@@ -370,8 +411,8 @@ for(do_site in all_sites){
         even_test,
         rank_test,
         gain_test,
-        loss_test,
-        comp_test
+        loss_test
+        # comp_test
       ) %>%
         mutate(
           site_proj_comm = do_site,
