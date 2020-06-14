@@ -91,6 +91,7 @@ for (i in 1:length(spc)){
   div_evar<-rbind(div_evar, out)
 }
 
+write.csv(div_evar, "C:\\Users\\mavolio2\\Dropbox\\C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_DivEvar_June2020.csv", row.names=F)
 
 #####CALCULATING RAC changes
 spc<-unique(corredat_raw$site_project_comm)
