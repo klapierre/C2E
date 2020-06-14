@@ -81,6 +81,19 @@ info.spc=read.csv("ForAnalysis_allAnalysisAllDatasets_04082019.csv") %>%
   mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))%>%
   select(site_project_comm, rrich, anpp, MAT, MAP)%>%
   unique()
+##getting site Evar for each location
+controls<-change_metrics%>%
+  select(site_code, project_name, community_type, plot_id, plot_mani)%>%
+  unique()%>%
+  filter(plot_mani==0)%>%
+  mutate(site_project_comm = paste(site_code, project_name, community_type, sep="_"))
+
+div_evar<-read.csv("CORRE_DivEvar_June2020.csv")
+
+evenness<-div_evar%>%
+  right_join(controls)%>%
+  group_by(site_project_comm)%>%
+  summarise(Evenness=mean(Evar, na.rm=T))
 
 # read in treatment variables for subsetting later
 info.trt=info.trt<-read.csv("C:\\Users\\mavolio2\\Dropbox\\converge_diverge/datasets/LongForm/ExperimentInformation_March2019.csv")%>%
@@ -118,10 +131,12 @@ change_glass_d_mean <- change_glass_d %>%
   group_by(site_project_comm, treatment, plot_mani) %>%
   summarise_at(vars(abs_richness_glass, abs_evenness_glass, rank_glass, gains_glass, losses_glass), funs(mean), na.rm=T) %>%
   left_join(info.spc) %>%
+  left_join(evenness)%>%
   left_join(info.trt)
+  
 
 #looking for correlations among predictor variables
-pred=as.matrix(change_glass_d_mean[, c("MAP", "MAT", "rrich", "anpp")])
+pred=as.matrix(change_glass_d_mean[, c("MAP", "MAT", "rrich", "anpp", "Evenness")])
 cor(pred)
 pairs(pred)
 png(paste0("Summer2018_Results/site predictors of SERGL/MR predictor variables SITE LEVEL pairs plot.png"), width=11, height=8, units="in", res=600)
@@ -142,8 +157,9 @@ change_glass_d_mean$sMAP<-scale(change_glass_d_mean$MAP)
 change_glass_d_mean$sMAT<-scale(change_glass_d_mean$MAT)
 change_glass_d_mean$srrich<-scale(change_glass_d_mean$rrich)
 change_glass_d_mean$sanpp<-scale(change_glass_d_mean$anpp)
+change_glass_d_mean$seven<-scale(change_glass_d_mean$Evenness)
 
-rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean)
+rich=lm(abs_richness_glass ~ sMAP + sMAT + srrich + sanpp + seven, data=change_glass_d_mean)
 #vif(rich) #need the car package for this.
 summary(rich)
 rsq.partial(rich)
@@ -156,22 +172,22 @@ richresults=data.frame(response="rich",
                        rsq=c(NA, rsq.partial(rich)$partial.rsq))
 
 
-even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean)
+even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp +seven, data=change_glass_d_mean)
 summary(even)
 rsq.partial(even)
 evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
-rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean)
+rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp + seven, data=change_glass_d_mean)
 summary(rank)
 rsq.partial(rank)
 rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
-gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean)
+gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp +seven, data=change_glass_d_mean)
 summary(gains)
 rsq.partial(gains)
 gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
-losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp, data=change_glass_d_mean)
+losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp +seven, data=change_glass_d_mean)
 summary(losses)
 rsq.partial(losses)
 lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
@@ -376,14 +392,14 @@ fulldataset$studies="All manipulations"
 # forbigfig$star.location=ifelse(forbigfig$slope>0, forbigfig$slope+0.1, forbigfig$slope-0.1)
 
 rsqvalues<-data.frame(response=c("rich", "rank", "even", "gains", "losses"), 
-                      rsq = c(0.01,0.03,0.03,0.11,0.04),
-                      pval = c("n.s.", "*","*",  "**","*"),
-                      combinded=c("0.01 n.s.","0.03*","0.03*","0.11**","0.04*"))%>%
+                      rsq = c(0.01,0.05,0.08,0.10,0.04),
+                      pval = c("n.s.", "*","**",  "**","*"),
+                      combinded=c("0.01 n.s.","0.05*","0.08**","0.10**","0.04*"))%>%
   mutate(response2=factor(response, levels=c("rich", "even", "rank", "gains", "losses")))
 
 forbigfig<-fulldataset%>%
   mutate(response2=factor(response, levels = c("rich", "even", "rank", "gains", "losses")),
-         predictor2=ifelse(predictor=="sanpp", "ANPP", ifelse(predictor=="sMAP", "MAP", ifelse(predictor=="sMAT", "MAT", ifelse(predictor=="srrich", "Regional SR", "(Intercept)")))), 
+         predictor2=ifelse(predictor=="sanpp", "ANPP", ifelse(predictor=="sMAP", "MAP", ifelse(predictor=="sMAT", "MAT", ifelse(predictor=="srrich", "Regional SR", ifelse(predictor=="seven", "Site Evenness", "(Intercept)"))))), 
          significant=as.factor(1*(pval<0.05)), 
          star.location=ifelse(slope>0, slope+0.02, slope-0.02))
 
@@ -443,12 +459,12 @@ ggplot(data=subset(forbigfig, predictor2!="(Intercept)"), aes(x=predictor2, y=sl
 
 #Making a correlation figure
 
-change_glass_d_mean2<-change_glass_d_mean[,c("site_project_comm", "treatment","abs_richness_glass", "abs_evenness_glass", "rank_glass", "gains_glass", "losses_glass", "sanpp", "sMAP", "sMAT", "srrich")]
+change_glass_d_mean2<-change_glass_d_mean[,c("site_project_comm", "treatment","abs_richness_glass", "abs_evenness_glass", "rank_glass", "gains_glass", "losses_glass", "sanpp", "sMAP", "sMAT", "srrich", "seven")]
 
 tograph_cor<-change_glass_d_mean2%>%
-  gather(parm, value, sanpp:srrich)%>%
+  gather(parm, value, sanpp:seven)%>%
   gather(vari_metric, vari_value, abs_richness_glass:losses_glass)%>%
-  mutate(parm_group=factor(parm, levels = c("sanpp","sMAP","sMAT","srrich")),
+  mutate(parm_group=factor(parm, levels = c("sanpp","sMAP","sMAT","srrich", "seven")),
          vari_group=factor(vari_metric, levels=c("abs_richness_glass","abs_evenness_glass","rank_glass", 'gains_glass','losses_glass')))
 
 rvalues <- tograph_cor %>% 
@@ -461,7 +477,8 @@ parameter2<-c(
   sanpp = "Site ANPP",
   sMAP = "MAP",
   sMAT = "MAT",
-  srrich = "Regional SR"
+  srrich = "Regional SR",
+  seven = "Site Evenness"
 )
 
 vari<-c(
@@ -485,6 +502,7 @@ ggplot(data=tograph_cor, aes(x = value, y = vari_value))+
   geom_smooth(data=subset(tograph_cor, vari_group=="gains_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sMAT"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sanpp"), method="lm", se=F, color = "black")+
+  geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="seven"), method="lm", se=F, color = "black")+
   geom_text(data=rvalues, mapping=aes(x=Inf, y =Inf, label = r.value), hjust=1.05, vjust=1.5)
 
 grid.arrange(mr, cor, ncol=1, heights=c(1.8,4))
