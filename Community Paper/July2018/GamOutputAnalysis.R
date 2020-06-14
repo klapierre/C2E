@@ -11,6 +11,7 @@ library(tidyverse)
 library(gridExtra)
 theme_set(theme_bw(12))
 
+
 #work
 setwd("C:\\Users\\mavolio2\\Dropbox\\")
 #home
@@ -267,7 +268,7 @@ sig_tograph<-metrics_sig_tally%>%
 
 sig_tograph2<-rbind(vector_overall, sig_tograph)
 
-
+overall<-
 ggplot(sig_tograph2, aes(x = response_var2, y = value, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
@@ -275,9 +276,10 @@ ggplot(sig_tograph2, aes(x = response_var2, y = value, fill = sig)) +
   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant"))+
   scale_x_discrete(limits=c("Richness change", "Species losses", "Species gains", "Rank change", "Evenness", "Any Change"), labels = c("Richness change","Species Losses","Species Gains", "Rank Change","Evenness Change","Any Change" ))+
   labs(x = "Change metric", y = "Proportion of communities") +
-  theme(legend.position = "top")+
+  #theme(legend.position = "none")+
   #geom_hline(yintercept = 0.5)+
-  geom_vline(xintercept = 5.5, linetype="dashed")
+  geom_vline(xintercept = 5.5, linetype="dashed")+
+  ggtitle("A)")
 
 ###how does this differ by GCD?
 
@@ -461,13 +463,17 @@ responses<-c(
   any_change = "Any Change")
 
 ##overall how many experiments saw some aspect of change.
-ggplot(tograph_metrics_trt, aes(x = trt_type3, y = value, fill = sig)) +
+trts<-
+  ggplot(tograph_metrics_trt, aes(x = trt_type3, y = value, fill = sig)) +
   geom_col(width = 0.7) +
   coord_flip() +
   theme_minimal() + 
   scale_x_discrete(labels=c("Mult. Nuts.", "Phosphorus","Nitrogen","Temperature" , "Precip. Vari.","Irrigation","CO2", "Res.+Non-Res.","Multiple Res.","Single Res.","Non-Res." , "All GCDs"))+
   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
   labs(x = "Treatment", y = "Proportion of communities") +
-  theme(legend.position = "top")+
+  theme(legend.position = "none")+
   geom_vline(xintercept=7.5, size=0.5)+
-  facet_wrap(~group, labeller=labeller(group = responses), ncol = 2)
+  facet_wrap(~group, labeller=labeller(group = responses), ncol = 2)+
+  ggtitle("B)")
+
+grid.arrange(overall, trts, ncol=1, heights=c(1,2))
