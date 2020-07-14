@@ -9,7 +9,7 @@
 
 library(tidyverse)
 library(gridExtra)
-theme_set(theme_bw(12))
+theme_set(theme_bw(base_size=20))
 
 
 #work
@@ -477,3 +477,25 @@ trts<-
   ggtitle("B)")
 
 grid.arrange(overall, trts, ncol=1, heights=c(1,2))
+
+#for esa
+ggplot(subset(tograph_metrics_trt, trt_type3=="Non-Res."|trt_type3=="Res."|trt_type3=="Mult. Res."|trt_type3=="Res.+Non-Res."), aes(x = trt_type3, y = value, fill = sig)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  scale_x_discrete(labels=c("Res.+Non-Res.","Multiple Res.","Single Res.","Non-Res."))+
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  labs(x = "Treatment", y = "Proportion of communities") +
+  theme(legend.position = "none")+
+  geom_vline(xintercept=7.5, size=0.5)+
+  facet_wrap(~group, labeller=labeller(group = responses), ncol = 3)
+
+ggplot(subset(tograph_metrics_trt, trt_type3!="Non-Res."&trt_type3!="Res."&trt_type3!="Mult. Res."&trt_type3!="Res.+Non-Res."), aes(x = trt_type3, y = value, fill = sig)) +
+  geom_col(width = 0.7) +
+  coord_flip() +
+  scale_x_discrete(labels=c("Mult. Nuts.", "Phosphorus","Nitrogen","Temperature" , "Precip. Vari.","Irrigation","CO2"))+
+  scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
+  labs(x = "Treatment", y = "Proportion of communities") +
+  theme(legend.position = "none")+
+  geom_vline(xintercept=7.5, size=0.5)+
+  facet_wrap(~group, labeller=labeller(group = responses), ncol = 3)
+
