@@ -24,7 +24,6 @@ theme_update(axis.title.x=element_text(size=40, vjust=-0.35, margin=margin(t=15)
 
 
 
-
 ##anpp difference through time by trt type
 #all yrs
 ggplot(data=correSEMdataTrt, aes(x=treatment_year, y=anpp_pdiff)) +
@@ -37,6 +36,85 @@ ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=treatment_year, y=
   geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
   xlab('Treatment Year') + ylab('ANPP (%) Difference')
 #export at 2000 x 800
+
+
+
+##anpp difference through time by trt type 2 (added or removed)
+#all yrs
+ggplot(data=correSEMdataTrt, aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type_2)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference')
+#10 yrs
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type_2)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference')
+#export at 2000 x 800
+
+
+##anpp difference through time by trt type (added resources, only with >20 obs)
+#all yrs
+ggplot(data=subset(correSEMdataTrt, trt_type %in% c('irr', 'N', 'P', 'N*P', 'mult_nutrient')), aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference')
+#10 yrs
+ggplot(data=subset(correSEMdataTrt, treatment_year<11&trt_type %in% c('irr', 'N', 'P', 'N*P', 'mult_nutrient')), aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=trt_type)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference')
+#export at 2000 x 800
+
+
+##anpp difference through time by trt
+#all yrs
+ggplot(data=correSEMdataTrt, aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=site_project_comm_trt)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  theme(legend.position='none')
+#10 yrs
+ggplot(data=subset(correSEMdataTrt, treatment_year<11&trt_type %in% c('irr', 'N', 'P', 'N*P', 'mult_nutrient')), aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(color=site_project_comm_trt)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), size=3, color='black') +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  theme(legend.position='none')
+#export at 2000 x 800
+
+
+##anpp difference through time by trt
+#10 yrs
+ggplot(data=subset(correSEMdataTrt, treatment_year<11&trt_type %in% c('irr', 'N', 'P', 'N*P', 'mult_nutrient')), aes(x=treatment_year, y=anpp_pdiff)) +
+  geom_line(aes(color=trt_type), size=3) +
+  xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  facet_wrap(~site_project_comm_trt)
+#export at 2000 x 800
+
+
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=composition_diff, y=anpp_pdiff)) +
+  geom_point(aes(color=trt_type), size=3) +
+  # xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  facet_wrap(~site_project_comm_trt, scales='free') +
+  theme(legend.position = 'none', axis.text.x = element_blank(), axis.text.y = element_blank())
+
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=rank_difference, y=anpp_pdiff)) +
+  geom_point(aes(color=trt_type), size=3) +
+  # xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  facet_wrap(~site_project_comm_trt, scales='free') +
+  theme(legend.position = 'none', axis.text.x = element_blank(), axis.text.y = element_blank())
+
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=evenness_diff, y=anpp_pdiff)) +
+  geom_point(aes(color=trt_type), size=3) +
+  # xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  facet_wrap(~site_project_comm_trt, scales='free') +
+  theme(legend.position = 'none', axis.text.x = element_blank(), axis.text.y = element_blank())
+
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=species_difference, y=anpp_pdiff)) +
+  geom_point(aes(color=trt_type), size=3) +
+  # xlab('Treatment Year') + ylab('ANPP (%) Difference') +
+  facet_wrap(~site_project_comm_trt, scales='free') +
+  theme(legend.position = 'none', axis.text.x = element_blank(), axis.text.y = element_blank())
 
 
 

@@ -3,7 +3,7 @@ library(grid)
 library(PerformanceAnalytics)
 
 #kim's desktop
-setwd('C:\\Users\\komatsuk\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
 
 
 theme_set(theme_bw())
@@ -35,7 +35,7 @@ correANPP <- read.csv('ANPP_Oct2017.csv')%>%
   mutate(treatment_year_2=ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2004, 10, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2005, 11, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2006, 12, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2007, 13, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2008, 14, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2009, 15, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2010, 16, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2011, 17, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2012, 18, treatment_year))))))))))%>%
   select(-treatment_year)%>%mutate(treatment_year=treatment_year_2)%>%select(-treatment_year_2)%>%
   #remove subset of CDR trts and KNZ BGP mowed treatment (they herbicided)
-  mutate(drop=ifelse(site_code=='CDR'&treatment=='2', 1, ifelse(site_code=='CDR'&treatment=='3', 1, ifelse(site_code=='CDR'&treatment=='4', 1, ifelse(site_code=='CDR'&treatment=='5', 1, ifelse(site_code=='CDR'&treatment=='7', 1, ifelse(site_code=='CDR'&treatment=='2_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='3_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='4_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='5_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='7_f_u_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_p', 1, ifelse(project_name=='BGP'&treatment=='u_m_b', 1, ifelse(project_name=='BGP'&treatment=='u_m_c', 1, ifelse(project_name=='BGP'&treatment=='b_m_n', 1, ifelse(project_name=='BGP'&treatment=='b_m_p', 1, ifelse(project_name=='BGP'&treatment=='b_m_b', 1, ifelse(project_name=='BGP'&treatment=='b_m_c', 1, 0)))))))))))))))))))%>%
+  mutate(drop=ifelse(site_code=='CDR'&treatment=='2', 1, ifelse(site_code=='CDR'&treatment=='3', 1, ifelse(site_code=='CDR'&treatment=='4', 1, ifelse(site_code=='CDR'&treatment=='5', 1, ifelse(site_code=='CDR'&treatment=='7', 1, ifelse(site_code=='CDR'&treatment=='8', 1, ifelse(site_code=='CDR'&treatment=='2_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='3_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='4_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='5_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='7_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='8_f_u_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_p', 1, ifelse(project_name=='BGP'&treatment=='u_m_b', 1, ifelse(project_name=='BGP'&treatment=='u_m_c', 1, ifelse(project_name=='BGP'&treatment=='b_m_n', 1, ifelse(project_name=='BGP'&treatment=='b_m_p', 1, ifelse(project_name=='BGP'&treatment=='b_m_b', 1, ifelse(project_name=='BGP'&treatment=='b_m_c', 1, 0)))))))))))))))))))))%>%
   #remove NANT wet because it only has ANPP in one year and has a much higher rate of N added (67.2 gm-2)
   filter(site_code!='NANT')%>%
   filter(drop==0)%>%
@@ -83,7 +83,7 @@ correSEMdata <- correANPPdiff%>%
 
 ###exploratory correlations and histograms (all variables compare treatment to control plots)
 dataVis <- correSEMdata%>%
-  select(anpp_pdiff_transform, composition_diff_transform, richness_difference, evenness_diff, rank_difference, species_difference) #make visualization dataframe
+  select(anpp_pdiff, composition_diff, richness_difference, evenness_diff, rank_difference, species_difference) #make visualization dataframe
 chart.Correlation(dataVis, histogram=T, pch=19)
 
 # qqnorm(correSEMdata$anpp_pdiff_transform)
@@ -111,7 +111,8 @@ correSEMdataTrt <- correSEMdata%>%
   #make binary treatments just in case we want them later
   mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt+drought_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
   na.omit()%>%
-  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='_'))
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='_'))%>%
+  mutate(trt_type_2=ifelse(trt_type %in% c('CO2', 'irr', 'mult_nutrient', 'N', 'N*CO2', 'P', 'N*P', 'N*irr'), 'added', ifelse(trt_type %in% c('drought'), 'removed', ifelse(trt_type %in% c('fungicide', 'mow_clip', 'precip_vari', 'temp'), 'other', 'multiple'))))
 
 rm(list=setdiff(ls(), "correSEMdataTrt"))
 # write.csv(correSEMdataTrt, 'CoRRE_comm and anpp diff_07160219.csv')
