@@ -22,6 +22,10 @@ gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_ta
   rename(site_project_comm=site_proj_comm)%>%
   separate(site_project_comm, into=c("site_code","project_name","community_type"), sep="_", remove=F)
 
+###can do this anlayses for datasets 10 yrs or longer, to match what kim has
+# %>%
+#   filter(diff_treatment_year>9)
+
 #filter the press treatments for the experiments with enough data
 trt_touse<-read.csv("C2E/Products/CommunityChange/March2018 WG/ExperimentInformation_March2019.csv")%>%
   filter(pulse==0, plot_mani!=0)%>%
@@ -248,10 +252,11 @@ metrics_all<-metrics_sig%>%
   unique()
 
 
+
 #overall diff in metrics of change - NO
 prop.test(x=as.matrix(metrics_sig_tally[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
-vector_overall<-data.frame("response_var"=c("all","all"), sig=c("psig", "pnsig"), value = c(0.8310502,0.1689498), response_var2=c("Any Change", "Any Change")) 
+vector_overall<-data.frame("response_var"=c("all","all"), sig=c("psig", "pnsig"), value = c(0.8219178, 0.1780822), response_var2=c("Any Change", "Any Change")) 
 
 sig_tograph<-metrics_sig_tally%>%
   mutate(sum = num_sig+num_nonsig,
