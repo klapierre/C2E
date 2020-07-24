@@ -7,9 +7,84 @@ library(MuMIn)
 
 #kim's desktop
 setwd('C:\\Users\\komatsuk\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
+#kim's laptop
+setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
 
 #source data management code  -- if on desktop, change source code
-source('C:\\Users\\komatsuk\\Desktop\\R files\\C2E\\SEM paper\\C2E_SEM_data processing.R')
+source('C:\\Users\\lapie\\Desktop\\R files laptop\\C2E\\SEM paper\\C2E_SEM_data processing.R')
+
+
+###all treatments
+###using absolute value of anpp percent difference
+#overall compositional difference
+modelComp <- lmer(abs(anpp_pdiff) ~ composition_diff + (1|site_code/project_name),
+                 data=correSEMdataTrt)
+summary(modelComp)
+anova(modelComp, type='I') #composition difference
+r.squaredGLMM(modelComp)
+#R2m (marginal)=0.1826489, R2c (conditional)=0.318324; ***marginal R2 estimate is based on only fixed factors, while conditional R2 estimate is based on full model (fixed and random effects)
+
+ggplot(data=correSEMdataTrt, aes(x=composition_diff, y=abs(anpp_pdiff))) +
+  geom_point(color='grey') +
+  geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
+  geom_smooth(method='lm', se=F, size=3, color='black') +
+  xlab('Composition Difference') + ylab('|ANPP Difference|') +
+  theme(legend.position='none')
+
+
+#specific community difference metrics
+modelAll <- lmer(abs(anpp_pdiff) ~ evenness_diff + rank_difference + species_difference + richness_difference + (1|site_code/project_name),
+                  data=correSEMdataTrt)
+summary(modelAll)
+anova(modelAll, type='I') #rank, richness, and spp diff
+r.squaredGLMM(modelAll)
+#R2m (marginal)=0.2096342, R2c (conditional)=0.3422267; ***marginal R2 estimate is based on only fixed factors, while conditional R2 estimate is based on full model (fixed and random effects)
+
+evennessPlot <- ggplot(data=correSEMdataTrt, aes(x=evenness_diff, y=abs(anpp_pdiff))) +
+  geom_point(color='grey') +
+  geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
+  geom_smooth(method='lm', se=F, size=3, color='black') +
+  xlab('Evenness Difference') + ylab('|ANPP Difference|') +
+  theme(legend.position='none')
+rankPlot <- ggplot(data=correSEMdataTrt, aes(x=rank_difference, y=abs(anpp_pdiff))) +
+  geom_point(color='grey') +
+  geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
+  geom_smooth(method='lm', se=F, size=3, color='black') +
+  xlab('Rank Difference') + ylab('|ANPP Difference|') +
+  theme(legend.position='none')
+sppdiffPlot <- ggplot(data=correSEMdataTrt, aes(x=species_difference, y=abs(anpp_pdiff))) +
+  geom_point(color='grey') +
+  geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
+  geom_smooth(method='lm', se=F, size=3, color='black') +
+  xlab('Species Difference') + ylab('|ANPP Difference|') +
+  theme(legend.position='none')
+richnessPlot <- ggplot(data=correSEMdataTrt, aes(x=richness_difference, y=abs(anpp_pdiff))) +
+  geom_point(color='grey') +
+  geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
+  geom_smooth(method='lm', se=F, size=3, color='black') +
+  xlab('Richness Difference') + ylab('|ANPP Difference|') +
+  theme(legend.position='none')
+
+pushViewport(viewport(layout=grid.layout(2,2)))
+print(evennessPlot, vp=viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(rankPlot, vp=viewport(layout.pos.row = 1, layout.pos.col = 2))
+print(sppdiffPlot, vp=viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(richnessPlot, vp=viewport(layout.pos.row = 2, layout.pos.col = 2))
+
+
+
+
+
+
+
+
+
+
+
+
+##################
+### By treatment types
+##################
 
 ###n treatments only
 Ntrt <- correSEMdataTrt%>%
@@ -38,7 +113,7 @@ PmodelAll <- lmer(anpp_pdiff_transform ~ p +
 summary(PmodelAll)
 anova(PmodelAll, type='I')
 r.squaredGLMM(PmodelAll)
-#R2m (marginal)=0.06608303, R2c (conditional)=0.06608303; ***marginal R2 estimate is based on only fixed factors, while conditional R2 estimate is based on full mode (fixed and random effects)
+#R2m (marginal)=0.06608303, R2c (conditional)=0.06608303
 
 
 ###irr treatments only
@@ -81,6 +156,6 @@ tempModelAll <- lmer(anpp_pdiff_transform ~ temp +
                       (1|site_code/project_name),
                     data=tempTrt)
 summary(tempModelAll)
-anova #evenness, species diff (marginally)
+anova(tempModelAll, type='I') #evenness, species diff (marginally)
 r.squaredGLMM(tempModelAll)
 #R2m (marginal)=0.3581464, R2c (conditional)=0.5777553
