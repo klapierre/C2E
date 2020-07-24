@@ -13,18 +13,32 @@ setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_
 #source data management code  -- if on desktop, change source code
 source('C:\\Users\\lapie\\Desktop\\R files laptop\\C2E\\SEM paper\\C2E_SEM_data processing.R')
 
-
 ###all treatments
 ###using absolute value of anpp percent difference
+#temporal trends in ANPP
+modelTime <- lmer(abs(anpp_pdiff) ~ treatment_year + (1|site_code/project_name),
+                  data=subset(correSEMdataTrt, treatment_year<11))
+summary(modelTime)
+anova(modelTime, type='I') #composition difference
+r.squaredGLMM(modelTime)
+#R2m (marginal)=0.007671168, R2c (conditional)=0.1539671; ***marginal R2 estimate is based on only fixed factors, while conditional R2 estimate is based on full model (fixed and random effects)
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=treatment_year, y=abs(anpp_pdiff))) +
+  geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, color='grey',aes(group=site_project_comm)) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
+  xlab('Treatment Year') + ylab('|ANPP Difference|') +
+  theme(legend.position='none')
+
+
 #overall compositional difference
 modelComp <- lmer(abs(anpp_pdiff) ~ composition_diff + (1|site_code/project_name),
-                 data=correSEMdataTrt)
+                 data=subset(correSEMdataTrt, treatment_year<11))
 summary(modelComp)
 anova(modelComp, type='I') #composition difference
 r.squaredGLMM(modelComp)
 #R2m (marginal)=0.1826489, R2c (conditional)=0.318324; ***marginal R2 estimate is based on only fixed factors, while conditional R2 estimate is based on full model (fixed and random effects)
 
-ggplot(data=correSEMdataTrt, aes(x=composition_diff, y=abs(anpp_pdiff))) +
+ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=composition_diff, y=abs(anpp_pdiff))) +
   geom_point(color='grey') +
   geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
   geom_smooth(method='lm', se=F, size=3, color='black') +
@@ -34,31 +48,31 @@ ggplot(data=correSEMdataTrt, aes(x=composition_diff, y=abs(anpp_pdiff))) +
 
 #specific community difference metrics
 modelAll <- lmer(abs(anpp_pdiff) ~ evenness_diff + rank_difference + species_difference + richness_difference + (1|site_code/project_name),
-                  data=correSEMdataTrt)
+                  data=subset(correSEMdataTrt, treatment_year<11))
 summary(modelAll)
 anova(modelAll, type='I') #rank, richness, and spp diff
 r.squaredGLMM(modelAll)
 #R2m (marginal)=0.2096342, R2c (conditional)=0.3422267; ***marginal R2 estimate is based on only fixed factors, while conditional R2 estimate is based on full model (fixed and random effects)
 
-evennessPlot <- ggplot(data=correSEMdataTrt, aes(x=evenness_diff, y=abs(anpp_pdiff))) +
+evennessPlot <- ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=evenness_diff, y=abs(anpp_pdiff))) +
   geom_point(color='grey') +
   geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
   geom_smooth(method='lm', se=F, size=3, color='black') +
   xlab('Evenness Difference') + ylab('|ANPP Difference|') +
   theme(legend.position='none')
-rankPlot <- ggplot(data=correSEMdataTrt, aes(x=rank_difference, y=abs(anpp_pdiff))) +
+rankPlot <- ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=rank_difference, y=abs(anpp_pdiff))) +
   geom_point(color='grey') +
   geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
   geom_smooth(method='lm', se=F, size=3, color='black') +
   xlab('Rank Difference') + ylab('|ANPP Difference|') +
   theme(legend.position='none')
-sppdiffPlot <- ggplot(data=correSEMdataTrt, aes(x=species_difference, y=abs(anpp_pdiff))) +
+sppdiffPlot <- ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=species_difference, y=abs(anpp_pdiff))) +
   geom_point(color='grey') +
   geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
   geom_smooth(method='lm', se=F, size=3, color='black') +
   xlab('Species Difference') + ylab('|ANPP Difference|') +
   theme(legend.position='none')
-richnessPlot <- ggplot(data=correSEMdataTrt, aes(x=richness_difference, y=abs(anpp_pdiff))) +
+richnessPlot <- ggplot(data=subset(correSEMdataTrt, treatment_year<11), aes(x=richness_difference, y=abs(anpp_pdiff))) +
   geom_point(color='grey') +
   geom_smooth(method='lm', se=F, color='grey',aes(group=site_project_comm)) +
   geom_smooth(method='lm', se=F, size=3, color='black') +
