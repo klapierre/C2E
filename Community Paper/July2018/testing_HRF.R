@@ -26,6 +26,9 @@ metrics_sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_metri
   right_join(subset_studies)%>%
   na.omit()
 
+#check number of sig results
+
+
 #yes the majority of experiments only see one change.
 check<-metrics_sig%>%
   group_by(site_project_comm, treatment)%>%
