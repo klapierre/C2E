@@ -124,7 +124,7 @@ reps<-GlassD%>%
   group_by(trt_type3)%>%
   summarize(n=length(trt_type3))
 
-###doing with all years
+###doing with all years, not just the last few years.
 allyears_all <- GlassD %>%
   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
