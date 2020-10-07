@@ -41,6 +41,11 @@ info.trt2<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\ForAnalysis_a
   mutate(trt_type3=ifelse(trt_type=="drought"|trt_type=="irr"|trt_type=="N"|trt_type=="precip_vari"|trt_type=="P"|trt_type=="CO2"|trt_type=="other_resource", "Res.", ifelse(trt_type=="mow_clip"|trt_type=="temp"|trt_type=="plant_mani"|trt_type=="other_nonresource"|trt_type=="herb_removal"|trt_type=="NxN", "Non-Res.", ifelse(trt_type=="RxR"|trt_type=="RxRxR", "Mult. Res.", ifelse(trt_type=="threeway"|trt_type=="RxN", "Res.+Non-Res.", "oops")))))%>%
   select(-trt_type)
 
+summary_res<-info.trt2%>%
+  right_join(gam_trt)%>%
+  group_by(trt_type3)%>%
+  summarize(n=length(trt_type3))
+
 gam_touse<-gam%>%
  inner_join(trt_touse)%>%
   mutate(trt_type2=ifelse(trt_type=="N"|trt_type=="control","N", 
@@ -317,53 +322,53 @@ gamtrts_metrics_em<-metrics_sig%>%
 
 #write.csv(gamtrts_metrics_em, "C2E/Products/CommunityChange/Summer2018_Results/sig_diff_by_trts_May2019.csv", row.names = F)
 
-# #wihtin a GCD is there a differnce?
-CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
-prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# # #wihtin a GCD is there a differnce?
+# CO2 <- gamtrts_metrics%>%filter(trt_type2=='CO2')
+# prop.test(x=as.matrix(CO2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# # 
+# #N
+# N <- gamtrts_metrics%>%filter(trt_type2=='N')
+# prop.test(x=as.matrix(N[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 # 
-#N
-N <- gamtrts_metrics%>%filter(trt_type2=='N')
-prop.test(x=as.matrix(N[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#P
-P <- gamtrts_metrics%>%filter(trt_type2=='P')
-prop.test(x=as.matrix(P[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#irr
-irr <- gamtrts_metrics%>%filter(trt_type2=='Irrigation')
-prop.test(x=as.matrix(irr[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#mult nuts
-multnuts <- gamtrts_metrics%>%filter(trt_type2=='Mult. Nuts.')
-prop.test(x=as.matrix(multnuts[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#temp
-temp <- gamtrts_metrics%>%filter(trt_type2=='Temperature')
-prop.test(x=as.matrix(temp[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#precip var
-pv <- gamtrts_metrics%>%filter(trt_type2=='Precip. Vari.')
-prop.test(x=as.matrix(pv[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-# #within a manipulation type is there a differnce?
-nonres <- gamtrts3_metrics%>%filter(trt_type2=='Non-Res.')
-prop.test(x=as.matrix(nonres[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# #P
+# P <- gamtrts_metrics%>%filter(trt_type2=='P')
+# prop.test(x=as.matrix(P[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 # 
-#N
-res <- gamtrts3_metrics%>%filter(trt_type2=='Res.')
-prop.test(x=as.matrix(res[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#P
-multres <- gamtrts3_metrics%>%filter(trt_type2=='Mult. Res.')
-prop.test(x=as.matrix(multres[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#irr
-rn<- gamtrts3_metrics%>%filter(trt_type2=='Res.+Non-Res.')
-prop.test(x=as.matrix(rn[c('num_sig', 'num_nonsig')]), alternative='two.sided')
-
-#mult nuts
-multnuts <- gamtrts_metrics%>%filter(trt_type2=='Mult. Nuts.')
-prop.test(x=as.matrix(multnuts[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# #irr
+# irr <- gamtrts_metrics%>%filter(trt_type2=='Irrigation')
+# prop.test(x=as.matrix(irr[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# #mult nuts
+# multnuts <- gamtrts_metrics%>%filter(trt_type2=='Mult. Nuts.')
+# prop.test(x=as.matrix(multnuts[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# #temp
+# temp <- gamtrts_metrics%>%filter(trt_type2=='Temperature')
+# prop.test(x=as.matrix(temp[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# #precip var
+# pv <- gamtrts_metrics%>%filter(trt_type2=='Precip. Vari.')
+# prop.test(x=as.matrix(pv[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# # #within a manipulation type is there a differnce?
+# nonres <- gamtrts3_metrics%>%filter(trt_type2=='Non-Res.')
+# prop.test(x=as.matrix(nonres[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# # 
+# #N
+# res <- gamtrts3_metrics%>%filter(trt_type2=='Res.')
+# prop.test(x=as.matrix(res[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# #P
+# multres <- gamtrts3_metrics%>%filter(trt_type2=='Mult. Res.')
+# prop.test(x=as.matrix(multres[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# #irr
+# rn<- gamtrts3_metrics%>%filter(trt_type2=='Res.+Non-Res.')
+# prop.test(x=as.matrix(rn[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+# 
+# #mult nuts
+# multnuts <- gamtrts_metrics%>%filter(trt_type2=='Mult. Nuts.')
+# prop.test(x=as.matrix(multnuts[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
 # ###now looking within communitychange
 # 
