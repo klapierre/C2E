@@ -61,177 +61,34 @@ gam_touse<-gam%>%
         ifelse(trt_type=="P*mow_clip"|trt_type=="P*burn"|trt_type=="P*burn*graze"|trt_type=="P*burn*mow_clip", "P*NR", 
         ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
         ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))%>%
-  left_join(info.trt2)
+  left_join(info.trt2)%>%
+  filter(response_var != "composition_change")
 
-##basic stats on what we are doing.
-gam_exp<-gam_touse%>%
-  select(site_project_comm)%>%
-  unique()
+###adjusting for multiple comparisons
+spc<-unique(gam_touse$site_project_comm)
 
-gam_trt<-gam_touse%>%
-  select(site_project_comm, treatment, trt_type2)%>%
-  unique()
+adjp<-data.frame()
 
-##summary of treatment for table 1
-sum_trts<-gam_trt%>%
-  select(site_project_comm, trt_type2)%>%
-  separate(site_project_comm, into=c("site_code", "project_name", "community_type"), sep="_")%>%
-  group_by(trt_type2)%>%
-  summarize(n=length(trt_type2))
+#looping through and correcting p-values
 
-sum_trts2<-gam_touse%>%
-  separate(site_project_comm, into=c("site_code", "project_name", "community_type"), sep="_")%>%
-  select(site_code, trt_type2)%>%
-  unique()%>%
-  group_by(trt_type2)%>%
-  summarize(n=length(trt_type2))
+for (i in 1:length(spc)){
+  
+  subset<-gam_touse%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-subset%>%
+    mutate(adjp=p.adjust(p_value, method="BH", n=length(site_project_comm)))
+  
+  adjp<-rbind(adjp, out)
+  
+}
 
-#write.csv(gam_trt, "C2E/Products/CommunityChange/March2018 WG/experiment_trt_subset_May2019.csv", row.names=F)
-
-# write.csv(trt_summary, "treatment_summary.csv")
-
-###
-
-#no longer doing this based on those communities that changed.
-
-# #first, how many communities saw sig differences in change between controls and treatments?
-# compchange<-gam_touse%>%
-#   filter(response_var == "composition_change")%>%
-#   group_by(sig_diff_cntrl_trt)%>%
-#   summarize(length(sig_diff_cntrl_trt))
-# 
-# ##did change differ depending on treatment?
-# gamtrts<-gam%>%
-#   left_join(trts_interactions)%>%
-#   filter(response_var == "composition_change", use == 1)%>%
-#   group_by(trt_type2) %>%
-#   summarise(
-#     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
-#     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
-#   )%>%
-#   filter(trt_type2!="N+irr"&trt_type2!="drought")
-# 
-# write.csv(gamtrts, "C2E/Products/CommunityChange/Summer2018_Results/chisq_comp_change_newtrts.csv")
-# 
-# gamtrts_toplot<-gamtrts%>%
-#   mutate(sum = num_sig+num_nonsig,
-#          psig = num_sig/sum,
-#          pnsig = num_nonsig/sum)%>%
-#   select(-sum, -num_sig, -num_nonsig)%>%
-#   gather(key = sig, value = number, -trt_type2)
-# 
-# 
-# ggplot(gamtrts_toplot, aes(x = trt_type2, y = number, fill = sig)) +
-#   geom_col(width = 0.7) +
-#   coord_flip() +
-#   theme_minimal() +
-#   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-#   labs(x = "Global Change Treatment", y = "Proportion of communities") +
-#   geom_hline(yintercept = 0.50)+
-#   theme(legend.position = "top")+
-#   annotate(geom="text", x = 1, y = 0.05, label="n = 7", size=3)+
-#   annotate(geom="text", x = 2, y = 0.05, label="n = 12", size=3)+
-#   annotate(geom="text", x = 3, y = 0.05, label="n = 51", size=3)+
-#   annotate(geom="text", x = 4, y = 0.05, label="n = 34", size=3)+
-#   annotate(geom="text", x = 5, y = 0.05, label="n = 11", size=3)
-# 
-# 
-# #second, of those that saw change, what aspect of the community changes
-# comchange_sig<-gam_touse%>%
-#   filter(response_var == "composition_change" & sig_diff_cntrl_trt == "yes")%>%
-#   select(site_project_comm, treatment)%>%
-#   mutate(keep = "yes")
-# #
-# # write.csv(comchange_sig, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv', row.names = F )
-# 
-# 
-# #second, of those that saw change, what aspect of the community changes
-# comchange_sig_metrics<-gam_touse%>%
-#   filter(response_var != "composition_change" & sig_diff_cntrl_trt == "yes")%>%
-#   select(site_project_comm, treatment, response_var)%>%
-#   mutate(keep = "yes")
-# 
-# overlap<-comchange_sig_metrics%>%
-#   select(-keep)%>%
-#   left_join(comchange_sig)
-# 
-# write.csv(comchange_sig_metrics, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_may2019.csv', row.names = F )
-# 
-# sig_only<-gam%>%
-#   right_join(comchange_sig)%>%
-#   filter(response_var != "composition_change")
-# 
-# sig_tally <- sig_only %>%
-#   group_by(response_var) %>%
-#   summarise(
-#     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
-#     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
-#   ) %>%
-#   mutate(sum = num_sig+num_nonsig,
-#          psig = num_sig/sum,
-#          pnsig = num_nonsig/sum)%>%
-#   select(-sum, -num_sig, -num_nonsig)%>%
-#   gather(key = sig, value = value, -response_var) %>%
-#   mutate(
-#     response_var2 = ifelse(response_var == "evenness_change_abs", "Evenness", response_var),
-#     response_var2 = ifelse(response_var == "gains", "Species gains", response_var2),
-#     response_var2 = ifelse(response_var == "losses", "Species losses", response_var2),
-#     response_var2 = ifelse(response_var == "rank_change", "Rank change", response_var2),
-#     response_var2 = ifelse(response_var == "richness_change_abs", "Richness change", response_var2))
-# 
-# allSERGL<-sig_tally%>%
-#   select(-response_var2)%>%
-#   spread(sig, value)
-# 
-# write.csv(allSERGL, 'C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change_all.csv', row.names = F )
-# 
-# sergl<-ggplot(sig_tally, aes(x = response_var2, y = value, fill = sig)) +
-#   geom_col(width = 0.7) +
-#   coord_flip() +
-#   theme_minimal() +
-#   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-#   labs(x = "Change metric", y = "Proportion of communities") +
-#   theme(legend.position = "top")+
-#   geom_hline(yintercept = 0.5)
-# 
-# ##did aspect of community change depend on the treatment?
-# gamtrts_metrics<-sig_only%>%
-#   left_join(trts_interactions)%>%
-#   ungroup()%>%
-#   filter(response_var != "composition_change", use == 1)%>%
-#   group_by(response_var, trt_type2) %>%
-#   summarise(
-#     num_sig = length(which(sig_diff_cntrl_trt == "yes")),
-#     num_nonsig = length(which(sig_diff_cntrl_trt == "no"))
-#   )%>%
-#   filter(trt_type2!="N+irr"&trt_type2!="drought")
-# 
-# write.csv(gamtrts_metrics, "C:\\Users\\megha\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\chisq_metrics_change.csv")
-# 
-# tograph_metrics_trt<-gamtrts_metrics%>%
-#   mutate(sum = num_sig + num_nonsig,
-#          psig = num_sig/sum,
-#          pnonsig = num_nonsig/sum)%>%
-#   select(-num_sig, -num_nonsig, -sum)%>%
-#   gather(key = sig, value = value, -trt_type2, -response_var) %>%
-#   mutate(
-#     response_var2 = ifelse(response_var == "evenness_change_abs", "Evenness", ifelse(response_var == "gains", "Species gains", ifelse(response_var == "losses", "Species losses", ifelse(response_var == "rank_change", "Rank change", "Richness change")))))
-# 
-# 
-# trt_sergl<-ggplot(subset(tograph_metrics_trt, trt_type2!="P"), aes(x = response_var2, y = value, fill = sig)) +
-#   geom_col(width = 0.7) +
-#   coord_flip() +
-#   theme_minimal() +
-#   scale_fill_brewer(name = "Treatment vs. Control", labels = c("Not significant", "Significant")) +
-#   labs(x = "Change metric", y = "Proportion of communities") +
-#   theme(legend.position = "top")+
-#   geom_hline(yintercept=0.50)+
-#   facet_wrap(~trt_type2, ncol = 2)
-
+adjp_sig<-adjp%>%
+  rename(oldsig=sig_diff_cntrl_trt)%>%
+  mutate(sig_diff_cntrl_trt=ifelse(is.na(adjp)|adjp>0.05, "no", ifelse(adjp<0.05, "yes", 999)))
 
 #Regradless of whether the community changed, how much to the metrics change?
-metrics_sig<-gam_touse%>%
-  filter(response_var != "composition_change")
+metrics_sig<-adjp_sig
 
 metrics_sig_tally <- metrics_sig %>%
   group_by(response_var) %>%
@@ -246,12 +103,16 @@ metrics_all<-metrics_sig%>%
   select(site_project_comm, treatment, sig_diff_cntrl_trt)%>%
   unique()
 
-1-(182/209)
+gam_trt<-gam_touse%>%
+  select(site_project_comm, treatment, trt_type2)%>%
+  unique()
+
+1-(154/209)
 
 #overall diff in metrics of change - NO
 prop.test(x=as.matrix(metrics_sig_tally[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
-vector_overall<-data.frame("response_var"=c("all","all"), sig=c("psig", "pnsig"), value = c(0.8708, 0.1292), response_var2=c("Any Change", "Any Change")) 
+vector_overall<-data.frame("response_var"=c("all","all"), sig=c("psig", "pnsig"), value = c(0.736, 0.263), response_var2=c("Any Change", "Any Change")) 
 
 sig_tograph<-metrics_sig_tally%>%
   mutate(sum = num_sig+num_nonsig,
