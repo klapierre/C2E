@@ -9,6 +9,7 @@
 
 library(tidyverse)
 library(gridExtra)
+
 theme_set(theme_bw(base_size=20))
 
 
@@ -20,7 +21,8 @@ setwd("~/Dropbox/")
 #read in and drop sucessional treatments (those that had a big disturbance to start)
 gam<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_comparison_table_last_year.csv")%>%
   rename(site_project_comm=site_proj_comm)%>%
-  separate(site_project_comm, into=c("site_code","project_name","community_type"), sep="_", remove=F)
+  separate(site_project_comm, into=c("site_code","project_name","community_type"), sep="_", remove=F)%>%
+  filter(response_var != "composition_change")
 
 ###can do this anlayses for datasets 10 yrs or longer, to match what kim has
 # %>%
@@ -72,6 +74,29 @@ gam_touse<-gam%>%
         ifelse(trt_type=="precip_vari*temp", "precip_vari*temp", 
         ifelse(trt_type=="N*irr*CO2", "mult_res", 999))))))))))))))))))))))))%>%
   left_join(info.trt2)
+
+###adjusting for multiple comparisons
+spc<-unique(gam_touse$site_project_comm)
+
+adjp<-data.frame()
+
+#looping through and correcting p-values
+
+for (i in 1:length(spc)){
+  
+  subset<-gam_touse%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-subset%>%
+    mutate(adjp=p.adjust(p_value, method="BH", n=length(site_project_comm)))
+  
+  adjp<-rbind(adjp, out)
+  
+}
+
+adjp_sig<-adjp%>%
+  rename(oldsig=sig_diff_cntrl_trt)%>%
+  mutate(sig_diff_cntrl_trt=ifelse(is.na(adjp)|adjp>0.05, "no", ifelse(adjp<0.05, "yes", 999)))
 
 ##basic stats on what we are doing.
 gam_exp<-gam_touse%>%
@@ -240,8 +265,7 @@ sum_trts2<-gam_touse%>%
 
 
 #Regradless of whether the community changed, how much to the metrics change?
-metrics_sig<-gam_touse%>%
-  filter(response_var != "composition_change")
+metrics_sig<-adjp_sig
 
 metrics_sig_tally <- metrics_sig %>%
   group_by(response_var) %>%
@@ -261,7 +285,7 @@ metrics_all<-metrics_sig%>%
 #overall diff in metrics of change - NO
 prop.test(x=as.matrix(metrics_sig_tally[c('num_sig', 'num_nonsig')]), alternative='two.sided')
 
-vector_overall<-data.frame("response_var"=c("all","all"), sig=c("psig", "pnsig"), value = c(0.8219178, 0.1780822), response_var2=c("Any Change", "Any Change")) 
+vector_overall<-data.frame("response_var"=c("all","all"), sig=c("psig", "pnsig"), value = c(0.7077, 0.2922), response_var2=c("Any Change", "Any Change")) 
 
 sig_tograph<-metrics_sig_tally%>%
   mutate(sum = num_sig+num_nonsig,
@@ -373,42 +397,52 @@ gamtrts_metrics_em<-metrics_sig%>%
 # ###now looking within communitychange
 # 
 rich <- gamtrts_metrics%>%filter(response_var=='richness_change_abs')
-prop.test(x=as.matrix(rich[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+r<-prop.test(x=as.matrix(rich[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=r["p.value"], "BH", n=10)
 
 even <- gamtrts_metrics%>%filter(response_var=='evenness_change_abs')
-prop.test(x=as.matrix(even[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+e<-prop.test(x=as.matrix(even[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=e["p.value"], "BH", n=10)
 
 #rank
 rank <- gamtrts_metrics%>%filter(response_var=='rank_change')
-prop.test(x=as.matrix(rank[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+ra<-prop.test(x=as.matrix(rank[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=ra["p.value"], "BH", n=10)
 
 #gain
 gain <- gamtrts_metrics%>%filter(response_var=='gains')
-prop.test(x=as.matrix(gain[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+g<-prop.test(x=as.matrix(gain[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=g["p.value"], "BH", n=10)
 
 #loss
 loss <- gamtrts_metrics%>%filter(response_var=='losses')
-prop.test(x=as.matrix(loss[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+l<-prop.test(x=as.matrix(loss[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=l["p.value"], "BH", n=10)
 
 # ###now looking within communitychange
 # 
 rich2 <- gamtrts3_metrics%>%filter(response_var=='richness_change_abs')
-prop.test(x=as.matrix(rich2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+r2<-prop.test(x=as.matrix(rich2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=r2["p.value"], "BH", n=10)
 
 even2 <- gamtrts3_metrics%>%filter(response_var=='evenness_change_abs')
-prop.test(x=as.matrix(even2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+e2<-prop.test(x=as.matrix(even2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=e2["p.value"], "BH", n=10)
 
 #rank
 rank2 <- gamtrts3_metrics%>%filter(response_var=='rank_change')
-prop.test(x=as.matrix(rank2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+ra2<-prop.test(x=as.matrix(rank2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=ra2["p.value"], "BH", n=10)
 
 #gain
 gain2 <- gamtrts3_metrics%>%filter(response_var=='gains')
-prop.test(x=as.matrix(gain2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+g2<-prop.test(x=as.matrix(gain2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=g2["p.value"], "BH", n=10)
 
 #loss
 loss2 <- gamtrts3_metrics%>%filter(response_var=='losses')
-prop.test(x=as.matrix(loss2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+l2<-prop.test(x=as.matrix(loss2[c('num_sig', 'num_nonsig')]), alternative='two.sided')
+p.adjust(p=l2["p.value"], "BH", n=10)
 
 
 numexp_trt<-metrics_sig%>%
