@@ -133,7 +133,7 @@ allyears_all_trt3 <- GlassD %>%
   group_by(site_project_comm, treatment, response_var, trt_type3) %>%
   summarise(mglassd=mean(glassd, na.rm=T))
 
-# allyears_sigonly <- GlassD %>%
+  # allyears_sigonly <- GlassD %>%
 #   filter(sig_diff_cntrl_trt=="yes")%>%
 #   group_by(site_project_comm, treatment, response_var, trt_type2, use) %>%
 #   summarise(mglassd=mean(glassd, na.rm=T))
@@ -149,19 +149,22 @@ allyears_all_trt3 <- GlassD %>%
 sig_alla_overall<-allyears_all%>%
   group_by(response_var)%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0),
+  mutate(adjp=p.adjust(pval, method = "BH", n=60),
+         sig=ifelse(adjp<0.05, 1, 0),
          trt_type2="All GCDs")
 
 sig_alla_trts<-allyears_all%>%
   filter(use==1)%>%
   group_by(response_var, trt_type2)%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0))
+  mutate(adjp=p.adjust(pval, method = "BH", n=60),
+         sig=ifelse(adjp<0.05, 1, 0))
 
 sig_alla_trts3<-allyears_all_trt3%>%
   group_by(response_var, trt_type3)%>%
   summarize(pval=t.test(mglassd, mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0))%>%
+  mutate(adjp=p.adjust(pval, method = "BH", n=60),
+         sig=ifelse(adjp<0.05, 1, 0))%>%
   rename(trt_type2=trt_type3)
 
 sig_alla<-sig_alla_overall%>%
@@ -383,19 +386,22 @@ nrow(subset(glassD_alldata_box, response_var2=="gains"&mglassd<0))
 sig_alla_overall_abs<-allyears_all%>%
   group_by(response_var)%>%
   summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0),
+  mutate(adjp=p.adjust(pval, method = "BH", n=60),
+         sig=ifelse(adjp<0.05, 1, 0),
          trt_type2="All GCDs")
 
 sig_alla_trts_abs<-allyears_all%>%
   filter(use==1)%>%
   group_by(response_var, trt_type2)%>%
   summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0))
+  mutate(adjp=p.adjust(pval, method = "BH", n=60),
+         sig=ifelse(adjp<0.05, 1, 0))
 
 sig_alla_trts3_abs<-allyears_all_trt3%>%
   group_by(response_var, trt_type3)%>%
   summarize(pval=t.test(abs(mglassd), mu=0)$p.value)%>%
-  mutate(sig=ifelse(pval<0.05, 1, 0))%>%
+  mutate(adjp=p.adjust(pval, method = "BH", n=60),
+         sig=ifelse(adjp<0.05, 1, 0))%>%
   rename(trt_type2=trt_type3)
 
 sig_alla_abs<-sig_alla_overall_abs%>%
