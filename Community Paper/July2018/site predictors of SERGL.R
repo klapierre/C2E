@@ -174,21 +174,26 @@ richresults=data.frame(response="rich",
 
 even=lm(abs_evenness_glass~sMAP + sMAT + srrich + sanpp +seven, data=change_glass_d_mean)
 summary(even)
+p.adjust(.0002751, method = "BH", n=5)# p = 0.001
 rsq.partial(even)
 evenresults=data.frame(response="even", predictor=names(even$coefficients), slope=as.numeric(even$coefficients), pval=as.numeric(summary(even)$coef[,4]), rsq=c(NA, rsq.partial(even)$partial.rsq))
 
 rank=lm(rank_glass~sMAP + sMAT + srrich + sanpp + seven, data=change_glass_d_mean)
 summary(rank)
+p.adjust(0.01067, method = "BH", n=5) p = 0.053
 rsq.partial(rank)
 rankresults=data.frame(response="rank", predictor=names(rank$coefficients), slope=as.numeric(rank$coefficients), pval=as.numeric(summary(rank)$coef[,4]), rsq=c(NA, rsq.partial(rank)$partial.rsq))
 
 gains=lm(gains_glass~sMAP + sMAT + srrich + sanpp +seven, data=change_glass_d_mean)
 summary(gains)
+p.adjust(0.00002981, method = "BH", n=5) #p = 0.00014 
 rsq.partial(gains)
 gainsresults=data.frame(response="gains", predictor=names(gains$coefficients), slope=as.numeric(gains$coefficients), pval=as.numeric(summary(gains)$coef[,4]), rsq=c(NA, rsq.partial(gains)$partial.rsq))
 
 losses=lm(losses_glass~sMAP + sMAT + srrich + sanpp +seven, data=change_glass_d_mean)
 summary(losses)
+p.adjust(0.02411, method = "BH", n=5) #p = 0.1205
+
 rsq.partial(losses)
 lossesresults=data.frame(response="losses", predictor=names(losses$coefficients), slope=as.numeric(losses$coefficients), pval=as.numeric(summary(losses)$coef[,4]), rsq=c(NA, rsq.partial(losses)$partial.rsq))
 
@@ -393,14 +398,15 @@ fulldataset$studies="All manipulations"
 
 rsqvalues<-data.frame(response=c("rich", "rank", "even", "gains", "losses"), 
                       rsq = c(0.01,0.05,0.08,0.10,0.04),
-                      pval = c("n.s.", "*","**",  "**","*"),
-                      combinded=c("0.01 n.s.","0.05*","0.08**","0.10**","0.04*"))%>%
+                      pval = c("n.s.", "n.s.","*",  "*","n.s."),
+                      combinded=c("0.01 n.s.","0.05 n.s.","0.08*","0.10*","0.04 n.s."))%>%
   mutate(response2=factor(response, levels=c("rich", "even", "rank", "gains", "losses")))
 
 forbigfig<-fulldataset%>%
   mutate(response2=factor(response, levels = c("rich", "even", "rank", "gains", "losses")),
          predictor2=ifelse(predictor=="sanpp", "ANPP", ifelse(predictor=="sMAP", "MAP", ifelse(predictor=="sMAT", "MAT", ifelse(predictor=="srrich", "Regional SR", ifelse(predictor=="seven", "Site Evenness", "(Intercept)"))))), 
-         significant=as.factor(1*(pval<0.05)), 
+         significant=as.factor(1*(pval<0.05)),
+         sig2=ifelse(response=='rank'|response=="losses"|response=="rich", 0, as.numeric(as.character((significant)))),
          star.location=ifelse(slope>0, slope+0.02, slope-0.02))
 
 parameter<-c(
@@ -415,7 +421,7 @@ parameter<-c(
 mr<-
 ggplot(data=subset(forbigfig, predictor2!="(Intercept)"), aes(x=predictor2, y=slope, fill=rsq)) + 
   geom_col() + 
-  geom_point(aes(predictor2, star.location, shape=significant)) + 
+  geom_point(aes(predictor2, star.location, shape=as.factor(sig2))) + 
   facet_wrap(~response2, ncol = 5, labeller=labeller(response2 = parameter)) + 
   theme(axis.text.x=element_text(angle = 90, vjust = 0.4, hjust=1)) + 
   xlab("Ecosystem Property") + 
@@ -471,7 +477,8 @@ rvalues <- tograph_cor %>%
   group_by(vari_group, parm_group) %>%
   summarize(r.value = round((cor.test(vari_value, value)$estimate), digits=3),
             p.value = (cor.test(vari_value, value)$p.value))%>%
-  mutate(sig=ifelse(p.value<0.05, 1, 0))
+  mutate(adjp=p.adjust(p.value, method="BH", n=25),
+         sig=ifelse(adjp<0.05, 1, 0))
 
 parameter2<-c(
   sanpp = "Site ANPP",
@@ -496,11 +503,11 @@ ggplot(data=tograph_cor, aes(x = value, y = vari_value))+
   xlab("Standardized Value")+
   ylab("Glass's D")+
   #geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="sMAP"), method="lm", se=F, color = "black")+
-  geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
-  geom_smooth(data=subset(tograph_cor, vari_group=="rank_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
-  geom_smooth(data=subset(tograph_cor, vari_group=="gains_glass"&parm_group=="sMAP"), method="lm", se=F, color = "black")+
+  #geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
+  #geom_smooth(data=subset(tograph_cor, vari_group=="rank_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
+  #geom_smooth(data=subset(tograph_cor, vari_group=="gains_glass"&parm_group=="sMAP"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="gains_glass"&parm_group=="srrich"), method="lm", se=F, color = "black")+
-  geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sMAT"), method="lm", se=F, color = "black")+
+  #geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sMAT"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="losses_glass"&parm_group=="sanpp"), method="lm", se=F, color = "black")+
   geom_smooth(data=subset(tograph_cor, vari_group=="abs_evenness_glass"&parm_group=="seven"), method="lm", se=F, color = "black")+
   geom_text(data=rvalues, mapping=aes(x=Inf, y =Inf, label = r.value), hjust=1.05, vjust=1.5)
