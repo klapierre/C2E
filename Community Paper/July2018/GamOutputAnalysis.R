@@ -267,6 +267,8 @@ sum_trts2<-gam_touse%>%
 #Regradless of whether the community changed, how much to the metrics change?
 metrics_sig<-adjp_sig
 
+write.csv(metrics_sig, 'C:\\Users\\mavolio2\\Dropbox\\C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_metrics_sig_change_Dec2020.csv', row.names = F )
+
 metrics_sig_tally <- metrics_sig %>%
   group_by(response_var) %>%
   summarise(
