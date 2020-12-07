@@ -21,16 +21,19 @@ subset_studies2<-subset_studies%>%
 # sig_com<-read.csv('C2E\\Products\\CommunityChange\\Summer2018_Results\\gam_com_sig_change.csv')%>%
 #   mutate(site_project_comm = site_proj_comm)
 
-metrics_sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_metrics_sig_change_may2019.csv")%>%
+gam_sig<-read.csv("C2E/Products/CommunityChange/Summer2018_Results/gam_metrics_sig_change_Dec2020.csv")%>%
   filter(response_var!="richness_change_abs")%>%
   right_join(subset_studies)%>%
-  na.omit()
+  select(site_project_comm, treatment, response_var, sig_diff_cntrl_trt)%>%
+  filter(sig_diff_cntrl_trt=="yes")
 
 #check number of sig results
+exp<-gam_sig%>%
+  select(site_project_comm, treatment)%>%
+  unique()
 
-
-#yes the majority of experiments only see one change.
-check<-metrics_sig%>%
+#most of experiments only see one change.
+check<-gam_sig%>%
   group_by(site_project_comm, treatment)%>%
   summarize(n=length(response_var))
 
@@ -112,7 +115,7 @@ max <- change_glass_d%>%
 ##dropping what didn't change and then ranking everything - I think this is the way to do it.
 rank_sig<-max%>%
   mutate(response_var = ifelse(max_metric=="Emax","evenness_change_abs",ifelse(max_metric=="Rmax","rank_change",ifelse(max_metric=="Gmax","gains", "losses"))))%>%
-  right_join(metrics_sig)%>%
+  right_join(gam_sig)%>%
   group_by(site_project_comm, treatment)%>%
   filter(max_metric!="Smax")%>%
   mutate(rank=rank(max_value, ties.method="random"))
@@ -130,7 +133,7 @@ rank_table<-rank_sig%>%
   summarize(num=length(order))%>%
   mutate(first=substring(order,1,1))%>%
   arrange(first, -num)%>%
-  mutate(ordered=seq(1:52),
+  mutate(ordered=seq(1:49),
          first1=factor(first, levels=c("E", "R", "G", "L")))#%>% dropping code to order by number of community changes
   # mutate(numchang=nchar(order))%>%
   # ungroup() %>%
