@@ -148,13 +148,15 @@ rank_table<-rank_sig%>%
 
 graph_headings<-rank_table%>%
   group_by(first1)%>%
-  summarize(tot=sum(num))
+  summarize(tot=sum(num),
+            pct=tot/150)
+chisq.test(graph_headings$tot)
 
 parameter<-c(
-  E = "Evenness changes occur first",
-  R = "Rank changes occur first",
-  G = "Gains occur first",
-  L = "Losses occur first"
+  E = "Evenness changes occur first in 23%\n of experimental treatments",
+  R = "Rank changes occur first in 29%\n of experimental treatments",
+  G = "Gains occur first in 23%\n of experimental treatments",
+  L = "Losses occur first in 24%\n of experimental treatments"
 )
 
 ##plotting by what changes first
@@ -164,8 +166,8 @@ ggplot(data=rank_table, aes(x=reorder(order, ordered), y = num))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   xlab("Order of Community Changes")+
   ylab("Number of Experiments")+
-  facet_wrap(~first1, scales="free_x", labeller=labeller(first1 = parameter))+
-  geom_text(data=graph_headings, mapping=aes(x=Inf, y = Inf, label = tot), hjust=1.5, vjust=1.5)
+  facet_wrap(~first1, scales="free_x", labeller=labeller(first1 = parameter))#+
+  #geom_text(data=graph_headings, mapping=aes(x=Inf, y = Inf, label = tot), size= 6, hjust=1.5, vjust=1.5)
 
 # #plotting by number of changes
 # ggplot(data=rank_table, aes(x=reorder(order, ordered2), y = num))+
