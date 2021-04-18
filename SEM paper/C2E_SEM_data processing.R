@@ -1,8 +1,9 @@
-library(tidyverse)
+library(codyn)
 library(grid)
 library(PerformanceAnalytics)
+library(tidyverse)
 
-#kim's desktop
+#kim's laptop
 setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\converge_diverge\\datasets\\LongForm')
 
 
@@ -21,11 +22,110 @@ trt <- read.csv('ExperimentInformation_March2019.csv')%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
   select(-site_code, -project_name, -community_type, -public)
 
-###community data
-correCommDiff <- read.csv('corre_community_difference_July2019.csv')%>%
-  select(-treatment)%>%
-  rename(treatment=treatment2)%>%
-  rename(treatment_year=time)
+trt2 <- read.csv('SpeciesRelativeAbundance_Nov2019.csv')%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
+  select(site_project_comm, site_code, project_name, community_type, calendar_year, treatment_year, treatment, plot_id)%>%
+  unique()
+
+relCover <- read.csv('SpeciesRelativeAbundance_Nov2019.csv')%>%
+  select(-X)%>%
+  group_by(site_code, project_name, community_type, treatment, plot_id, genus_species, treatment_year)%>%
+  summarise(relcov=mean(relcov))%>%
+  ungroup()%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
+  left_join(trt)%>%
+  filter(treatment_year!=0)%>%
+  filter(site_project_comm!='GVN::FACE::0')
+
+
+##### calculating community differences #####
+#make a new dataframe with just the label
+exp_year=relCover%>%
+  select(site_project_comm)%>%
+  unique()
+
+#makes an empty dataframe
+correCommDiff=data.frame(row.names=1) 
+
+for(i in 1:length(exp_year$site_project_comm)) {
+  
+  #creates a dataset for each unique year, trt, exp combo
+  subset <- relCover[relCover$site_project_comm==as.character(exp_year$site_project_comm[i]),]%>%
+    select(site_project_comm, treatment_year, treatment, plot_mani, genus_species, relcov, plot_id)%>%
+    mutate(treatment2=ifelse(plot_mani==0, 'TRUECONTROL', as.character(treatment)))
+  
+  #need this to keep track of treatment
+  treatments <- subset%>%
+    select(plot_id, treatment)%>%
+    unique()
+  
+  #calculating composition difference and abs(dispersion difference)
+  multivariate <- multivariate_difference(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var='treatment2', reference.treatment='TRUECONTROL')%>%
+    rename(treatment=treatment22)%>%
+    select(-treatment2, -trt_greater_disp)
+  
+  #calculating univariate community metrics for each plot
+  univariate <- RAC_difference(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var='treatment2', reference.treatment='TRUECONTROL')%>%
+    rename(treatment=treatment22)%>%
+    select(-treatment2, -plot_id2)%>%
+    group_by(treatment_year, treatment)%>%
+    summarise(richness_diff=mean(richness_diff), evenness_diff=mean(evenness_diff), rank_diff=mean(rank_diff), species_diff=mean(species_diff))%>%
+    ungroup()
+  
+  #merge multivariate and univariate metrics
+  all <- univariate%>%
+    full_join(multivariate)%>%
+    mutate(site_project_comm=exp_year$site_project_comm[i])
+  
+  #pasting dispersions into the dataframe made for this analysis
+  correCommDiff=rbind(all, correCommDiff)  
+}
+
+
+
+##### calculating community changes #####
+#makes an empty dataframe
+correCommChange=data.frame(row.names=1) 
+
+for(i in 1:length(exp_year$site_project_comm)) {
+  
+  #creates a dataset for each unique year, trt, exp combo
+  subset <- relCover[relCover$site_project_comm==as.character(exp_year$site_project_comm[i]),]%>%
+    select(site_project_comm, treatment_year, treatment, plot_mani, genus_species, relcov, plot_id)%>%
+    mutate(treatment2=ifelse(plot_mani==0, 'TRUECONTROL', as.character(treatment)))
+  
+  #need this to keep track of treatment
+  treatments <- subset%>%
+    select(plot_id, treatment)%>%
+    unique()
+  
+  referenceTime=min(subset$treatment_year)
+  
+  #calculating composition difference and abs(dispersion difference)
+  multivariate <- multivariate_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var='treatment2', reference.time=referenceTime)%>%
+    select(-treatment_year)%>%
+    rename(treatment_year=treatment_year2,
+           treatment=treatment2)
+  
+  #calculating univariate community metrics for each plot
+  univariate <- RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time=referenceTime)%>%
+    select(-treatment_year)%>%
+    rename(treatment_year=treatment_year2)%>%
+    left_join(treatments)%>%
+    group_by(treatment_year, treatment)%>%
+    summarise(richness_change=mean(richness_change), evenness_change=mean(evenness_change), rank_change=mean(rank_change), gains=mean(gains), losses=mean(losses))%>%
+    ungroup()
+  
+  #merge multivariate and univariate metrics
+  all <- univariate%>%
+    full_join(multivariate)%>%
+    mutate(site_project_comm=exp_year$site_project_comm[i])
+  
+  #pasting dispersions into the dataframe made for this analysis
+  correCommChange=rbind(all, correCommChange)  
+}
+
+
 
 ###anpp data
 correANPP <- read.csv('ANPP_Oct2017.csv')%>%
@@ -72,18 +172,25 @@ correANPPdiff <- correANPP%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))
 
 #merge
-correSEMdata <- correANPPdiff%>%
-  left_join(correCommDiff)%>%
+correSEMdata <- correCommDiff%>%
+  full_join(correCommChange)%>%
+  filter(!is.na(richness_diff))%>%
+  mutate(evenness_diff=ifelse(is.na(evenness_diff), 0, evenness_diff),
+         evenness_change=ifelse(is.na(evenness_change), 0, evenness_change))%>%
+  full_join(correANPPdiff)%>%
+  filter(!is.na(anpp_pdiff))%>%
   left_join(trt)%>%
-  na.omit()%>%
   #transform to improve normality
   mutate(anpp_pdiff_transform=log10(anpp_pdiff+1-min(anpp_pdiff)), composition_diff_transform=(composition_diff)^(1/3))
-#all of these compare each year to year 1!
 
 
 ###exploratory correlations and histograms (all variables compare treatment to control plots)
 dataVis <- correSEMdata%>%
-  select(anpp_pdiff, composition_diff, richness_difference, evenness_diff, rank_difference, species_difference) #make visualization dataframe
+  select(anpp_pdiff, composition_diff, richness_diff, evenness_diff, rank_diff, species_diff) #make visualization dataframe
+chart.Correlation(dataVis, histogram=T, pch=19)
+
+dataVis <- correSEMdata%>%
+  select(anpp_pdiff, composition_change, richness_change, evenness_change, rank_change, gains, losses) #make visualization dataframe
 chart.Correlation(dataVis, histogram=T, pch=19)
 
 # qqnorm(correSEMdata$anpp_pdiff_transform)
@@ -110,9 +217,8 @@ correSEMdataTrt <- correSEMdata%>%
   mutate(irr=ifelse(precip>0, precip, 0), drought=ifelse(precip<0, precip, 0))%>%
   #make binary treatments just in case we want them later
   mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt+drought_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
-  na.omit()%>%
+  # na.omit()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='_'))%>%
   mutate(trt_type_2=ifelse(trt_type %in% c('CO2', 'irr', 'mult_nutrient', 'N', 'N*CO2', 'P', 'N*P', 'N*irr'), 'added', ifelse(trt_type %in% c('drought'), 'removed', ifelse(trt_type %in% c('fungicide', 'mow_clip', 'precip_vari', 'temp'), 'other', 'multiple'))))
 
-rm(list=setdiff(ls(), "correSEMdataTrt"))
-# write.csv(correSEMdataTrt, 'CoRRE_comm and anpp diff_07160219.csv')
+# write.csv(correSEMdataTrt, 'CoRRE_comm and anpp diff_04182021.csv')
