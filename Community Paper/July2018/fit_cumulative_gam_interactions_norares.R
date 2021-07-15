@@ -43,12 +43,12 @@ library(rlang)
 # setwd(work_dir)
 
 ## ATT testing
-# setwd("C:/Users/atredennick/Desktop/")
-# dat <- read.csv("forGAMnorare.csv")
+setwd("C:/Users/atredennick/Desktop/")
+dat <- read.csv("forGAMnorare.csv")
 
 # ##meghan's computer
-setwd("C:\\Users\\mavolio2\\Dropbox\\converge_diverge\\datasets\\LongForm\\")
-dat<-read.csv("CORRE_RAC_Metrics_June2020_allReplicates_norares.csv")
+# setwd("C:\\Users\\mavolio2\\Dropbox\\converge_diverge\\datasets\\LongForm\\")
+# dat<-read.csv("CORRE_RAC_Metrics_June2020_allReplicates_norares.csv")
 treatment_info<-read.csv("ExperimentInformation_March2019.csv")%>%
   dplyr::select(site_code, project_name, community_type, treatment,plot_mani)%>%
   unique()%>%
@@ -462,10 +462,10 @@ save_comparisons <- all_comparisons %>%
     sig_diff_cntrl_trt = ifelse(is.na(sig_diff_cntrl_trt) == TRUE, "no", sig_diff_cntrl_trt)
   )
 
-outfile <- paste0("gam_comparison_table_", diff_type, ".csv")
+outfile <- paste0("gam_comparison_table_norare", diff_type, ".csv")
 write_csv(
   x = save_comparisons,
-  path = paste0(results_dir, outfile)
+  path = outfile
 )
 
 
