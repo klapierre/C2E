@@ -226,4 +226,4 @@ correAllDataTrt <- correAllData%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='_'))%>%
   mutate(trt_type_2=ifelse(trt_type %in% c('CO2', 'irr', 'mult_nutrient', 'N', 'N*CO2', 'P', 'N*P', 'N*irr'), 'added', ifelse(trt_type %in% c('drought'), 'removed', ifelse(trt_type %in% c('fungicide', 'mow_clip', 'precip_vari', 'temp'), 'other', 'multiple'))))
 
-# write.csv(correAllDataTrt, 'CoRRE_comm and anpp diff_07122021.csv')
+# write.csv(correAllDataTrt, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp diff_07122021.csv', row.names=F)
