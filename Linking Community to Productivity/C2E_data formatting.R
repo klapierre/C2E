@@ -105,7 +105,7 @@ for(i in 1:length(exp_year2$site_project_comm)) {
   
   referenceTime=min(subset$treatment_year)
   
-  #calculating composition difference and abs(dispersion difference)
+  #calculating composition change and abs(dispersion change) from the first year (not year-to-year comparison!)
   multivariate <- multivariate_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var='treatment2', reference.time=referenceTime)%>%
     select(-treatment_year)%>%
     rename(treatment_year=treatment_year2,
