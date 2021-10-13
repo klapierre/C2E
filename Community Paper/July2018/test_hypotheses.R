@@ -1,22 +1,26 @@
-### Addressing hypotheses in ecosphere paper
+### Addressing hypotheses in Ecosphere paper
+###
+### This code uses output from RAC Differences.R and permanvoa_permdisp loop.R
 ###
 ### Authors:  Meghan Avolio (meghan.avolio@jhu.edu)
-### Last updated: Oct 30 2018
+### Last updated: Oct 13 2021
 
 setwd("C:\\Users\\mavolio2\\Dropbox\\")
-theme_set(theme_bw(12))
 
 library(tidyverse)
 library(devtools)
-install_github("NCEAS/codyn", ref = "sp_diff_test")
 library(codyn)
 library(vegan)
 
-###getting ttest differences between rac trt-control and contorl-contorl comparisions
+theme_set(theme_bw(12))
 
-rac_diff <-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_Metrics_June2019.csv")
+###step 1. Run RAC Differences overall and for controls only.
 
-rac_diff_control<- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_control_Metrics_Jun2019.csv")
+###Step 2: Do ttests. Getting ttest differences between rac trt-control and contorl-contorl comparisions
+
+rac_diff <-read.csv("C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_Oct2021.csv")
+
+rac_diff_control<- read.csv("C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics_Oct2021.csv")
 
 
 ##get average C-T diff for each control replicate
@@ -151,18 +155,31 @@ for (i in 1:length(spc_yr_trt_vec)){
 
  }
 
-write.csv(ttests, "C2E\\Products\\CommunityChange\\March2018 WG\\RAC_diff_CT_ttests_Jun2019.csv", row.names = F)
+write.csv(ttests, "C2E\\Products\\Testing Hypots\\RAC_diff_CT_ttests_Oct2021.csv", row.names = F)
 
-####linking RAC differences with compositon/disperison differences
+##step 3: run permanova_perm disp loop.R
+
+###step 4: read in all necessary files and correct for multiple hypothesis testing
 
 #there are more perm_output b/c did not subset CDR e001/e002
-perm_output<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_outputJul2019.csv")
+perm_output<-read.csv("C2E\\Products\\Testing Hypots\\permanova_permdisp_outputOct2021.csv")%>%
+  gather(measure, pval, perm_Pvalue:disp_Pvalue)%>%
+  group_by(site_project_comm)%>%
+  mutate(adjp=p.adjust(pval, method="BH", n=length(site_project_comm)))%>%
+  select(-pval)%>%
+  spread(measure, adjp)
 
-mult_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_Jun2019.csv")%>%
+mult_diff <- read.csv("C2E\\Products\\Testing Hypots\\CORRE_Mult_diff_Metrics_Oct2021.csv")%>%
   mutate(treatment = treatment2)
 
-CT_ttests<- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\RAC_diff_CT_ttests_Jun2019.csv")
+CT_ttests<- read.csv("C2E\\Products\\Testing Hypots\\RAC_diff_CT_ttests_Oct2021.csv")%>%
+  gather(measure, pval, rich_pval:spdiff_pval)%>%
+  group_by(site_project_comm)%>%
+  mutate(adjp=p.adjust(pval, method="BH", n=length(site_project_comm)))%>%
+  select(-pval)%>%
+  spread(measure, adjp)
 
+####Step 5: linking RAC differences with composition/disperison differences
 
 #merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
 #1 = no change comp, no change disp
@@ -194,6 +211,7 @@ RAC_diff_outcomes <- scenarios%>%
 num_scen<- RAC_diff_outcomes%>%
   group_by(scenario)%>%
   summarize(n=length(scenario))%>%
+  mutate(pct=n/2900)%>%
   na.omit()
 
 prop_diff<-RAC_diff_outcomes%>%
