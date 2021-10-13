@@ -1,8 +1,8 @@
 ################################################################################
 ##  RAC Changes.R: This script creates the RAC differences and multivariate differences metrics for the codyn dataset 
 ##
-##  Author: Meghan Avolio (meghan.avolio@gmail.com)
-##  Date: Oct 30, 2018
+##  Author: Meghan Avolio (meghan.avolio@jhu.edu)
+##  Date: Oct 13, 2021
 ################################################################################
 
 library(tidyverse)
@@ -10,16 +10,15 @@ library(gridExtra)
 library(grid)
 library(gtable)
 library(devtools)
-install_github("NCEAS/codyn", ref = "sp_diff_test")
 library(codyn)
 library(vegan)
 #home
 setwd("~/Dropbox/")
 #work
-setwd("C:\\Users\\megha\\Dropbox\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\")
 
-#Files from home
-corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_March2019.csv")
+#Read in sp. rel. abund.
+corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Nov2019.csv")
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
@@ -95,7 +94,7 @@ for (i in 1:length(spc)){
   diff_rac<-rbind(diff_rac, out)
 }
 
-write.csv(diff_rac, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_Metrics_June2019.csv", row.names = F)
+write.csv(diff_rac, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_Oct2021.csv", row.names = F)
 
 
 #####CALCULATING RAC differences CONTROLS ONLY
@@ -115,7 +114,7 @@ for (i in 1:length(spc)){
   diff_rac_c<-rbind(diff_rac_c, out)
 }
 
-write.csv(diff_rac_c, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_RAC_Diff_control_Metrics_Jun2019.csv", row.names = F)
+write.csv(diff_rac_c, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics_Oct2021.csv", row.names = F)
 
 #####CALCULATING multivariate differences
 spc<-unique(corredat$site_project_comm)
@@ -145,8 +144,9 @@ diff_mult2 <- diff_mult%>%
          control=as.character(control))%>%
   mutate(greater_disp=ifelse(trt_greater_disp == control, "C","T"))
 
-write.csv(diff_mult2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_Jun2019.csv", row.names = F)
+write.csv(diff_mult2, "C2E\\Products\\Testing Hypots\\CORRE_Mult_diff_Metrics_Oct2021.csv", row.names = F)
 
+########
 noraresp<-corredat%>%
   filter(plot_mani==0)%>%
   group_by(site_project_comm, genus_species)%>%
