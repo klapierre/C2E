@@ -6,6 +6,7 @@
 ### Last updated: Nov 10 2021
 
 setwd("C:\\Users\\mavolio2\\Dropbox\\")
+setwd("E:\\Dropbox\\")
 
 library(tidyverse)
 library(devtools)
@@ -161,7 +162,6 @@ write.csv(ttests, "C2E\\Products\\Testing Hypots\\RAC_diff_CT_ttests_Oct2021.csv
 
 ###step 4: read in all necessary files and correct for multiple hypothesis testing
 
-#there are more perm_output b/c did not subset CDR e001/e002
 perm_output<-read.csv("C2E\\Products\\Testing Hypots\\permanova_permdisp_outputOct2021.csv")%>%
   gather(measure, pval, perm_Pvalue:disp_Pvalue)%>%
   group_by(site_project_comm)%>%
@@ -170,24 +170,24 @@ perm_output<-read.csv("C2E\\Products\\Testing Hypots\\permanova_permdisp_outputO
   spread(measure, adjp)
 
 mult_diff <- read.csv("C2E\\Products\\Testing Hypots\\CORRE_Mult_diff_Metrics_Oct2021.csv")%>%
-  mutate(treatment = treatment2)
+  mutate(treatment = treatment2)%>%
+  filter(site_project_comm!="NGBER_gb_0"|treatment2!="AMBIENT")
 
+#there are 24 fewer c-t comparisons because we were unable to run the t-test for 24 comparisons.
 CT_ttests<- read.csv("C2E\\Products\\Testing Hypots\\RAC_diff_CT_ttests_Oct2021.csv")%>%
+  filter(site_project_comm!="NGBER_gb_0"|treatment!="AMBIENT")%>%
   gather(measure, pval, rich_pval:spdiff_pval)%>%
   group_by(site_project_comm)%>%
   mutate(adjp=p.adjust(pval, method="BH", n=length(site_project_comm)))%>%
   select(-pval)%>%
   spread(measure, adjp)
 
-num_diff<-CT_ttests%>%
-  mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
-even=ifelse(even_pval<0.0601, 1, 0),
-rank=ifelse(rank_pval<0.0501, 1, 0),
-spdiff=ifelse(spdiff_pval<0.501, 1, 0),
-onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
-  group_by(onesig)%>%
-  summarize(n=length(onesig))%>%
-  mutate(pct=n/2900)
+#this is the full dataset of all C-T comparision for which it worked for all measures and pvalues are corrected.
+fulldataset<-perm_output%>%
+  right_join(mult_diff)%>%
+  na.omit()%>%
+  right_join(CT_ttests)%>%
+  na.omit()
 
 ####Step 5: linking RAC differences with composition/disperison differences
 
@@ -199,96 +199,178 @@ onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
 #5 = change comp, increase disp (T > C )
 #6 = change comp, decrease disp (C > T)
 
-scenarios<-perm_output%>%
-  right_join(mult_diff)%>%
+scenarios<-fulldataset%>%
   mutate(scenario=ifelse(perm_Pvalue>0.0501&disp_Pvalue>0.0501, 1, 
                          ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "T", 2,
                          ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "C", 3,
                          ifelse(perm_Pvalue<0.0501&disp_Pvalue>0.0501,4,
                          ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "T",5,
-                         ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))
+                         ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))%>%
+  na.omit
 
-
+num_scen<- scenarios%>%
+  group_by(scenario)%>%
+  summarize(n=length(scenario))%>%
+  mutate(pct=n/2831)
 
 ##combining to see proportion is different for each RAC metric
 RAC_diff_outcomes <- scenarios%>%
-  right_join(CT_ttests)%>%
   mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
          even=ifelse(even_pval<0.0601, 1, 0),
          rank=ifelse(rank_pval<0.0501, 1, 0),
-         spdiff=ifelse(spdiff_pval<0.501, 1, 0))
-
-num_scen<- RAC_diff_outcomes%>%
-  group_by(scenario)%>%
-  summarize(n=length(scenario))%>%
-  mutate(pct=n/2900)%>%
-  na.omit()
+         spdiff=ifelse(spdiff_pval<0.0501, 1, 0))
 
 prop_diff<-RAC_diff_outcomes%>%
   na.omit()%>%
   group_by(scenario)%>%
   summarize_at(vars(rich, even, rank, spdiff), funs(sum))%>%
   gather(metric, num, rich:spdiff)%>%
-  mutate(prop = ifelse(scenario==1, num/1762, ifelse(scenario==2, num/98, ifelse(scenario==3, num/132, ifelse(scenario==4, num/586, ifelse(scenario==5, num/152, ifelse(scenario==6, num/153, 999)))))))%>%
+  mutate(prop = ifelse(scenario==1, num/2194, ifelse(scenario==2, num/80, ifelse(scenario==3, num/99, ifelse(scenario==4, num/300, ifelse(scenario==5, num/58, ifelse(scenario==6, num/100, 999)))))))%>%
   mutate(notsig=1-prop)%>%
   select(-num)%>%
   gather(sig, proportion, notsig:prop)
 
-theme_set(theme_bw(16))
+theme_set(theme_bw(12))
 theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
-ggplot(data=prop_diff, aes(x = metric, y = proportion, fill=sig))+
+#this is the figure I am going to use, I just need to not facet_wrap
+ggplot(data=subset(prop_diff, scenario==6), aes(x = metric, y = proportion, fill=sig))+
   geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
-  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"))+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("lightgray","darkgray"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich.", "Even.", "Rank", "Species"))+
+  theme(axis.text.x = element_text(angle = 90))+
   ylab("Proportion")+
-  xlab("RAC Difference Metric")+
-  facet_wrap(~scenario, ncol=3)+
+  xlab("RAC Difference Measure")+
   geom_hline(yintercept = 0.5)
 
-#controls only
-ggplot(data=subset(prop_diff, scenario==1), aes(x = metric, y = proportion, fill=sig))+
-  geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
-  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
-  ylab("Proportion")+
-  xlab("RAC Difference Metric")+
-  geom_hline(yintercept = 0.5)
+###Step 6
+#####looking into how often each measure of commnity difference detects sig differneces
+#how often is one aspect of community diff detected with rank-based measures?
+num_diff<-fulldataset%>%
+  mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
+         even=ifelse(even_pval<0.0501, 1, 0),
+         rank=ifelse(rank_pval<0.0501, 1, 0),
+         spdiff=ifelse(spdiff_pval<0.0501, 1, 0),
+         onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
+  replace(is.na(.), 0)%>%
+  group_by(onesig)%>%
+  summarize(n=length(onesig))%>%
+  mutate(pct=n/2831)
 
-ggplot(data=subset(prop_diff, scenario==2|scenario==3), aes(x = metric, y = proportion, fill=sig))+
-  geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
-  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
-  ylab("Proportion")+
-  xlab("RAC Difference Metric")+
-  facet_wrap(~scenario, ncol=1)+
-  geom_hline(yintercept = 0.5)
 
-ggplot(data=subset(prop_diff, scenario==4), aes(x = metric, y = proportion, fill=sig))+
-  geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
-  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
-  ylab("Proportion")+
-  xlab("RAC Difference Metric")+
-  geom_hline(yintercept = 0.5)
+measure_comp<-fulldataset%>%
+  select(site_project_comm, treatment, calendar_year, disp_Pvalue, perm_Pvalue, even_pval, rank_pval, rich_pval, spdiff_pval)%>%
+  pivot_longer(disp_Pvalue:spdiff_pval, names_to="measure", values_to= "pval")%>%
+  mutate(sig=ifelse(pval<0.0501, 1, 0))%>%
+  group_by(measure)%>%
+  summarize(n=sum(sig), prop=n/2831)
 
-ggplot(data=subset(prop_diff, scenario==5|scenario==6), aes(x = metric, y = proportion, fill=sig))+
+ggplot(data=measure_comp, aes(x = measure, y = prop))+
   geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
-  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+  scale_x_discrete(limits=c("rich_pval", "rank_pval", "perm_Pvalue", "even_pval", "disp_Pvalue", "spdiff_pval"), labels=c("Richness\nDiff","Rank\nDiff","Mult.\nCentriod","Evennness\nDiff","Mult.\nDispersion", "Species\nDiff"))+
+  theme(axis.text.x=element_text(angle=90))+
   ylab("Proportion")+
-  xlab("RAC Difference Metric")+
-  facet_wrap(~scenario, ncol=1)+
-  geom_hline(yintercept = 0.5)
+  xlab("Difference measure")
 
-#people like this figure less
-ggplot(data=prop_diff, aes(x = scenario, y = proportion, fill=sig))+
-  geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
-  ylab("Proportion")+
-  xlab("Community Difference Scenario")+
-  scale_x_continuous(breaks = c(1:6))+
-  facet_wrap(~metric, ncol=2)
+# ####investigating certain patterns
+# 
+# 
+# #controls only
+# ggplot(data=subset(prop_diff, scenario==1), aes(x = metric, y = proportion, fill=sig))+
+#   geom_bar(stat="identity")+
+#   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+#   scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+#   ylab("Proportion")+
+#   xlab("RAC Difference Metric")+
+#   geom_hline(yintercept = 0.5)
+# 
+# ggplot(data=subset(prop_diff, scenario==2|scenario==3), aes(x = metric, y = proportion, fill=sig))+
+#   geom_bar(stat="identity")+
+#   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+#   scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+#   ylab("Proportion")+
+#   xlab("RAC Difference Metric")+
+#   facet_wrap(~scenario, ncol=1)+
+#   geom_hline(yintercept = 0.5)
+# 
+# ggplot(data=subset(prop_diff, scenario==4), aes(x = metric, y = proportion, fill=sig))+
+#   geom_bar(stat="identity")+
+#   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+#   scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+#   ylab("Proportion")+
+#   xlab("RAC Difference Metric")+
+#   geom_hline(yintercept = 0.5)
+# 
+# ggplot(data=subset(prop_diff, scenario==5|scenario==6), aes(x = metric, y = proportion, fill=sig))+
+#   geom_bar(stat="identity")+
+#   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+#   scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich diff", "Even diff", "Rank diff.", "Species diff"))+
+#   ylab("Proportion")+
+#   xlab("RAC Difference Metric")+
+#   facet_wrap(~scenario, ncol=1)+
+#   geom_hline(yintercept = 0.5)
+# 
+# #people like this figure less
+# ggplot(data=prop_diff, aes(x = scenario, y = proportion, fill=sig))+
+#   geom_bar(stat="identity")+
+#   scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray","darkgreen"))+
+#   ylab("Proportion")+
+#   xlab("Community Difference Scenario")+
+#   scale_x_continuous(breaks = c(1:6))+
+#   facet_wrap(~metric, ncol=2)
+
+
+# ###thinking about looking at sig c-t differnece in another way. So far I compared did a t-test asking if there was a differnce among the differences in measures among control plots versus c-t comparisons. Another way to do this is to just ask if the C-T difference is differnt from zero.
+# 
+# ###when I do this, the answer is nearly always yes, there is a signifcant differnece from zero. I don't think this is sensitive enough and I am no longer pursuing it. Also, I think the above way is better if you consider that i am comparing control plots and treatment plots more like the PCA does.
+# 
+# ##dropping problematic comparisions
+# diffzero<-rac_diff_mean%>%
+#   group_by(site_project_comm, calendar_year, treatment, treatment2, spc_yr, plot_id)%>%
+#   pivot_longer(richness_diff:species_diff, names_to="measure", values_to="difference")%>%
+#   ungroup()%>%
+#   mutate(spc_trt_year_measure=paste(spc_yr, treatment, measure, sep="_"))%>%
+#   filter(spc_trt_year_measure!="CAR_salt marsh_SalCus_1999_control_rank_diff",
+#          spc_trt_year_measure!="CAR_salt marsh_SalCus_1999_control_richness_diff",
+#          spc_trt_year_measure!="CDR_e001_A_1988_9_evenness_diff",
+#          spc_trt_year_measure!="CUL_Culardoch_0_2000_control_evenness_diff",
+#          spc_trt_year_measure!="NANT_wet_Broad_BRC_S_2003_0N0P_evenness_diff",
+#          spc_trt_year_measure!="SERC_CXN_0_2006_t1_rank_diff",
+#          spc_trt_year_measure!="SERC_CXN_0_2013_t1_evenness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_1998_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2001_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2002_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2004_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2006_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2008_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2009_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_MX_2009_A_species_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SC_2010_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SC_2010_A_species_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SC_2011_A_species_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SP_1997_A_evenness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SP_1997_A_richness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SP_1999_A_evenness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SP_2000_A_evenness_diff",
+#          spc_trt_year_measure!="SERC_TMECE_SP_2001_A_evenness_diff")%>%
+#   group_by(site_project_comm, calendar_year, treatment, treatment2, spc_yr, measure, spc_trt_year_measure)%>%
+#   summarize(p.val=t.test(difference, mu=0, alternative = "greater")$p.value)
+# 
+# num_diff_zero<-diffzero%>%
+#   group_by(site_project_comm)%>%
+#   mutate(adjp=p.adjust(p.val, method="BH", n=length(site_project_comm)))%>%
+#   select(-p.val)%>%
+#   mutate(sig=ifelse(adjp<0.0501, 1, 0))%>%
+#   group_by(site_project_comm, treatment, treatment2, calendar_year)%>%
+#   summarise(n=sum(sig))%>%
+#   mutate(onesig=ifelse(n>0, 1, 0))%>%
+#   group_by(onesig)%>%
+#   summarize(n=length(onesig))%>%
+#   mutate(pct=n/2924)
+# 
+# ## longer doing this
+#            
+
 
 ###redoing this with out the rare species
 perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Jul2019.csv")
@@ -311,12 +393,13 @@ scenariosnorare<-perm_outputnorare%>%
                                 ifelse(perm_Pvalue>0.0501&disp_Pvalue<0.0501&greater_disp == "C", 3,
                                        ifelse(perm_Pvalue<0.0501&disp_Pvalue>0.0501,4,
                                               ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "T",5,
-                                                     ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))
-
-num_scenmprare<- scenarios%>%
-  group_by(scenario)%>%
-  summarize(n=length(scenario))%>%
+                                                     ifelse(perm_Pvalue<0.0501&disp_Pvalue<0.0501&greater_disp == "C",6,999)))))))%>%
   na.omit()
+
+num_scenmprare<- scenariosnorare%>%
+  group_by(scenario)%>%
+  summarize(n=length(scenario), prop=n/2641)
+
 
 ####what is the role of species differneces?
 abund_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_June2019.csv")%>%
