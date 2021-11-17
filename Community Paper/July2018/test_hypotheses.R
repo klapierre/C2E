@@ -3,7 +3,7 @@
 ### This code uses output from RAC Differences.R and permanvoa_permdisp loop.R
 ###
 ### Authors:  Meghan Avolio (meghan.avolio@jhu.edu)
-### Last updated: Oct 13 2021
+### Last updated: Nov 10 2021
 
 setwd("C:\\Users\\mavolio2\\Dropbox\\")
 
@@ -178,6 +178,16 @@ CT_ttests<- read.csv("C2E\\Products\\Testing Hypots\\RAC_diff_CT_ttests_Oct2021.
   mutate(adjp=p.adjust(pval, method="BH", n=length(site_project_comm)))%>%
   select(-pval)%>%
   spread(measure, adjp)
+
+num_diff<-CT_ttests%>%
+  mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
+even=ifelse(even_pval<0.0601, 1, 0),
+rank=ifelse(rank_pval<0.0501, 1, 0),
+spdiff=ifelse(spdiff_pval<0.501, 1, 0),
+onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
+  group_by(onesig)%>%
+  summarize(n=length(onesig))%>%
+  mutate(pct=n/2900)
 
 ####Step 5: linking RAC differences with composition/disperison differences
 
