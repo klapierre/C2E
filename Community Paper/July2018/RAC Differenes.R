@@ -77,6 +77,19 @@ treatment_info<-read.csv("converge_diverge/datasets/LongForm/ExperimentInformati
 corredat <- corredat_raw %>%
  left_join(treatment_info, by=c( "site_code","project_name","community_type", "treatment","site_project_comm"))
 
+
+########
+noraresp<-corredat%>%
+  filter(plot_mani==0)%>%
+  group_by(site_project_comm, genus_species)%>%
+  summarize(mrelcov=mean(relcov))%>%
+  filter(mrelcov>0.1)%>%
+  select(-mrelcov)
+
+
+corredat_norare <- corredat %>%
+  right_join(noraresp)
+
 #####CALCULATING RAC differences
 spc<-unique(corredat$site_project_comm)
 diff_rac<-data.frame()
@@ -116,6 +129,49 @@ for (i in 1:length(spc)){
 
 write.csv(diff_rac_c, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics_Oct2021.csv", row.names = F)
 
+####NO RARES
+#####CALCULATING RAC differences
+spc<-unique(corredat_norare$site_project_comm)
+diff_rac_norare<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_norare%>%
+    filter(site_project_comm==spc[i])
+  
+  ref_trt <- unique(subset(subset, plot_mani==0)$treatment)
+  
+  out<-RAC_difference(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment", reference.treatment = ref_trt)
+  
+  out$site_project_comm<-spc[i]
+  
+  diff_rac_norare<-rbind(diff_rac_norare, out)
+}
+
+write.csv(diff_rac_norare, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_norares_Oct2021.csv", row.names = F)
+
+##no RARE
+#####CALCULATING RAC differences CONTROLS ONLY
+corredat_control_nr<-corredat_norare%>%
+  filter(plot_mani==0)%>%
+  filter(site_project_comm!="Finse_WarmNut_0")
+
+spc<-unique(corredat_control_nr$site_project_comm)
+
+diff_rac_c_nr<-data.frame()
+
+for (i in 1:length(spc)){
+  subset<-corredat_control_nr%>%
+    filter(site_project_comm==spc[i])
+  
+  out<-RAC_difference(subset, time.var = 'calendar_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var = "treatment")
+  
+  out$site_project_comm<-spc[i]
+  
+  diff_rac_c_nr<-rbind(diff_rac_c_nr, out)
+}
+
+write.csv(diff_rac_c_nr, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics__norares_Oct2021.csv", row.names = F)
+
 #####CALCULATING multivariate differences
 spc<-unique(corredat$site_project_comm)
 diff_mult<-data.frame()
@@ -146,17 +202,7 @@ diff_mult2 <- diff_mult%>%
 
 write.csv(diff_mult2, "C2E\\Products\\Testing Hypots\\CORRE_Mult_diff_Metrics_Oct2021.csv", row.names = F)
 
-########
-noraresp<-corredat%>%
-  filter(plot_mani==0)%>%
-  group_by(site_project_comm, genus_species)%>%
-  summarize(mrelcov=mean(relcov))%>%
-  filter(mrelcov>0.1)%>%
-  select(-mrelcov)
 
-
-corredat_norare <- corredat %>%
-  right_join(noraresp)
 
 
 #####CALCULATING multivariate differences no rares
@@ -207,4 +253,4 @@ for (i in 1:length(spc)){
   diff_abund<-rbind(diff_abund, out)
 }
 
-write.csv(diff_abund, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_June2019.csv", row.names = F)
+write.csv(diff_abund, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_Nov2021.csv", row.names = F)
