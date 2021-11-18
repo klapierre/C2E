@@ -83,9 +83,11 @@ noraresp<-corredat%>%
   filter(plot_mani==0)%>%
   group_by(site_project_comm, genus_species)%>%
   summarize(mrelcov=mean(relcov))%>%
-  filter(mrelcov>0.1)%>%
+  filter(mrelcov<0.01)%>%
   select(-mrelcov)
 
+ggplot(data=subset(noraresp, mrelcov<0.1), aes(x=mrelcov))+
+  geom_histogram()
 
 corredat_norare <- corredat %>%
   right_join(noraresp)
@@ -155,7 +157,7 @@ corredat_control_nr<-corredat_norare%>%
   filter(plot_mani==0)%>%
   filter(site_project_comm!="Finse_WarmNut_0")
 
-spc<-unique(corredat_control_nr$site_project_comm)
+spc<-unique(corredat_norare$site_project_comm)
 
 diff_rac_c_nr<-data.frame()
 
