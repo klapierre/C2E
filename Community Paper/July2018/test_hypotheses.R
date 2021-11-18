@@ -382,7 +382,7 @@ ggplot(data=measure_comp, aes(x = measure, y = prop))+
 ###redoing this with out the rare species
 perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Nov2021.csv")
 
-mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Jun2019.csv")%>%
+mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Nov2021.csv")%>%
   mutate(treatment = treatment2)
 
 #merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
