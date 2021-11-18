@@ -220,6 +220,13 @@ RAC_diff_outcomes <- scenarios%>%
          rank=ifelse(rank_pval<0.0501, 1, 0),
          spdiff=ifelse(spdiff_pval<0.0501, 1, 0))
 
+onesigscen<-RAC_diff_outcomes%>%
+  mutate(onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
+  replace(is.na(.), 0)%>%
+  group_by(scenario, onesig)%>%
+  summarize(num=length(onesig))%>%
+  mutate(prop = ifelse(scenario==1, num/2194, ifelse(scenario==2, num/80, ifelse(scenario==3, num/99, ifelse(scenario==4, num/300, ifelse(scenario==5, num/58, ifelse(scenario==6, num/100, 999)))))))
+
 prop_diff<-RAC_diff_outcomes%>%
   na.omit()%>%
   group_by(scenario)%>%
@@ -373,7 +380,7 @@ ggplot(data=measure_comp, aes(x = measure, y = prop))+
 
 
 ###redoing this with out the rare species
-perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Jul2019.csv")
+perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Nov2021.csv")
 
 mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Jun2019.csv")%>%
   mutate(treatment = treatment2)
@@ -402,7 +409,7 @@ num_scenmprare<- scenariosnorare%>%
 
 
 ####what is the role of species differneces?
-abund_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_June2019.csv")%>%
+abund_diff <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Abund_Diff_Nov2021.csv")%>%
   mutate(treatment = treatment2)
 
 numrep<-abund_diff%>%
