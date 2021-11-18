@@ -83,7 +83,7 @@ noraresp<-corredat%>%
   filter(plot_mani==0)%>%
   group_by(site_project_comm, genus_species)%>%
   summarize(mrelcov=mean(relcov))%>%
-  filter(mrelcov<0.01)%>%
+  filter(mrelcov>0.01)%>%
   select(-mrelcov)
 
 ggplot(data=subset(noraresp, mrelcov<0.1), aes(x=mrelcov))+
@@ -236,7 +236,7 @@ diff_mult_norare2 <- diff_mult_norare%>%
          control=as.character(control))%>%
   mutate(greater_disp=ifelse(trt_greater_disp == control, "C","T"))
 
-write.csv(diff_mult_norare2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Jun2019.csv", row.names = F)
+write.csv(diff_mult_norare2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Nov2021.csv", row.names = F)
 
 ####species differences
 spc<-unique(corredat$site_project_comm)
