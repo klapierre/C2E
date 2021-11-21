@@ -169,6 +169,10 @@ perm_output<-read.csv("C2E\\Products\\Testing Hypots\\permanova_permdisp_outputO
   select(-pval)%>%
   spread(measure, adjp)
 
+num_studies<-perm_output%>%
+  select(site_project_comm)%>%
+  unique()
+
 mult_diff <- read.csv("C2E\\Products\\Testing Hypots\\CORRE_Mult_diff_Metrics_Oct2021.csv")%>%
   mutate(treatment = treatment2)%>%
   filter(site_project_comm!="NGBER_gb_0"|treatment2!="AMBIENT")
@@ -218,7 +222,12 @@ RAC_diff_outcomes <- scenarios%>%
   mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
          even=ifelse(even_pval<0.0601, 1, 0),
          rank=ifelse(rank_pval<0.0501, 1, 0),
-         spdiff=ifelse(spdiff_pval<0.0501, 1, 0))
+         spdiff=ifelse(spdiff_pval<0.0501, 1, 0),
+         outcome=ifelse(rich==1&even==0&rank==0&spdiff==0, "Richness", ifelse(rich==0&even==1&rank==0&spdiff==0, 'Evenness', ifelse(rich==0&even==0&rank==1&spdiff==0, "Ranks", ifelse(rich==0&even==0&rank==0&spdiff==1, "Species", ifelse(rich==1&even==1&rank==0&spdiff==0, "Rich&Even", ifelse(rich==1&even==0&rank==1&spdiff==0|rich==0&even==1&rank==1&spdiff==0|rich==1&even==1&rank==1&spdiff==0, "Rank&Other", ifelse(rich==1&even==0&rank==0&spdiff==1|rich==0&even==1&rank==0&spdiff==1|rich==1&even==1&rank==0&spdiff==1, "Species&Other", ifelse(rich==1&even==0&rank==1&spdiff==1|rich==0&even==1&rank==1&spdiff==1|rich==1&even==1&rank==1&spdiff==1|rich==0&even==0&rank==1&spdiff==1, "Ranks&Species&Other", "999")))))))))
+
+Check<-RAC_diff_outcomes%>%
+  filter(outcome=="999")%>%
+  mutate(sum=rich+even+rank+spdiff)
 
 onesigscen<-RAC_diff_outcomes%>%
   mutate(onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
@@ -227,25 +236,30 @@ onesigscen<-RAC_diff_outcomes%>%
   summarize(num=length(onesig))%>%
   mutate(prop = ifelse(scenario==1, num/2194, ifelse(scenario==2, num/80, ifelse(scenario==3, num/99, ifelse(scenario==4, num/300, ifelse(scenario==5, num/58, ifelse(scenario==6, num/100, 999)))))))
 
+sp5<-data.frame("scenario"=5, "outcome"= "Species", "sig"="notsig", "proportion"=1)
+
 prop_diff<-RAC_diff_outcomes%>%
   na.omit()%>%
-  group_by(scenario)%>%
-  summarize_at(vars(rich, even, rank, spdiff), funs(sum))%>%
-  gather(metric, num, rich:spdiff)%>%
+  filter(outcome!="999")%>%
+  group_by(scenario, outcome)%>%
+  summarize(num=length(outcome))%>%
   mutate(prop = ifelse(scenario==1, num/2194, ifelse(scenario==2, num/80, ifelse(scenario==3, num/99, ifelse(scenario==4, num/300, ifelse(scenario==5, num/58, ifelse(scenario==6, num/100, 999)))))))%>%
   mutate(notsig=1-prop)%>%
   select(-num)%>%
-  gather(sig, proportion, notsig:prop)
+  gather(sig, proportion, notsig:prop)%>%
+  bind_rows(sp5)
+
+
 
 theme_set(theme_bw(12))
 theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
 #this is the figure I am going to use, I just need to not facet_wrap
-ggplot(data=subset(prop_diff, scenario==6), aes(x = metric, y = proportion, fill=sig))+
+ggplot(data=subset(prop_diff, scenario==6), aes(x = outcome, y = proportion, fill=sig))+
   geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("lightgray","darkgray"))+
-  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich.", "Even.", "Rank", "Species"))+
-  theme(axis.text.x = element_text(angle = 90))+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray90","gray48"))+
+  scale_x_discrete(limits=c("Richness", "Evenness", "Ranks", "Species", "Rich&Even", "Rank&Other", "Species&Other", "Ranks&Species&Other"), labels=c("Richness (R)", "Evenness (E)", "Ranks (Ra)", "Species (S)", "R+E", "Rank & RE", "Species & RE", "Ra+S & RE"))+
+  theme(axis.text.x = element_text(angle = 90, vjust=.5))+
   ylab("Proportion")+
   xlab("RAC Difference Measure")+
   geom_hline(yintercept = 0.5)
