@@ -189,6 +189,10 @@ fulldataset<-perm_output%>%
   right_join(CT_ttests)%>%
   na.omit()
 
+site<-fulldataset%>%
+  select(site_project_comm)%>%
+  unique()
+
 ####Step 5: linking RAC differences with composition/disperison differences
 
 #merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
