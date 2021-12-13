@@ -1,18 +1,19 @@
 ### calculating permanova and permdisp for each experiment and year
 ###
 ### Authors: Kevin Wilcox (wilcoxkr@gmail.com) Andrew Tredennick (atredenn@gmail.com) and Meghan Avolio (meghan.avolio@jhu.edu)
-### Last updated: Oct 29 2018
-### meghan's update adds permdisp to this.
+### Last updated: Oct 13 2021
+### .
 
 ### Set up workspace
 setwd("C:\\Users\\wilco\\Dropbox\\")
 setwd("C:\\Users\\megha\\Dropbox\\")
+setwd("C:\\Users\\mavolio2\\Dropbox\\")
 
 library(tidyverse)
 library(vegan)
 library(ggthemes)
 
-corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_March2019.csv")
+corredat<-read.csv("converge_diverge/datasets/LongForm/SpeciesRelativeAbundance_Nov2019.csv")
 
 #gvn face - only 2 years of data so will only have one point for the dataset, therefore we are removing this dataset from these analyses.
 corredat1<-corredat%>%
@@ -144,14 +145,14 @@ permanova_out_mod <- permanova_out_master %>%
 
 filter(permanova_out_master, site_project_comm =="ASGA_clonal_0")
 
-write.csv(permanova_out_master, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_outputJul2019.csv", row.names=F)
+write.csv(permanova_out_master, file="C2E\\Products\\Testing Hypots\\permanova_permdisp_outputOct2021.csv", row.names=F)
 
-
+###doing for rare speceis removed
 noraresp<-corredat%>%
   filter(plot_mani==0)%>%
   group_by(site_project_comm, genus_species)%>%
   summarize(mrelcov=mean(relcov))%>%
-  filter(mrelcov>0.1)%>%
+  filter(mrelcov>0.01)%>%
   select(-mrelcov)
 
 
@@ -220,5 +221,5 @@ for(i in 1:length(site_project_comm_vec)) {
 
 
 
-write.csv(permanova_out_master_norare, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Jul2019.csv", row.names=F)
+write.csv(permanova_out_master_norare, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Nov2021.csv", row.names=F)
 

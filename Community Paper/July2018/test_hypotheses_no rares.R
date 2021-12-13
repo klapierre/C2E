@@ -19,9 +19,9 @@ theme_set(theme_bw(12))
 
 ###Step 2: Do ttests. Getting ttest differences between rac trt-control and contorl-contorl comparisions
 
-rac_diff <-read.csv("C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_Oct2021.csv")
+rac_diff <-read.csv("C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_norares_Oct2021.csv")
 
-rac_diff_control<- read.csv("C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics_Oct2021.csv")
+rac_diff_control<- read.csv("C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics__norares_Oct2021.csv")
 
 
 ##get average C-T diff for each control replicate
@@ -39,7 +39,7 @@ rac_diff_control2 <- rac_diff_control%>%
   mutate(spc_yr=paste(site_project_comm, calendar_year, sep="_"))
 
 
-spc_yr_vec<-unique(rac_diff_mean$spc_yr)
+spc_yr_vec<-unique(rac_diff_control2$spc_yr)
 
 control_means<-data.frame()
 
@@ -71,7 +71,8 @@ for (i in 1:length(spc_yr_vec)){
 #merge with rank_diff means
 
 rac_diff_c_t<-rac_diff_mean%>%
-  left_join(control_means)
+  left_join(control_means)%>%
+  filter(site_project_comm!="Finse_WarmNut_0")
 
 
 ##loop through each experiment, year, treatment and ask is if C-T comparisons are different than C-C comparisions with a ttest
@@ -102,15 +103,40 @@ rac_diff_c_t<-rac_diff_mean%>%
 #SERC_TMECE_SP_2000_E evenness is NAN for controls
 #SERC_TMECE_SP_2001_E same as above
 
-rac_diff_c_t_sub<-rac_diff_c_t%>%
+#to drop
+todrop<-rac_diff_c_t%>%
   mutate(spc_yr_trt=paste(site_project_comm, calendar_year, treatment2, sep="_"))%>%
-  filter(spc_yr_trt!="CAR_salt marsh_SalCus_1999_NPK"&
-           spc_yr_trt!="CDR_e001_A_1988_8"&
-           spc_yr_trt!="CUL_Culardoch_0_2000_N10burn"&
-           spc_yr_trt!="CUL_Culardoch_0_2000_N10burnclip"&
-           spc_yr_trt!="CUL_Culardoch_0_2000_N20burn"&
-           spc_yr_trt!="CUL_Culardoch_0_2000_N20burnclip"&
-           spc_yr_trt!="CUL_Culardoch_0_2000_N50burn"&
+  mutate(diffr=richness_diff-C_richness_diff,
+         diffe=evenness_diff-C_evenness_diff,
+         diffra=rank_diff-C_rank_diff, 
+         diffsp=species_diff-C_species_diff)%>%
+  group_by(spc_yr_trt)%>%
+  summarise(nr=sum(diffr), 
+            ne=sum(diffe),
+            nra=sum(diffra),
+            nsp=sum(diffsp))%>%
+  pivot_longer(nr:nsp, names_to="diff", values_to="value")%>%
+  filter(value==0)%>%
+  mutate(drop=1)
+  
+  rac_diff_c_t_sub<-rac_diff_c_t%>%
+  mutate(spc_yr_trt=paste(site_project_comm, calendar_year, treatment2, sep="_"))%>%
+  left_join(todrop)%>%
+  filter(is.na(drop))%>%
+  filter(spc_yr_trt!="CDR_BioCON_0_2004_X_C"&
+           spc_yr_trt!="CDR_e001_B_1983_8"&
+           site_project_comm!="CDR_e001_B"&
+           site_project_comm!="CDR_e002_B"&
+           spc_yr_trt!="CDR_e001_C_1992_8"&
+           spc_yr_trt!="CDR_e002_C_1987_8_f_u_n"&
+           site_project_comm!="IMGERS_Yu_0")
+  
+  
+  &
+    
+    
+    
+           spc_yr_trt!="IMGERS_Yu_0_2007_N2")&
            spc_yr_trt!="NANT_wet_Broad_BRC_S_2003_0N1P"&
            spc_yr_trt!="NANT_wet_Broad_BRC_S_2003_1N0P"&
            spc_yr_trt!="NANT_wet_Broad_BRC_S_2003_1N1P"&
@@ -127,7 +153,8 @@ rac_diff_c_t_sub<-rac_diff_c_t%>%
            spc_yr_trt!="SERC_TMECE_SP_1997_E"&
            spc_yr_trt!="SERC_TMECE_SP_1999_E"&
            spc_yr_trt!="SERC_TMECE_SP_2000_E"&
-           spc_yr_trt!="SERC_TMECE_SP_2001_E")
+           spc_yr_trt!="SERC_TMECE_SP_2001_E"&
+           spc_yr_trt!="ARC_MAT2_0_2004_NP")
 
 
 spc_yr_trt_vec<-unique(rac_diff_c_t_sub$spc_yr_trt)
@@ -169,10 +196,6 @@ perm_output<-read.csv("C2E\\Products\\Testing Hypots\\permanova_permdisp_outputO
   select(-pval)%>%
   spread(measure, adjp)
 
-num_studies<-perm_output%>%
-  select(site_project_comm)%>%
-  unique()
-
 mult_diff <- read.csv("C2E\\Products\\Testing Hypots\\CORRE_Mult_diff_Metrics_Oct2021.csv")%>%
   mutate(treatment = treatment2)%>%
   filter(site_project_comm!="NGBER_gb_0"|treatment2!="AMBIENT")
@@ -192,10 +215,6 @@ fulldataset<-perm_output%>%
   na.omit()%>%
   right_join(CT_ttests)%>%
   na.omit()
-
-site<-fulldataset%>%
-  select(site_project_comm)%>%
-  unique()
 
 ####Step 5: linking RAC differences with composition/disperison differences
 
@@ -226,12 +245,7 @@ RAC_diff_outcomes <- scenarios%>%
   mutate(rich=ifelse(rich_pval<0.0501, 1, 0),
          even=ifelse(even_pval<0.0601, 1, 0),
          rank=ifelse(rank_pval<0.0501, 1, 0),
-         spdiff=ifelse(spdiff_pval<0.0501, 1, 0),
-         outcome=ifelse(rich==1&even==0&rank==0&spdiff==0, "Richness", ifelse(rich==0&even==1&rank==0&spdiff==0, 'Evenness', ifelse(rich==0&even==0&rank==1&spdiff==0, "Ranks", ifelse(rich==0&even==0&rank==0&spdiff==1, "Species", ifelse(rich==1&even==1&rank==0&spdiff==0, "Rich&Even", ifelse(rich==1&even==0&rank==1&spdiff==0|rich==0&even==1&rank==1&spdiff==0|rich==1&even==1&rank==1&spdiff==0, "Rank&Other", ifelse(rich==1&even==0&rank==0&spdiff==1|rich==0&even==1&rank==0&spdiff==1|rich==1&even==1&rank==0&spdiff==1, "Species&Other", ifelse(rich==1&even==0&rank==1&spdiff==1|rich==0&even==1&rank==1&spdiff==1|rich==1&even==1&rank==1&spdiff==1|rich==0&even==0&rank==1&spdiff==1, "Ranks&Species&Other", "999")))))))))
-
-Check<-RAC_diff_outcomes%>%
-  filter(outcome=="999")%>%
-  mutate(sum=rich+even+rank+spdiff)
+         spdiff=ifelse(spdiff_pval<0.0501, 1, 0))
 
 onesigscen<-RAC_diff_outcomes%>%
   mutate(onesig=ifelse(rich|even|rank|spdiff==1, 1, 0))%>%
@@ -240,30 +254,25 @@ onesigscen<-RAC_diff_outcomes%>%
   summarize(num=length(onesig))%>%
   mutate(prop = ifelse(scenario==1, num/2194, ifelse(scenario==2, num/80, ifelse(scenario==3, num/99, ifelse(scenario==4, num/300, ifelse(scenario==5, num/58, ifelse(scenario==6, num/100, 999)))))))
 
-sp5<-data.frame("scenario"=5, "outcome"= "Species", "sig"="notsig", "proportion"=1)
-
 prop_diff<-RAC_diff_outcomes%>%
   na.omit()%>%
-  filter(outcome!="999")%>%
-  group_by(scenario, outcome)%>%
-  summarize(num=length(outcome))%>%
+  group_by(scenario)%>%
+  summarize_at(vars(rich, even, rank, spdiff), funs(sum))%>%
+  gather(metric, num, rich:spdiff)%>%
   mutate(prop = ifelse(scenario==1, num/2194, ifelse(scenario==2, num/80, ifelse(scenario==3, num/99, ifelse(scenario==4, num/300, ifelse(scenario==5, num/58, ifelse(scenario==6, num/100, 999)))))))%>%
   mutate(notsig=1-prop)%>%
   select(-num)%>%
-  gather(sig, proportion, notsig:prop)%>%
-  bind_rows(sp5)
-
-
+  gather(sig, proportion, notsig:prop)
 
 theme_set(theme_bw(12))
 theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
 #this is the figure I am going to use, I just need to not facet_wrap
-ggplot(data=subset(prop_diff, scenario==6), aes(x = outcome, y = proportion, fill=sig))+
+ggplot(data=subset(prop_diff, scenario==6), aes(x = metric, y = proportion, fill=sig))+
   geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray90","gray48"))+
-  scale_x_discrete(limits=c("Richness", "Evenness", "Ranks", "Species", "Rich&Even", "Rank&Other", "Species&Other", "Ranks&Species&Other"), labels=c("Richness (R)", "Evenness (E)", "Ranks (Ra)", "Species (S)", "R+E", "Rank & RE", "Species & RE", "Ra+S & RE"))+
-  theme(axis.text.x = element_text(angle = 90, vjust=.5))+
+  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("lightgray","darkgray"))+
+  scale_x_discrete(limits=c("rich", "even", "rank", "spdiff"), labels=c("Rich.", "Even.", "Rank", "Species"))+
+  theme(axis.text.x = element_text(angle = 90))+
   ylab("Proportion")+
   xlab("RAC Difference Measure")+
   geom_hline(yintercept = 0.5)
@@ -400,7 +409,7 @@ ggplot(data=measure_comp, aes(x = measure, y = prop))+
 ###redoing this with out the rare species
 perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Nov2021.csv")
 
-mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Nov2021.csv")%>%
+mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Jun2019.csv")%>%
   mutate(treatment = treatment2)
 
 #merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
