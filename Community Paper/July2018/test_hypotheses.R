@@ -12,6 +12,7 @@ library(tidyverse)
 library(devtools)
 library(codyn)
 library(vegan)
+library(ggrepel)
 
 theme_set(theme_bw(12))
 
@@ -72,6 +73,13 @@ for (i in 1:length(spc_yr_vec)){
 
 rac_diff_c_t<-rac_diff_mean%>%
   left_join(control_means)
+
+
+###get averages
+ave_diff<-rac_diff_c_t %>% 
+  select(-plot_id) %>% 
+  group_by(site_project_comm, calendar_year, treatment, treatment2, spc_yr) %>% 
+  summarise_all(funs(mean))
 
 
 ##loop through each experiment, year, treatment and ask is if C-T comparisons are different than C-C comparisions with a ttest
@@ -219,7 +227,34 @@ scenarios<-fulldataset%>%
 num_scen<- scenarios%>%
   group_by(scenario)%>%
   summarize(n=length(scenario))%>%
-  mutate(pct=n/2831)
+  mutate(pct=round(100*(n/2831), 1))
+
+df2 <- num_scen %>% 
+  mutate(csum = rev(cumsum(rev(pct))), 
+         pos = pct/2 + lead(csum, 1),
+         pos = if_else(is.na(pos), pct/2, pos))
+
+###Figure 3 make a pie chart
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    plot.title=element_text(size=14, face="bold")
+  )
+
+ggplot(num_scen, aes(x="",y=pct, fill=as.factor(scenario)))+
+  geom_col(width=1, color=1)+
+  coord_polar(theta = "y", start=100)+
+  scale_fill_brewer(name="Scenario", palette="Blues")+
+  blank_theme+
+  theme(axis.text.x = element_blank())+
+  geom_label_repel(data=df2, aes(y = pos, label = paste0(pct, "%")),
+                   size = 4.5, nudge_x = 1, show.legend = FALSE)
+            
+
 
 ##combining to see proportion is different for each RAC metric
 RAC_diff_outcomes <- scenarios%>%
@@ -251,7 +286,8 @@ prop_diff<-RAC_diff_outcomes%>%
   mutate(notsig=1-prop)%>%
   select(-num)%>%
   gather(sig, proportion, notsig:prop)%>%
-  bind_rows(sp5)
+  bind_rows(sp5)%>%
+  mutate(percent=proportion*100)
 
 
 
@@ -259,14 +295,14 @@ theme_set(theme_bw(12))
 theme_update(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
 
 #this is the figure I am going to use, I just need to not facet_wrap
-ggplot(data=subset(prop_diff, scenario==6), aes(x = outcome, y = proportion, fill=sig))+
+ggplot(data=subset(prop_diff, scenario==6&sig=="prop"), aes(x = outcome, y = percent))+
   geom_bar(stat="identity")+
-  scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray90","gray48"))+
-  scale_x_discrete(limits=c("Richness", "Evenness", "Ranks", "Species", "Rich&Even", "Rank&Other", "Species&Other", "Ranks&Species&Other"), labels=c("Richness (R)", "Evenness (E)", "Ranks (Ra)", "Species (S)", "R+E", "Rank & RE", "Species & RE", "Ra+S & RE"))+
+  #scale_fill_manual(name = "", labels=c("No Difference", "C-T Different"), values=c("gray90","gray48"))+
+  scale_x_discrete(limits=c("Richness", "Evenness", "Ranks", "Species", "Rich&Even", "Rank&Other", "Species&Other", "Ranks&Species&Other"), labels=c("Richness (R)", "Evenness (E)", "Ranks (Ra)", "Species (S)", "R+E", "Ra+R &/or E", "S+R &/or E", "Ra+S+R &/or E"))+
   theme(axis.text.x = element_text(angle = 90, vjust=.5))+
-  ylab("Proportion")+
+  ylab("% C-T Differences")+
   xlab("RAC Difference Measure")+
-  geom_hline(yintercept = 0.5)
+  scale_y_continuous(limits = c(0, 50))
 
 ###Step 6
 #####looking into how often each measure of commnity difference detects sig differneces
@@ -398,9 +434,9 @@ ggplot(data=measure_comp, aes(x = measure, y = prop))+
 
 
 ###redoing this with out the rare species
-perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Nov2021.csv")
+perm_outputnorare<-read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare5_Nov2021.csv")
 
-mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Nov2021.csv")%>%
+mult_diffnorare <- read.csv("C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare5_Nov2021.csv")%>%
   mutate(treatment = treatment2)
 
 #merge perm_output and mult_diff to set up the six scenarios and drop what did not work for ttests.
