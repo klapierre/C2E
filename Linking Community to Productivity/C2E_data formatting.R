@@ -16,11 +16,11 @@ setwd('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\CoRRE_dat
 
 ##### import community data #####
 trt <- read.csv('ExperimentInfo.csv')%>%
-  select(-X)%>%
+  # select(-X)%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))
 
 relCover <- read.csv('RelativeCover.csv')%>%
-  select(-X)%>%
+  # select(-X)%>%
   filter(treatment_year!=0)%>%
   filter(site_code!='ANR')%>% #drop ANR fert1, repeat entries for spp and treatmnet_year wrong
   group_by(site_code, project_name, community_type, treatment_year, calendar_year, treatment, plot_id, genus_species)%>%
@@ -28,16 +28,8 @@ relCover <- read.csv('RelativeCover.csv')%>%
   ungroup()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
   left_join(trt)%>%
-  mutate(plot_mani=ifelse(site_project_comm %in% c('Bt::DroughtNet::0', 'Glen::Fert::0') & treatment %in% c('control', 'C'), 0,
-                          ifelse(site_project_comm %in% c('Bt::NPKDNet::0', 'Glen::Fert::0') & treatment %in% c('drought*fert', 'NP'), 2,
-                                 ifelse(site_project_comm %in% c('Bt::DroughtNet::0', 'Bt::NPKDNet::0', 'Glen::Fert::0', 'NGBER::gb::0') & treatment %in% c('drought', 'fert', 'N', 'P', 'AMBIENT'), 1, plot_mani))))%>%
-  filter(site_project_comm!='Bt::NPKDNet::0', site_project_comm!='HAYS::Precip::0', site_project_comm!='KUFS::E2::0', site_project_comm!='SORBAS::CLIMARID::0')%>% #experiment needs controls repeated in data; trt names messed up
-  filter(site_project_comm!='DCGS::gap::0')%>% #pulse experiment
-  mutate(treatment_year=ifelse(site_project_comm=='DL::NSFC::0'&calendar_year==2013, 9,
-                               ifelse(site_project_comm=='DL::NSFC::0'&calendar_year==2014, 10,
-                                      ifelse(site_project_comm=='DL::NSFC::0'&calendar_year==2015, 11,
-                                             ifelse(site_project_comm=='DL::NSFC::0'&calendar_year==2016, 12,
-                                                    treatment_year)))))
+  mutate(site_project_comm_dat=paste(site_code, project_name, community_type, data_type, sep='::'))%>%
+  filter(site_project_comm_dat != "CDR::BioCON::0::biomass" | site_project_comm_dat != "AZI::EELplot::0::anpp" | site_project_comm_dat != "Sil::NASH::0::biomass")
 
 
 ##### calculating community differences #####
@@ -85,7 +77,7 @@ for(i in 1:length(exp_year$site_project_comm)) {
 
 
 
-##### calculating community changes #####
+##### calculating community changes -- averaged across plots within a treatment*site #####
 #makes an empty dataframe
 correCommChange=data.frame(row.names=1) 
 
@@ -105,7 +97,7 @@ for(i in 1:length(exp_year2$site_project_comm)) {
   
   referenceTime=min(subset$treatment_year)
   
-  #calculating composition difference and abs(dispersion difference)
+  #calculating composition change and abs(dispersion change) from the first year (not year-to-year comparison!)
   multivariate <- multivariate_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', treatment.var='treatment2', reference.time=referenceTime)%>%
     select(-treatment_year)%>%
     rename(treatment_year=treatment_year2,
@@ -227,3 +219,61 @@ correAllDataTrt <- correAllData%>%
   mutate(trt_type_2=ifelse(trt_type %in% c('CO2', 'irr', 'mult_nutrient', 'N', 'N*CO2', 'P', 'N*P', 'N*irr'), 'added', ifelse(trt_type %in% c('drought'), 'removed', ifelse(trt_type %in% c('fungicide', 'mow_clip', 'precip_vari', 'temp'), 'other', 'multiple'))))
 
 # write.csv(correAllDataTrt, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp diff_07122021.csv', row.names=F)
+
+
+##### calculating change -- for each plot separately #####
+##### calculating community changes -- averaged across plots within a treatment*site #####
+#makes an empty dataframe
+correCommChangePlot=data.frame(row.names=1) 
+
+exp_year2 <- subset(exp_year, site_project_comm!='GVN::FACE::0')
+
+for(i in 1:length(exp_year2$site_project_comm)) {
+  
+  #creates a dataset for each unique year, trt, exp combo
+  subset <- relCover[relCover$site_project_comm==as.character(exp_year2$site_project_comm[i]),]%>%
+    select(site_project_comm, treatment_year, treatment, plot_mani, genus_species, relcov, plot_id)%>%
+    mutate(treatment2=ifelse(plot_mani==0, 'TRUECONTROL', as.character(treatment)))
+  
+  #need this to keep track of treatment
+  treatments <- subset%>%
+    select(plot_id, treatment)%>%
+    unique()
+  
+  referenceTime=min(subset$treatment_year)
+  
+  #calculating univariate community metrics for each plot from the first year (not year-to-year comparison!)
+  univariate <- RAC_change(subset, time.var = 'treatment_year', species.var = "genus_species", abundance.var = 'relcov', replicate.var = 'plot_id', reference.time=referenceTime)%>%
+    select(-treatment_year)%>%
+    rename(treatment_year=treatment_year2)%>%
+    left_join(treatments)%>%
+    mutate(site_project_comm=exp_year2$site_project_comm[i])
+
+  #pasting change metrics into the dataframe made for this analysis
+  correCommChangePlot=rbind(univariate, correCommChangePlot)  
+}
+
+##### calculating percent anpp change from year 1 #####
+#anpp year 1 data
+correANPPctl <- correANPP%>%
+  filter(plot_mani==0)%>%
+  group_by(site_code, project_name, community_type)%>%
+  summarise(anpp_ctl=mean(anpp))%>%
+  ungroup()
+#anpp difference
+correANPPdiff <- correANPP%>%
+  filter(plot_mani!=0)%>%
+  group_by(site_code, project_name, community_type, treatment_year, treatment)%>%
+  summarise(anpp=mean(anpp))%>%
+  ungroup()%>%
+  left_join(correANPPctl)%>%
+  #calculate anpp diff as percent diff from ctl in each year
+  mutate(anpp_pdiff=(anpp-anpp_ctl)/anpp_ctl)%>%
+  select(-anpp, -anpp_ctl)%>%
+  mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))
+
+###merge with ANPP data
+correCommChangePlotANPP <- correCommChangePlot%>%
+  left_join(correANPP)
+
+# write.csv(correCommChangePlotANPP, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp change_by plot_07202021.csv', row.names=F)
