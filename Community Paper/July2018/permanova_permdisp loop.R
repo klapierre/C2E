@@ -147,12 +147,12 @@ filter(permanova_out_master, site_project_comm =="ASGA_clonal_0")
 
 write.csv(permanova_out_master, file="C2E\\Products\\Testing Hypots\\permanova_permdisp_outputOct2021.csv", row.names=F)
 
-###doing for rare speceis removed
+###doing for rare speceis removed, DO THIS FOR 1% AND 5%
 noraresp<-corredat%>%
   filter(plot_mani==0)%>%
   group_by(site_project_comm, genus_species)%>%
   summarize(mrelcov=mean(relcov))%>%
-  filter(mrelcov>0.01)%>%
+  filter(mrelcov>0.05)%>%
   select(-mrelcov)
 
 
@@ -221,5 +221,5 @@ for(i in 1:length(site_project_comm_vec)) {
 
 
 
-write.csv(permanova_out_master_norare, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare_Nov2021.csv", row.names=F)
+write.csv(permanova_out_master_norare, file="C2E\\Products\\CommunityChange\\March2018 WG\\permanova_permdisp_output_norare5_Nov2021.csv", row.names=F)
 
