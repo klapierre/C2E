@@ -78,12 +78,12 @@ corredat <- corredat_raw %>%
  left_join(treatment_info, by=c( "site_code","project_name","community_type", "treatment","site_project_comm"))
 
 
-########
+########to fileter our rare species try >0.01, >0.05, 0.01
 noraresp<-corredat%>%
   filter(plot_mani==0)%>%
   group_by(site_project_comm, genus_species)%>%
   summarize(mrelcov=mean(relcov))%>%
-  filter(mrelcov>0.01)%>%
+  filter(mrelcov>0.05)%>%
   select(-mrelcov)
 
 ggplot(data=subset(noraresp, mrelcov<0.1), aes(x=mrelcov))+
@@ -149,7 +149,7 @@ for (i in 1:length(spc)){
   diff_rac_norare<-rbind(diff_rac_norare, out)
 }
 
-write.csv(diff_rac_norare, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_norares_Oct2021.csv", row.names = F)
+write.csv(diff_rac_norare, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_Metrics_norares5_Oct2021.csv", row.names = F)
 
 ##no RARE
 #####CALCULATING RAC differences CONTROLS ONLY
@@ -172,7 +172,7 @@ for (i in 1:length(spc)){
   diff_rac_c_nr<-rbind(diff_rac_c_nr, out)
 }
 
-write.csv(diff_rac_c_nr, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics__norares_Oct2021.csv", row.names = F)
+write.csv(diff_rac_c_nr, "C2E\\Products\\Testing Hypots\\CORRE_RAC_Diff_control_Metrics__norares5_Oct2021.csv", row.names = F)
 
 #####CALCULATING multivariate differences
 spc<-unique(corredat$site_project_comm)
@@ -236,7 +236,7 @@ diff_mult_norare2 <- diff_mult_norare%>%
          control=as.character(control))%>%
   mutate(greater_disp=ifelse(trt_greater_disp == control, "C","T"))
 
-write.csv(diff_mult_norare2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare_Nov2021.csv", row.names = F)
+write.csv(diff_mult_norare2, "C2E\\Products\\CommunityChange\\March2018 WG\\CORRE_Mult_diff_Metrics_norare5_Nov2021.csv", row.names = F)
 
 ####species differences
 spc<-unique(corredat$site_project_comm)
