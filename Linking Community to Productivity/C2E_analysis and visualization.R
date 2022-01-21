@@ -191,97 +191,97 @@ ggplot(data=correDiffSite, aes(x=anpp, y=abs(anpp_pdiff))) +
   coord_cartesian(ylim=c(0,4))
 
 ggplot(data=correDiffSite, aes(x=rank_diff, y=abs(anpp_pdiff))) +
-  geom_point() +
-  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(group=interaction(site_project_comm, treatment), color=rrich)) +
+  # geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x, se=F, color='grey', aes(group=interaction(site_project_comm, treatment))) +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
   xlab('Rank Difference') + ylab('|ANPP % Difference|') +
   theme(legend.position='none') +
-  coord_cartesian(ylim=c(0,4))
+  coord_cartesian(ylim=c(0,2))
 
 ggplot(data=correDiffSite, aes(x=species_diff, y=abs(anpp_pdiff))) +
-  geom_point(color='grey') +
-  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, aes(group=interaction(site_project_comm, treatment), color=rrich)) +
+  # geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x, color='grey', se=F, aes(group=interaction(site_project_comm, treatment))) +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
   xlab('Species Difference') + ylab('|ANPP % Difference|') +
   theme(legend.position='none') +
-  coord_cartesian(ylim=c(0,4))
+  coord_cartesian(ylim=c(0,2))
 
 
-##### boosted regression trees #####
-#bidirectional response
-brtModel <-  gbm.step(data=correDiffSite, gbm.x = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani'),
-                      gbm.y = "anpp_pdiff", family = "gaussian", #can consider other distributions
-                      tree.complexity = 5, learning.rate = 0.001, #these values punish the models for over fitting
-                      bag.fraction = 0.5, step.size=100, max.trees = 50000) #learning rate (0.5 is high) and step size are important
-
-#get some metrics from the model:
-brtModel$gbm.call$best.trees #14650 trees
-hist(brtModel$residuals)
-contributions <- brtModel$contributions
-cor(correDiffSite$anpp_pdiff, brtModel$fitted)^2 #pseudo-R2 = 0.6414528
-mean(brtModel$residuals * brtModel$residuals) #MSE = 0.1152091
-brtModel$cv.statistics$deviance.mean #minimum cv deviance = 0.1979288
-brtModel$cv.statistics$deviance.se #cv deviance se = 0.01132706
-
-# contributions plot
-ggplot(data=contributions, aes(x=var, y=rel.inf)) + 
-  geom_bar(stat='identity') +
-  coord_flip() + 
-  scale_x_discrete(limits = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani')) +
-  xlab('Variable') + ylab('Relative Influence')
-
-# partial dependence plots
-gbm.plot(brtModel, smooth=T, write.title=F, y.label="ANPP % Difference")
-
-find.int <- gbm.interactions(brtModel) #this is the interactions
-find.int$rank.list
-find.int$interactions
-# The returned object is a list. The first 2 components summarise the results, first as a ranked list of the 5 most important pairwise interactions, and the second tabulating all pairwise interactions. The variable index numbers in $rank.list can be used for plotting.
-# You can plot pairwise interactions like this:
-gbm.perspec(brtModel,9,6) #plot_mani vs evenness_diff
-gbm.perspec(brtModel,7,6) #rank_diff vs evenness_diff
-gbm.perspec(brtModel,8,4) #species_diff vs anpp - uninformative
-gbm.perspec(brtModel,5,1) #richness_diff vs MAP - uninformative
-
-ggplot(data=correDiffSite, aes(x=richness_diff, y=anpp_pdiff)) + geom_point() + ylab('ANPP % Difference')
-
-
-###abs value (magnitude) of response
-brtModel <-  gbm.step(data=correDiffSite, gbm.x = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani'),
-                      gbm.y = "abs_anpp_pdiff", family = "gaussian", #can consider other distributions
-                      tree.complexity = 5, learning.rate = 0.001, #these values punish the models for over fitting
-                      bag.fraction = 0.5, step.size=100, max.trees = 50000) #learning rate (0.5 is high) and step size are important
-
-#get some metrics from the model:
-brtModel$gbm.call$best.trees #14450 trees
-hist(brtModel$residuals)
-contributions <- brtModel$contributions
-cor(correDiffSite$anpp_pdiff, brtModel$fitted)^2 #pseudo-R2 = 0.4582868
-mean(brtModel$residuals * brtModel$residuals) #MSE = 0.0664859
-brtModel$cv.statistics$deviance.mean #minimum cv deviance = 0.1162645
-brtModel$cv.statistics$deviance.se #cv deviance se = 0.008857221
-
-# contributions plot
-ggplot(data=contributions, aes(x=var, y=rel.inf)) + 
-  geom_bar(stat='identity') +
-  coord_flip() + 
-  scale_x_discrete(limits = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani')) +
-  xlab('Variable') + ylab('Relative Influence')
-
-# partial dependence plots
-gbm.plot(brtModel, smooth=T, write.title=F, y.label="ANPP % Difference")
-
-find.int <- gbm.interactions(brtModel) #this is the interactions
-find.int$rank.list
-find.int$interactions
-# The returned object is a list. The first 2 components summarise the results, first as a ranked list of the 5 most important pairwise interactions, and the second tabulating all pairwise interactions. The variable index numbers in $rank.list can be used for plotting.
-# You can plot pairwise interactions like this:
-gbm.perspec(brtModel,7,5) #rank_diff vs richness_diff
-gbm.perspec(brtModel,8,5) #species_diff vs richness_diff
-gbm.perspec(brtModel,6,3) #evenness_diff vs rrich -- uninformative
-gbm.perspec(brtModel,7,6) #rank_diff vs evenness_diff
-
-ggplot(data=correDiffSite, aes(x=richness_diff, y=abs_anpp_pdiff)) + geom_point() + ylab('ANPP % Difference')
+# ##### boosted regression trees #####
+# #bidirectional response
+# brtModel <-  gbm.step(data=correDiffSite, gbm.x = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani'),
+#                       gbm.y = "anpp_pdiff", family = "gaussian", #can consider other distributions
+#                       tree.complexity = 5, learning.rate = 0.001, #these values punish the models for over fitting
+#                       bag.fraction = 0.5, step.size=100, max.trees = 50000) #learning rate (0.5 is high) and step size are important
+# 
+# #get some metrics from the model:
+# brtModel$gbm.call$best.trees #14650 trees
+# hist(brtModel$residuals)
+# contributions <- brtModel$contributions
+# cor(correDiffSite$anpp_pdiff, brtModel$fitted)^2 #pseudo-R2 = 0.6414528
+# mean(brtModel$residuals * brtModel$residuals) #MSE = 0.1152091
+# brtModel$cv.statistics$deviance.mean #minimum cv deviance = 0.1979288
+# brtModel$cv.statistics$deviance.se #cv deviance se = 0.01132706
+# 
+# # contributions plot
+# ggplot(data=contributions, aes(x=var, y=rel.inf)) + 
+#   geom_bar(stat='identity') +
+#   coord_flip() + 
+#   scale_x_discrete(limits = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani')) +
+#   xlab('Variable') + ylab('Relative Influence')
+# 
+# # partial dependence plots
+# gbm.plot(brtModel, smooth=T, write.title=F, y.label="ANPP % Difference")
+# 
+# find.int <- gbm.interactions(brtModel) #this is the interactions
+# find.int$rank.list
+# find.int$interactions
+# # The returned object is a list. The first 2 components summarise the results, first as a ranked list of the 5 most important pairwise interactions, and the second tabulating all pairwise interactions. The variable index numbers in $rank.list can be used for plotting.
+# # You can plot pairwise interactions like this:
+# gbm.perspec(brtModel,9,6) #plot_mani vs evenness_diff
+# gbm.perspec(brtModel,7,6) #rank_diff vs evenness_diff
+# gbm.perspec(brtModel,8,4) #species_diff vs anpp - uninformative
+# gbm.perspec(brtModel,5,1) #richness_diff vs MAP - uninformative
+# 
+# ggplot(data=correDiffSite, aes(x=richness_diff, y=anpp_pdiff)) + geom_point() + ylab('ANPP % Difference')
+# 
+# 
+# ###abs value (magnitude) of response
+# brtModel <-  gbm.step(data=correDiffSite, gbm.x = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani'),
+#                       gbm.y = "abs_anpp_pdiff", family = "gaussian", #can consider other distributions
+#                       tree.complexity = 5, learning.rate = 0.001, #these values punish the models for over fitting
+#                       bag.fraction = 0.5, step.size=100, max.trees = 50000) #learning rate (0.5 is high) and step size are important
+# 
+# #get some metrics from the model:
+# brtModel$gbm.call$best.trees #14450 trees
+# hist(brtModel$residuals)
+# contributions <- brtModel$contributions
+# cor(correDiffSite$anpp_pdiff, brtModel$fitted)^2 #pseudo-R2 = 0.4582868
+# mean(brtModel$residuals * brtModel$residuals) #MSE = 0.0664859
+# brtModel$cv.statistics$deviance.mean #minimum cv deviance = 0.1162645
+# brtModel$cv.statistics$deviance.se #cv deviance se = 0.008857221
+# 
+# # contributions plot
+# ggplot(data=contributions, aes(x=var, y=rel.inf)) + 
+#   geom_bar(stat='identity') +
+#   coord_flip() + 
+#   scale_x_discrete(limits = c('MAP', 'MAT', 'rrich', 'anpp', 'richness_diff', 'evenness_diff', 'rank_diff', 'species_diff', 'plot_mani')) +
+#   xlab('Variable') + ylab('Relative Influence')
+# 
+# # partial dependence plots
+# gbm.plot(brtModel, smooth=T, write.title=F, y.label="ANPP % Difference")
+# 
+# find.int <- gbm.interactions(brtModel) #this is the interactions
+# find.int$rank.list
+# find.int$interactions
+# # The returned object is a list. The first 2 components summarise the results, first as a ranked list of the 5 most important pairwise interactions, and the second tabulating all pairwise interactions. The variable index numbers in $rank.list can be used for plotting.
+# # You can plot pairwise interactions like this:
+# gbm.perspec(brtModel,7,5) #rank_diff vs richness_diff
+# gbm.perspec(brtModel,8,5) #species_diff vs richness_diff
+# gbm.perspec(brtModel,6,3) #evenness_diff vs rrich -- uninformative
+# gbm.perspec(brtModel,7,6) #rank_diff vs evenness_diff
+# 
+# ggplot(data=correDiffSite, aes(x=richness_diff, y=abs_anpp_pdiff)) + geom_point() + ylab('ANPP % Difference')
 
 
 
@@ -312,15 +312,59 @@ correCommChangePlotANPP <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\wo
   mutate(site_year=paste(site_project_comm, treatment_year, sep="::"))%>% #creates dummy site-by-year variable (time variant site effects)
   mutate(site_plot=paste(site_project_comm, plot_id, sep='::')) #creates dummy site-by-plot variable (time invariant plot effects)
 
+correANPPctl <- correCommChangePlotANPP%>%
+  filter(trt_type=='control')%>%
+  group_by(site_year)%>%
+  summarise(anpp_ctl=mean(anpp))%>%
+  ungroup()
+
+correCommChangePlotANPPDiff <- correCommChangePlotANPP%>%
+  filter(trt_type!='control')%>%
+  left_join(correANPPctl)%>%
+  mutate(anpp_diff=(anpp-anpp_ctl)/anpp_ctl)
+
 #need to calculate change in anpp from year 0 as well to include in the model instead of raw anpp values
 #also try including the treatment variables as interactors with the change variables? like N effects alone vs interating with richness, evenness etc to get at the physiological responses vs the community driven responses?
-changePlotCausalModel <- feols(anpp ~ richness_change + evenness_change + rank_change + gains + losses | site_plot + site_year, data=subset(correCommChangePlotANPP, anpp<4000))
+changePlotCausalModel <- feols(abs(anpp_diff) ~ richness_change + evenness_change + rank_change + gains + losses | site_plot + site_year, data=subset(correCommChangePlotANPPDiff, anpp<4000))
 etable(changePlotCausalModel,
        cluster="site_plot")
 
-# significant effects of evenness change (negative) and rank change (positive) on ANPP
-with(subset(correCommChangePlotANPP, anpp<4000), plot(anpp, evenness_change))
-with(subset(correCommChangePlotANPP, anpp<4000), plot(anpp, rank_change))
+# # significant effects of evenness change (negative) and rank change (positive) on ANPP
+# with(subset(correCommChangePlotANPPDiff, anpp<4000), plot(anpp_diff, evenness_change))
+# with(subset(correCommChangePlotANPPDiff, anpp<4000), plot(anpp_diff, rank_change))
+
+ggplot(data=subset(correCommChangePlotANPPDiff, anpp<4000), aes(x=evenness_change, y=abs(anpp_diff))) +
+  # geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x, color='grey', se=F, aes(group=interaction(site_project_comm, treatment))) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
+  xlab('Evenness Change') + ylab('|ANPP % Difference|') +
+  theme(legend.position='none') +
+  coord_cartesian(ylim=c(0,2))
+
+ggplot(data=subset(correCommChangePlotANPPDiff, anpp<4000), aes(x=rank_change, y=abs(anpp_diff))) +
+  # geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x, color='grey', se=F, aes(group=interaction(site_project_comm, treatment))) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
+  xlab('Rank Change') + ylab('|ANPP % Difference|') +
+  theme(legend.position='none') +
+  coord_cartesian(ylim=c(0,2))
+
+ggplot(data=subset(correCommChangePlotANPPDiff, anpp<4000), aes(x=gains, y=abs(anpp_diff))) +
+  # geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x, color='grey', se=F, aes(group=interaction(site_project_comm, treatment))) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
+  xlab('Species Gains') + ylab('|ANPP % Difference|') +
+  theme(legend.position='none') +
+  coord_cartesian(ylim=c(0,2.5))
+
+ggplot(data=subset(correCommChangePlotANPPDiff, anpp<4000), aes(x=losses, y=abs(anpp_diff))) +
+  # geom_point(color='grey') +
+  geom_smooth(method='lm', formula=y~x, color='grey', se=F, aes(group=interaction(site_project_comm, treatment))) +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
+  xlab('Species Losses') + ylab('|ANPP % Difference|') +
+  theme(legend.position='none') +
+  coord_cartesian(ylim=c(0,2.5))
+
 
 #losses removed from model because collinearity
 
