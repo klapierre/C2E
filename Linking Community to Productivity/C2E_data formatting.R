@@ -22,14 +22,10 @@ trt <- read.csv('ExperimentInfo.csv')%>%
 relCover <- read.csv('RelativeCover.csv')%>%
   # select(-X)%>%
   filter(treatment_year!=0)%>%
-  filter(site_code!='ANR')%>% #drop ANR fert1, repeat entries for spp and treatmnet_year wrong
-  group_by(site_code, project_name, community_type, treatment_year, calendar_year, treatment, plot_id, genus_species)%>%
-  summarise(relcov=mean(relcov))%>% #need to fix duplicate entires in several experiments (AZI EELplot; Bt DrougthNet; CDR BioCON; CDR e001; NIN HerbDiv; Sil NASH; SIU TON)
-  ungroup()%>%
+  filter(project_name!='NSFC')%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
   left_join(trt)%>%
-  mutate(site_project_comm_dat=paste(site_code, project_name, community_type, data_type, sep='::'))%>%
-  filter(site_project_comm_dat != "CDR::BioCON::0::biomass" | site_project_comm_dat != "AZI::EELplot::0::anpp" | site_project_comm_dat != "Sil::NASH::0::biomass")
+  mutate(site_project_comm_dat=paste(site_code, project_name, community_type, data_type, sep='::'))
 
 
 ##### calculating community differences #####
@@ -74,7 +70,6 @@ for(i in 1:length(exp_year$site_project_comm)) {
   #pasting dispersions into the dataframe made for this analysis
   correCommDiff=rbind(all, correCommDiff)  
 }
-
 
 
 ##### calculating community changes -- averaged across plots within a treatment*site #####
@@ -124,15 +119,35 @@ for(i in 1:length(exp_year2$site_project_comm)) {
 
 
 ##### import anpp data #####
-correANPP <- read.csv('ANPP2020.csv')%>%
+correANPP <- read.csv('ANPP2021.csv')%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='::'))%>%
-  select(-X, -calendar_year)%>%
+  select(-calendar_year)%>%
   filter(!is.na(anpp))%>%
   left_join(trt)%>%
   mutate(treatment_year_2=ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2004, 10, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2005, 11, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2006, 12, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2007, 13, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2008, 14, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2009, 15, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2010, 16, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2011, 17, ifelse(site_project_comm=='SEV::Nfert::0'&calendar_year==2012, 18, treatment_year))))))))))%>%
   select(-treatment_year)%>%mutate(treatment_year=treatment_year_2)%>%select(-treatment_year_2)%>%
   #remove subset of CDR trts and KNZ BGP mowed treatment (they herbicided)
-  mutate(drop=ifelse(site_code=='CDR'&treatment=='2', 1, ifelse(site_code=='CDR'&treatment=='3', 1, ifelse(site_code=='CDR'&treatment=='4', 1, ifelse(site_code=='CDR'&treatment=='5', 1, ifelse(site_code=='CDR'&treatment=='7', 1, ifelse(site_code=='CDR'&treatment=='8', 1, ifelse(site_code=='CDR'&treatment=='2_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='3_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='4_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='5_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='7_f_u_n', 1, ifelse(site_code=='CDR'&treatment=='8_f_u_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_n', 1, ifelse(project_name=='BGP'&treatment=='u_m_p', 1, ifelse(project_name=='BGP'&treatment=='u_m_b', 1, ifelse(project_name=='BGP'&treatment=='u_m_c', 1, ifelse(project_name=='BGP'&treatment=='b_m_n', 1, ifelse(project_name=='BGP'&treatment=='b_m_p', 1, ifelse(project_name=='BGP'&treatment=='b_m_b', 1, ifelse(project_name=='BGP'&treatment=='b_m_c', 1, 0)))))))))))))))))))))%>%
+  mutate(drop=ifelse(site_code=='CDR'&treatment=='2', 1, 
+                     ifelse(site_code=='CDR'&treatment=='3', 1, 
+                            ifelse(site_code=='CDR'&treatment=='4', 1, 
+                                   ifelse(site_code=='CDR'&treatment=='5', 1, 
+                                          ifelse(site_code=='CDR'&treatment=='7', 1, 
+                                                 ifelse(site_code=='CDR'&treatment=='8', 1, 
+                                                        ifelse(site_code=='CDR'&treatment=='2_f_u_n', 1, 
+                                                               ifelse(site_code=='CDR'&treatment=='3_f_u_n', 1,
+                                                                      ifelse(site_code=='CDR'&treatment=='4_f_u_n', 1, 
+                                                                             ifelse(site_code=='CDR'&treatment=='5_f_u_n', 1, 
+                                                                                    ifelse(site_code=='CDR'&treatment=='7_f_u_n', 1, 
+                                                                                           ifelse(site_code=='CDR'&treatment=='8_f_u_n', 1, 
+                                                                                                  ifelse(project_name=='BGP'&treatment=='u_m_n', 1, 
+                                                                                                         ifelse(project_name=='BGP'&treatment=='u_m_p', 1, 
+                                                                                                                ifelse(project_name=='BGP'&treatment=='u_m_b', 1, 
+                                                                                                                       ifelse(project_name=='BGP'&treatment=='u_m_c', 1, 
+                                                                                                                              ifelse(project_name=='BGP'&treatment=='b_m_n', 1, 
+                                                                                                                                     ifelse(project_name=='BGP'&treatment=='b_m_p', 1, 
+                                                                                                                                            ifelse(project_name=='BGP'&treatment=='b_m_b', 1, 
+                                                                                                                                                   ifelse(project_name=='BGP'&treatment=='b_m_c', 1, 
+                                                                                                                                                          ifelse(project_name=='fireplots'&treatment_year==10, 1, 0))))))))))))))))))))))%>%
   #remove NANT wet because it only has ANPP in one year and has a much higher rate of N added (67.2 gm-2)
   filter(site_code!='NANT')%>%
   filter(drop==0)%>%
@@ -145,7 +160,10 @@ correANPP <- read.csv('ANPP2020.csv')%>%
 
 # #checking site level data for outliers in anpp
 # ggplot(correANPP, aes(anpp)) + geom_histogram() + facet_wrap(~project_name, scales='free')
+BGPproblems <- subset(correANPP, project_name=='BGP') #several very low and somewhat high values
+e001problems <- subset(correANPP, project_name=='e001') #1992, trt 6, plot 21 has a value >7000
 
+ggplot(data=subset(correANPP, project_name=='BGP'), aes(x=treatment_year, y=anpp, color=treatment)) + geom_point() + geom_smooth(method='lm', se=F)
 
 ##### calculating percent anpp difference #####
 #anpp ctl data
@@ -216,9 +234,9 @@ correAllDataTrt <- correAllData%>%
   mutate(n_trt=ifelse(n>0, 1, 0), p_trt=ifelse(p>0, 1, 0), k_trt=ifelse(k>0, 1, 0), CO2_trt=ifelse(CO2>0, 1, 0), irr_trt=ifelse(precip>0, 1, 0), drought_trt=ifelse(precip<0, 1, 0), temp_trt=n_trt+p_trt+k_trt+CO2_trt+irr_trt+drought_trt, other_trt=ifelse((plot_mani-temp_trt)>0, 1, 0))%>%
   # na.omit()%>%
   mutate(site_project_comm=paste(site_code, project_name, community_type, sep='_'), site_project_comm_trt=paste(site_code, project_name, community_type, treatment, sep='_'))%>%
-  mutate(trt_type_2=ifelse(trt_type %in% c('CO2', 'irr', 'mult_nutrient', 'N', 'N*CO2', 'P', 'N*P', 'N*irr'), 'added', ifelse(trt_type %in% c('drought'), 'removed', ifelse(trt_type %in% c('fungicide', 'mow_clip', 'precip_vari', 'temp'), 'other', 'multiple'))))
+  mutate(trt_type_2=ifelse(trt_type %in% c('CO2', 'irr', 'mult_nutrient', 'N', 'N*CO2', 'P', 'N*P', 'N*irr', 'K'), 'added', ifelse(trt_type %in% c('drought'), 'removed', ifelse(trt_type %in% c('burn', 'fungicide', 'herb_removal', 'mow_clip', 'plant_mani', 'precip_vari', 'temp'), 'other', 'multiple'))))
 
-# write.csv(correAllDataTrt, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp diff_07122021.csv', row.names=F)
+# write.csv(correAllDataTrt, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp diff_05022022.csv', row.names=F)
 
 
 ##### calculating change -- for each plot separately #####
@@ -276,4 +294,4 @@ correANPPdiff <- correANPP%>%
 correCommChangePlotANPP <- correCommChangePlot%>%
   left_join(correANPP)
 
-# write.csv(correCommChangePlotANPP, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp change_by plot_07202021.csv', row.names=F)
+# write.csv(correCommChangePlotANPP, 'C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\C2E\\Products\\testing HRF\\data\\CoRRE_comm and anpp change_by plot_05022022.csv', row.names=F)
