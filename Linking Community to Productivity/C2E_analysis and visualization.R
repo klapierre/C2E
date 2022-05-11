@@ -487,25 +487,25 @@ print(sppDiff, vp=viewport(layout.pos.row=2, layout.pos.col=2))
 ###### anpp vs composition diff #####
 anppCompModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
-  model=lm(anpp_pdiff~composition_diff, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
+  model=lm(anpp_pdiff~poly(composition_diff,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   anppCompModels=rbind(cf, anppCompModels) 
 }
 
-for(PROJ in 1:length(site_project_comm_vector)){
-  ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]),
-         aes(x=composition_diff, y=anpp_pdiff, color=treatment)) +
-    geom_point() +
-    geom_smooth(method='lm', se=F) +
-    ggtitle(site_project_comm_vector[PROJ]) +
-    theme_bw()
-  ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\anpp v comp figs\\",
-                         site_project_comm_vector[PROJ], "_anppComp.png"))
-}
+# for(PROJ in 1:length(site_project_comm_vector)){
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
+#          aes(x=composition_diff, y=anpp_pdiff, color=treatment)) +
+#     geom_point() +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
+#     ggtitle(site_project_comm_vector[PROJ]) +
+#     theme_bw()
+#   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\anpp v comp figs\\",
+#                          site_project_comm_vector[PROJ], "_anppComp.png"))
+# }
 
 #anpp vs richness diff
 anppRichModels=data.frame(row.names=1) 
