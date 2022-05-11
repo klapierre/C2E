@@ -68,6 +68,10 @@ options(contrasts=c('contr.sum','contr.poly'))
 
 
 ##### import data #####
+#site details
+siteData <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\CoRRE_database\\Data\\CompiledData\\siteBiotic.csv')%>%
+  left_join(read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\CoRRE_database\\Data\\CompiledData\\siteLocationClimate.csv'))
+
 correAllDataTrt <- read.csv('CoRRE_comm and anpp diff_05022022.csv')%>%
   select(site_project_comm, site_project_comm_trt, site_code, project_name, community_type, treatment_year, calendar_year, treatment, trt_type, trt_type_2, richness_diff, evenness_diff, rank_diff, species_diff, composition_diff, abs_dispersion_diff, richness_change, evenness_change, rank_change, gains, losses, composition_change, dispersion_change, anpp_pdiff, plot_mani)%>%
   # drop_na()%>%
@@ -80,20 +84,21 @@ correDiff <- correAllDataTrt%>%
   select(-richness_change, -evenness_change, -rank_change, -gains, -losses, -composition_change, -dispersion_change)%>%
   drop_na()
 
-#filter to just the treatments with large replication
-correDiffMain <- correDiff%>%
-  filter(trt_type %in% c('CO2', 'herb_removal', 'irr', 'K', 'mult_nutrient', 'N', 'N*irr', 'N*P', 'P', 'precip_vari', 'temp'))
-
-#site details
-siteData <- read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\CoRRE_database\\Data\\CompiledData\\siteBiotic.csv')%>%
-  left_join(read.csv('C:\\Users\\lapie\\Dropbox (Smithsonian)\\working groups\\CoRRE\\CoRRE_database\\Data\\CompiledData\\siteLocationClimate.csv'))
-
 #dataset details
 correDiffDetails <- correDiff%>%
   group_by(site_project_comm, site_project_comm_trt, site_code, project_name, community_type, treatment, trt_type, trt_type_2, plot_mani)%>%
   summarise(data_points=length(anpp_pdiff), exp_length=max(treatment_year), first_yr=min(treatment_year))%>%
   ungroup()%>%
   left_join(siteData)
+
+#filter to just the projects with enough data points
+correDiffLong <- correDiff%>%
+  left_join(correDiffDetails)%>%
+  filter(data_points>4)
+
+#filter to just the treatments with large replication
+correDiffMain <- correDiffLong%>%
+  filter(trt_type %in% c('CO2', 'herb_removal', 'irr', 'K', 'mult_nutrient', 'N', 'N*irr', 'N*P', 'P', 'precip_vari', 'temp'))
 
 # correChange <- correAllDataTrt%>%
 #   select(-richness_diff, -evenness_diff, -rank_diff, -species_diff, -composition_diff, -abs_dispersion_diff)%>%
@@ -103,11 +108,11 @@ correDiffDetails <- correDiff%>%
 # AIC greater than 6 to prefer polynomial model, due to sample size of 196 (trt within site_project_comm)
 
 ##### ANPP differences through time #####
-summary(anppTemporal <- lmer(abs(anpp_pdiff)~poly(treatment_year,1) + (1+treatment_year|site_project_comm/treatment), data=correDiff))  #no effect
-r.squaredGLMM(anppTemporal) #marginal R2=0.01687675 , conditional R2=0.5871126 
-AIC(anppTemporal) #polynomial model (AIC=1755.544) NOT better than liner model (AIC=1758.549)
+summary(anppTemporal <- lmer(abs(anpp_pdiff)~poly(treatment_year,2) + (1+treatment_year|site_project_comm/treatment), data=correDiffLong))  #no effect (marginally significant negative quadratic term)
+r.squaredGLMM(anppTemporal)
+AIC(anppTemporal)
 
-ggplot(data=correDiff, aes(x=treatment_year, y=anpp_pdiff)) +
+ggplot(data=correDiffLong, aes(x=treatment_year, y=anpp_pdiff)) +
   geom_point(color='grey') +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, color='grey',aes(group=interaction(site_project_comm, treatment))) +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, color='black') +
@@ -115,7 +120,7 @@ ggplot(data=correDiff, aes(x=treatment_year, y=anpp_pdiff)) +
   theme(legend.position='none')
 
 #look at directionality by trt type
-ggplot(data=subset(correDiffMain, trt_type %in% c('CO2', 'drought', 'herb_removal', 'irr', 'K', 'mult_nutrient', 'N', 'N*irr', 'N*P', 'P', 'precip_vari', 'temp')), aes(x=treatment_year, y=anpp_pdiff)) +
+ggplot(data=subset(correDiffLong, trt_type %in% c('CO2', 'drought', 'herb_removal', 'irr', 'K', 'mult_nutrient', 'N', 'N*irr', 'N*P', 'P', 'precip_vari', 'temp')), aes(x=treatment_year, y=anpp_pdiff)) +
   geom_point(color='grey') +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, color='grey',aes(group=interaction(site_project_comm, treatment))) +
   geom_smooth(method='lm', formula=y~x+I(x^2), se=F, size=3, aes(color=trt_type)) +
@@ -123,16 +128,16 @@ ggplot(data=subset(correDiffMain, trt_type %in% c('CO2', 'drought', 'herb_remova
   facet_wrap(~trt_type)
 
 ##### checking for patterns #####
-site_project_comm_vector <- unique(correDiff$site_project_comm) 
-site_project_comm_trt_vector <- unique(correDiff$site_project_comm_trt) 
+site_project_comm_vector <- unique(correDiffLong$site_project_comm) 
+site_project_comm_trt_vector <- unique(correDiffLong$site_project_comm_trt) 
 
 ##### ANPP over time #####
 anppTimeModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
-  model=lm(anpp_pdiff~treatment_year, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
+  model=lm(anpp_pdiff~poly(treatment_year,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   anppTimeModels=rbind(cf, anppTimeModels) 
@@ -145,39 +150,40 @@ anppTimeModels <- anppTimeModels%>%
   select(site_project_comm_trt, r_sq, component, estimate, std_error, p)%>%
   mutate(weight=1/std_error)%>%
   mutate(significant=ifelse(p<0.05, 'yes', 'no'))%>%
-  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))%>%
-  mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
-                        ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
-                               ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
-                                      ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
-                                             ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
-                                                    ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
-                                                           ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
-                                                                  ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
+  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))
+  # %>%
+  # mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
+  #                       ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
+  #                              ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
+  #                                     ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
+  #                                            ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
+  #                                                   ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
+  #                                                          ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
+  #                                                                 ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
 colnames(anppTimeModels) <-paste(colnames(anppTimeModels), 'anpp', sep='_')
 anppTimeModels <- anppTimeModels%>%
   rename(site_project_comm_trt=site_project_comm_trt_anpp)
 
 # #plots of all ANPP through time
-# for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-#   ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]), 
-#          aes(x=treatment_year, y=anpp_pdiff, color=treatment)) + 
-#     geom_point() + 
-#     geom_smooth(method='lm', se=F) + 
-#     ggtitle(site_project_comm_vector[PROJ]) + 
+# for(PROJ in 1:length(site_project_comm_trt_vector)){
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
+#          aes(x=treatment_year, y=anpp_pdiff, color=treatment)) +
+#     geom_point() +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
+#     ggtitle(site_project_comm_vector[PROJ]) +
 #     theme_bw() +
 #     facet_wrap(~treatment)
-#   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\anpp figs\\", 
-#                          site_project_comm_vector[PROJ], "_anpp.png")) 
+#   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\anpp figs\\",
+#                          site_project_comm_vector[PROJ], "_anpp.png"))
 # }
 
 ##### community difference over time #####
 commTimeModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
-  model=lm(composition_diff~treatment_year, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
+  model=lm(composition_diff~poly(treatment_year,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   commTimeModels=rbind(cf, commTimeModels) 
@@ -190,25 +196,26 @@ commTimeModels <- commTimeModels%>%
   select(site_project_comm_trt, r_sq, component, estimate, std_error, p)%>%
   mutate(weight=1/std_error)%>%
   mutate(significant=ifelse(p<0.05, 'yes', 'no'))%>%
-  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))%>%
-  mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
-                        ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
-                               ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
-                                      ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
-                                             ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
-                                                    ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
-                                                           ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
-                                                                  ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
+  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))
+  # %>%
+  # mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
+  #                       ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
+  #                              ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
+  #                                     ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
+  #                                            ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
+  #                                                   ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
+  #                                                          ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
+  #                                                                 ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
 colnames(commTimeModels) <-paste(colnames(commTimeModels), 'comm', sep='_')
 commTimeModels <- commTimeModels%>%
   rename(site_project_comm_trt=site_project_comm_trt_comm)
 
 # #graphs for each site
 # for(PROJ in 1:length(site_project_comm_vector)){
-#   ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]),
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
 #          aes(x=treatment_year, y=composition_diff, color=treatment)) +
 #     geom_point() +
-#     geom_smooth(method='lm', se=F) +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
 #     ggtitle(site_project_comm_vector[PROJ]) +
 #     theme_bw() +
 #     facet_wrap(~treatment)
@@ -219,10 +226,10 @@ commTimeModels <- commTimeModels%>%
 ##### richness difference over time #####
 richTimeModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
-  model=lm(richness_diff~treatment_year, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
+  model=lm(richness_diff~poly(treatment_year,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   richTimeModels=rbind(cf, richTimeModels) 
@@ -235,25 +242,26 @@ richTimeModels <- richTimeModels%>%
   select(site_project_comm_trt, r_sq, component, estimate, std_error, p)%>%
   mutate(weight=1/std_error)%>%
   mutate(significant=ifelse(p<0.05, 'yes', 'no'))%>%
-  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))%>%
-  mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
-                        ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
-                               ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
-                                      ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
-                                             ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
-                                                    ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
-                                                           ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
-                                                                  ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
+  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))
+  # %>%
+  # mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
+  #                       ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
+  #                              ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
+  #                                     ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
+  #                                            ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
+  #                                                   ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
+  #                                                          ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
+  #                                                                 ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
 colnames(richTimeModels) <-paste(colnames(richTimeModels), 'rich', sep='_')
 richTimeModels <- richTimeModels%>%
   rename(site_project_comm_trt=site_project_comm_trt_rich)
 
 # #plots for each site
 # for(PROJ in 1:length(site_project_comm_vector)){
-#   ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]),
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
 #          aes(x=treatment_year, y=richness_diff, color=treatment)) +
 #     geom_point() +
-#     geom_smooth(method='lm', se=F) +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
 #     ggtitle(site_project_comm_vector[PROJ]) +
 #     theme_bw()
 #   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\richness figs\\",
@@ -263,10 +271,10 @@ richTimeModels <- richTimeModels%>%
 ##### evenness difference over time #####
 evenTimeModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ]) #breaks at SERC because evenness=0 for all plots in SERC_TMECE_SP_E
-  model=lm(evenness_diff~treatment_year, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ]) #breaks at SERC because evenness=0 for all plots in SERC_TMECE_SP_E
+  model=lm(evenness_diff~poly(treatment_year,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   evenTimeModels=rbind(cf, evenTimeModels) 
@@ -279,25 +287,26 @@ evenTimeModels <- evenTimeModels%>%
   select(site_project_comm_trt, r_sq, component, estimate, std_error, p)%>%
   mutate(weight=1/std_error)%>%
   mutate(significant=ifelse(p<0.05, 'yes', 'no'))%>%
-  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))%>%
-  mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
-                        ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
-                               ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
-                                      ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
-                                             ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
-                                                    ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
-                                                           ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
-                                                                  ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
+  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))
+  # %>%
+  # mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
+  #                       ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
+  #                              ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
+  #                                     ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
+  #                                            ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
+  #                                                   ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
+  #                                                          ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
+  #                                                                 ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
 colnames(evenTimeModels) <-paste(colnames(evenTimeModels), 'even', sep='_')
 evenTimeModels <- evenTimeModels%>%
   rename(site_project_comm_trt=site_project_comm_trt_even)
 
 # #plotting all sites
 # for(PROJ in 1:length(site_project_comm_vector)){
-#   ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]),
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
 #          aes(x=treatment_year, y=evenness_diff, color=treatment)) +
 #     geom_point() +
-#     geom_smooth(method='lm', se=F) +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
 #     ggtitle(site_project_comm_vector[PROJ]) +
 #     theme_bw()
 #   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\evenness figs\\",
@@ -307,10 +316,10 @@ evenTimeModels <- evenTimeModels%>%
 ##### rank difference over time #####
 rankTimeModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
-  model=lm(rank_diff~treatment_year, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
+  model=lm(rank_diff~poly(treatment_year,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   rankTimeModels=rbind(cf, rankTimeModels) 
@@ -323,25 +332,26 @@ rankTimeModels <- rankTimeModels%>%
   select(site_project_comm_trt, r_sq, component, estimate, std_error, p)%>%
   mutate(weight=1/std_error)%>%
   mutate(significant=ifelse(p<0.05, 'yes', 'no'))%>%
-  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))%>%
-  mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
-                        ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
-                               ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
-                                      ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
-                                             ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
-                                                    ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
-                                                           ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
-                                                                  ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
+  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))
+  # %>%
+  # mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
+  #                       ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
+  #                              ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
+  #                                     ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
+  #                                            ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
+  #                                                   ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
+  #                                                          ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
+  #                                                                 ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
 colnames(rankTimeModels) <-paste(colnames(rankTimeModels), 'rank', sep='_')
 rankTimeModels <- rankTimeModels%>%
   rename(site_project_comm_trt=site_project_comm_trt_rank)
 
 # #plotting all sites
 # for(PROJ in 1:length(site_project_comm_vector)){
-#   ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]),
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
 #          aes(x=treatment_year, y=rank_diff, color=treatment)) +
 #     geom_point() +
-#     geom_smooth(method='lm', se=F) +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
 #     ggtitle(site_project_comm_vector[PROJ]) +
 #     theme_bw()
 #   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\rank figs\\",
@@ -351,10 +361,10 @@ rankTimeModels <- rankTimeModels%>%
 ##### spp difference over time #####
 sppDiffTimeModels=data.frame(row.names=1) 
 for(PROJ in 1:length(site_project_comm_trt_vector)){ 
-  subset=filter(correDiff, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
-  model=lm(species_diff~treatment_year, data=subset)
+  subset=filter(correDiffLong, site_project_comm_trt == site_project_comm_trt_vector[PROJ])
+  model=lm(species_diff~poly(treatment_year,2), data=subset)
   cf=as.data.frame(coef(summary(model)))%>%
-    mutate(component=c('intercept','slope'),
+    mutate(component=c('intercept','linear','quadratic'),
            r_sq=summary(model)$r.squared,
            site_project_comm_trt=site_project_comm_trt_vector[PROJ])
   sppDiffTimeModels=rbind(cf, sppDiffTimeModels) 
@@ -367,25 +377,26 @@ sppDiffTimeModels <- sppDiffTimeModels%>%
   select(site_project_comm_trt, r_sq, component, estimate, std_error, p)%>%
   mutate(weight=1/std_error)%>%
   mutate(significant=ifelse(p<0.05, 'yes', 'no'))%>%
-  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))%>%
-  mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
-                        ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
-                               ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
-                                      ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
-                                             ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
-                                                    ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
-                                                           ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
-                                                                  ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
+  pivot_wider(names_from=component, values_from = c(estimate, std_error, weight, p, significant))
+  # %>%
+  # mutate(pattern=ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope>0, 'increase through time',
+  #                       ifelse(significant_intercept=='no'&significant_slope=='yes'&estimate_slope<0, 'decrease through time',
+  #                              ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept>0, 'consistently higher',
+  #                                     ifelse(significant_intercept=='yes'&significant_slope=='no'&estimate_intercept<0, 'consistently lower',
+  #                                            ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope>0, 'initially higher and increasing',
+  #                                                   ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept>0&estimate_slope<0, 'initially higher and decreasing',
+  #                                                          ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope<0, 'initially lower and decreasing',
+  #                                                                 ifelse(significant_intercept=='yes'&significant_slope=='yes'&estimate_intercept<0&estimate_slope>0, 'initially lower and increasing', 'no pattern')))))))))
 colnames(sppDiffTimeModels) <-paste(colnames(sppDiffTimeModels), 'spp_diff', sep='_')
 sppDiffTimeModels <- sppDiffTimeModels%>%
   rename(site_project_comm_trt=site_project_comm_trt_spp_diff)
 
 # #plotting all sites
 # for(PROJ in 1:length(site_project_comm_vector)){
-#   ggplot(data=filter(correDiff, site_project_comm == site_project_comm_vector[PROJ]),
+#   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
 #          aes(x=treatment_year, y=species_diff, color=treatment)) +
 #     geom_point() +
-#     geom_smooth(method='lm', se=F) +
+#     geom_smooth(method='lm', se=F, formula=y~poly(x,2)) +
 #     ggtitle(site_project_comm_vector[PROJ]) +
 #     theme_bw()
 #   ggsave(filename=paste0("C:\\Users\\lapie\\Desktop\\spp diff figs\\",
@@ -401,37 +412,53 @@ allTimeModels <- anppTimeModels%>%
   left_join(rankTimeModels)%>%
   left_join(sppDiffTimeModels)%>%
   left_join(correDiffDetails)%>%
-  mutate(slope_anpp_modifier=ifelse(site_project_comm_trt %in% c('CDR_e001_D_1', 'IMGERS_Yu_0_N1', 'IMGERS_Yu_0_N2', 'IMGERS_Yu_0_N3', 'IMGERS_Yu_0_N4', 'IMGERS_Yu_0_N5', 'IMGERS_Yu_0_N6', 'KNZ_RaMPs_0_delayed_heated', 'KNZ_RaMPs_0_delayed_control', 'KNZ_RaMPs_0_ambient_heated', 'NWT_snow_0_PXW', 'SERC_CXN_0_t3', 'shps.us_NutNet_0_P', 'Bt_EVENT2_0_D2-N1', 'Bt_EVENT2_0_D1-N1', 'Bt_DroughtNet_0_drought', 'SERC_TMECE_SC_E'), -1, 1),
-         estimate_slope_anpp_alt=estimate_slope_anpp*slope_anpp_modifier)
+  mutate(linear_anpp_modifier=ifelse(site_project_comm_trt %in% c('Bt_DroughtNet_0_drought', 'Bt_EVENT2_0_D1-N1', 'Bt_EVENT2_0_D2-N1'), -1, 1),
+         estimate_linear_anpp_alt=estimate_linear_anpp*linear_anpp_modifier)
 
-#comparing anpp slope to community differences -- some go up and some go down with increasing community change
-ggplot(data=subset(allTimeModels, data_points>4), aes(x=estimate_slope_comm, y=estimate_slope_anpp_alt, color=MAP)) +
+
+##### comparing anpp diff across years 1-3, 4-6, and 7-9 of exp #####
+diffByYear <- correDiffLong%>%
+  mutate(year_set=ifelse(treatment_year %in% c(1,2,3), 'yrs_1to3',
+                         ifelse(treatment_year %in% c(4,5,6), 'yrs_4to6',
+                                ifelse(treatment_year %in% c(7,8,9), 'yrs_7to9', 'yrs10plus'))))
+
+ggplot(data=diffByYear, aes(x=year_set, y=anpp_pdiff)) +
+  geom_boxplot()
+ggplot(data=diffByYear, aes(x=as.factor(treatment_year), y=anpp_pdiff)) +
+  geom_boxplot()
+
+
+#try looking at max diff vs first and last yr diff
+do this
+
+##### comparing anpp slope to community differences -- some go up and some go down with increasing community change #####
+ggplot(data=allTimeModels, aes(x=estimate_linear_comm, y=estimate_linear_anpp_alt, color=MAP)) +
   geom_point(size=4) +
+  geom_smooth(method='lm', formula=y~poly(x,2)) +
   # geom_text(hjust=0, vjust=0, size=4) +
   geom_hline(yintercept=0) + geom_vline(xintercept=0)
+summary(lm(estimate_linear_anpp_alt~poly(estimate_linear_comm,2), weights=weight_linear_anpp, data=allTimeModels))
 
-summary(model <- lm(estimate_slope_anpp_alt~MAP, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4)))
 
-
-#anpp trends with site predictors -- more positive anpp responses at sites with greater MAP
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_anpp_alt~MAP))
-summary(model <- lm(estimate_slope_anpp_alt~MAP, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #positive trend
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_anpp_alt~MAT)) 
-summary(model <- lm(estimate_slope_anpp_alt~MAT, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #no trend
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_anpp_alt~rrich)) 
-summary(model <- lm(estimate_slope_anpp_alt~rrich, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #positive trend
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_anpp_alt~anpp))
-summary(model <- lm(estimate_slope_anpp_alt~anpp, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #no trend
+##### anpp trends with site predictors -- more positive anpp responses at sites with greater MAP #####
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=MAP, y=estimate_slope_anpp_alt)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_anpp_alt~poly(MAP,2), weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #negative quadratic trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=MAT, y=estimate_slope_anpp_alt)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_anpp_alt~poly(MAT,2), weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #no trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=rrich, y=estimate_slope_anpp_alt)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_anpp_alt~poly(rrich,2), weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #positive trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=anpp, y=estimate_slope_anpp_alt)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_anpp_alt~poly(anpp,2), weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #negative quadratic trend
 
 #community trends with site predictors -- more positive community responses at sites with higher MAP/anpp
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_comm~MAP))
-summary(model <- lm(estimate_slope_comm~MAP, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #negative trend
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_comm~MAT))
-summary(model <- lm(estimate_slope_comm~MAT, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #no trend
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_comm~rrich))
-summary(model <- lm(estimate_slope_comm~rrich, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #no trend
-with(subset(allTimeModels, data_points>4), plot(estimate_slope_comm~anpp)) 
-summary(model <- lm(estimate_slope_comm~anpp, weights=weight_slope_anpp, data=subset(allTimeModels, data_points>4))) #negative trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=MAP, y=estimate_slope_comm)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_comm~poly(MAP,2), weights=weight_slope_comm, data=subset(allTimeModels, data_points>4))) #no trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=MAT, y=estimate_slope_comm)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_comm~poly(MAT,2), weights=weight_slope_comm, data=subset(allTimeModels, data_points>4))) #positive quadratic trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=rrich, y=estimate_slope_comm)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_comm~poly(rrich,2), weights=weight_slope_comm, data=subset(allTimeModels, data_points>4))) #negative quadratic trend
+ggplot(data=subset(allTimeModels, data_points>4), aes(x=anpp, y=estimate_slope_comm)) + geom_point() + geom_smooth(method='lm', formula=y~poly(x,2))
+summary(model <- lm(estimate_slope_comm~poly(anpp,2), weights=weight_slope_comm, data=subset(allTimeModels, data_points>4))) #no trend
 
  
 #comparing anpp slope to different metrics of community difference
