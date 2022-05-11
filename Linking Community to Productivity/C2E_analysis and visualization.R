@@ -496,6 +496,9 @@ for(PROJ in 1:length(site_project_comm_trt_vector)){
   anppCompModels=rbind(cf, anppCompModels) 
 }
 
+#figure out if negative slopes between anpp and comm mean something vs positive slopes, when does one occur vs the other?
+do this
+
 # for(PROJ in 1:length(site_project_comm_vector)){
 #   ggplot(data=filter(correDiffLong, site_project_comm == site_project_comm_vector[PROJ]),
 #          aes(x=composition_diff, y=anpp_pdiff, color=treatment)) +
