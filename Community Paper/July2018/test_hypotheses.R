@@ -14,9 +14,9 @@ library(codyn)
 library(vegan)
 library(ggrepel)
 
-theme_set(theme_bw(12))
+theme_set(theme_bw(8))
 
-###step 1. Run RAC Differences overall and for controls only.
+###step 1. Run RAC Differences overall and for controls only. This is different code and the data is not public.
 
 ###Step 2: Do ttests. Getting ttest differences between rac trt-control and contorl-contorl comparisions
 
@@ -242,19 +242,20 @@ blank_theme <- theme_minimal()+
     panel.border = element_blank(),
     panel.grid=element_blank(),
     axis.ticks = element_blank(),
-    plot.title=element_text(size=14, face="bold")
+    plot.title=element_text(size=10, face="bold")
   )
 
-ggplot(num_scen, aes(x="",y=pct, fill=as.factor(scenario)))+
+fig3<-ggplot(num_scen, aes(x="",y=pct, fill=as.factor(scenario)))+
   geom_col(width=1, color=1)+
   coord_polar(theta = "y", start=100)+
-  scale_fill_brewer(name="Scenario", palette="Blues")+
+  scale_fill_brewer(name="Scenario", palette="Pastel2")+
   blank_theme+
   theme(axis.text.x = element_blank())+
   geom_label_repel(data=df2, aes(y = pos, label = paste0(pct, "%")),
-                   size = 4.5, nudge_x = 1, show.legend = FALSE)
+                   size = 2.5, nudge_x = 1, show.legend = FALSE)+
+  theme(legend.title = element_text(size=8), legend.text = element_text(size=8))
             
-
+ggsave("C:\\Users\\mavolio2\\OneDrive - Johns Hopkins\\Manuscripts\\C2E - testing ecosphere hypotheses\\Revison\\Fig3.jpeg",fig3, units="in", dpi=300, width = 3, height = 3)
 
 ##combining to see proportion is different for each RAC metric
 RAC_diff_outcomes <- scenarios%>%
